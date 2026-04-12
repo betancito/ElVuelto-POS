@@ -1,0 +1,39 @@
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+.yarn/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Env files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python / Django (backend lives in el_vuelto_backend/)
+el_vuelto_backend/.venv/
+el_vuelto_backend/__pycache__/
+el_vuelto_backend/**/__pycache__/
+el_vuelto_backend/**/*.py[cod]
+el_vuelto_backend/staticfiles/
+el_vuelto_backend/media/
+el_vuelto_backend/db.sqlite3

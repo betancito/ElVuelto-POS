@@ -1,0 +1,232 @@
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.headerRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.date {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+/* KPI grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.kpiCard {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.kpiIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-amber-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+.kpiLabel {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.25rem;
+}
+
+.kpiValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  margin: 0;
+}
+
+.kpiSub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0.125rem 0 0;
+}
+
+/* Charts row */
+.chartsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.chartCard {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.chartTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 1.25rem;
+  font-family: var(--font-ui);
+}
+
+/* Bar chart */
+.barChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 140px;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  background: var(--color-amber-500);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.bar:hover { opacity: 1; }
+
+.barLabel {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Top list */
+.topList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.topItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topRank {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.topInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topName {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.topUnits {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.topTotal {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-amber-500);
+  font-family: var(--font-mono);
+}
+
+/* Recent sales table */
+.recentCard {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+  padding: 0.625rem 0.75rem;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.tableAmount {
+  font-weight: 600;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-mono);
+}

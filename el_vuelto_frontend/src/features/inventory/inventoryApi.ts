@@ -24,6 +24,8 @@ export const inventoryApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listMovements: builder.query<InventoryMovement[], void>({
       query: () => '/inventory/movements/',
+      transformResponse: (response: InventoryMovement[] | { results: InventoryMovement[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['InventoryMovement'],
     }),
     createMovement: builder.mutation<InventoryMovement, Partial<InventoryMovement>>({
@@ -32,6 +34,8 @@ export const inventoryApi = apiBase.injectEndpoints({
     }),
     getStock: builder.query<StockItem[], void>({
       query: () => '/inventory/stock/',
+      transformResponse: (response: StockItem[] | { results: StockItem[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['InventoryMovement'],
     }),
   }),

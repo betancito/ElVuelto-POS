@@ -26,6 +26,8 @@ export const tenantsApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listTenants: builder.query<Tenant[], void>({
       query: () => '/tenants/',
+      transformResponse: (response: Tenant[] | { results: Tenant[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['Tenant'],
     }),
     getTenant: builder.query<Tenant, string>({

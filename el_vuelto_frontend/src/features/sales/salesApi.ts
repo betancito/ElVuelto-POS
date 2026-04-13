@@ -30,6 +30,8 @@ export const salesApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listSales: builder.query<Sale[], void>({
       query: () => '/sales/',
+      transformResponse: (response: Sale[] | { results: Sale[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['Sale'],
     }),
     getSale: builder.query<Sale, string>({

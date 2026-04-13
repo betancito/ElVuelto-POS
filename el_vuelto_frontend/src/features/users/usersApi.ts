@@ -22,6 +22,8 @@ export const usersApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listUsers: builder.query<User[], void>({
       query: () => '/users/',
+      transformResponse: (response: User[] | { results: User[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['User'],
     }),
     createUser: builder.mutation<User, CreateUserArgs>({

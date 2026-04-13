@@ -42,14 +42,20 @@ export const productsApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listProducts: builder.query<Product[], void>({
       query: () => '/products/',
+      transformResponse: (response: Product[] | { results: Product[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['Product'],
     }),
     getPosProducts: builder.query<PosProduct[], void>({
       query: () => '/products/pos/',
+      transformResponse: (response: PosProduct[] | { results: PosProduct[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['Product'],
     }),
     listCategories: builder.query<Category[], void>({
       query: () => '/products/categories/',
+      transformResponse: (response: Category[] | { results: Category[] }) =>
+        Array.isArray(response) ? response : response.results,
       providesTags: ['Category'],
     }),
     createProduct: builder.mutation<Product, ProductPayload>({

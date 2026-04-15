@@ -1,0 +1,49 @@
+/* ─── Base ─────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sa-sidebar-w);
+  background: var(--surface-container);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem;
+  gap: 0.5rem;
+  z-index: 50;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+/* ─── Desktop collapsed: icon-only rail ──────────────────────── */
+.sidebar[data-collapsed='true'] {
+  width: var(--sa-sidebar-collapsed-w);
+  padding-left: 0;
+  padding-right: 0;
+  align-items: center;
+}
+
+/* ─── Mobile: hidden off-screen by default, slides in when open ──── */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.25s ease, width 0.25s ease;
+  }
+
+  .sidebar[data-mobile-open='true'] {
+    transform: translateX(0);
+  }
+}
+
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.sidebar[data-collapsed='true'] .nav {
+  align-items: center;
+}

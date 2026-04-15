@@ -1,6 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
+  /* ─── Typography ─────────────────────────────────────────────────── */
+  --font-display: 'Playfair Display', serif;
+  --font-sans:    'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --font-ui:      'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* ─── Design-system color tokens (warm light palette) ───────────── */
+
+  /* Backgrounds */
+  --background:                  #fafaf9;  /* stone-50  */
+  --on-background:               #1c1917;  /* stone-900 */
+
+  /* Surface containers */
+  --surface:                     #ffffff;
+  --surface-container-lowest:    #ffffff;
+  --surface-container-low:       #fafaf9;  /* stone-50  */
+  --surface-container:           #f5f5f4;  /* stone-100 */
+  --surface-container-high:      #e7e5e4;  /* stone-200 */
+  --surface-container-highest:   #d6d3d1;  /* stone-300 */
+
+  /* On-surface text */
+  --on-surface:                  #1c1917;  /* stone-900 */
+  --on-surface-variant:          #78716c;  /* stone-500 */
+
+  /* Primary – orange */
+  --primary:                     #ea580c;  /* orange-600 */
+  --on-primary:                  #ffffff;
+  --primary-container:           #ffedd5;  /* orange-100 */
+  --on-primary-container:        #7c2d12;  /* orange-900 */
+
+  /* Secondary – same warm orange family */
+  --secondary-container:         #ffedd5;  /* orange-100 */
+  --on-secondary-container:      #7c2d12;  /* orange-900 */
+
+  /* Tertiary – green (used for "Active" status) */
+  --tertiary:                    #16a34a;  /* green-600  */
+  --on-tertiary:                 #ffffff;
+
+  /* Outline / border */
+  --outline:                     #d6d3d1;  /* stone-300  */
+  --outline-variant:             rgba(214,211,208,0.5);
+
+  /* Gradient */
+  --gradient-baked: linear-gradient(135deg, #ea580c 0%, #b45309 100%);
+
+  /* ─── Layout ─────────────────────────────────────────────────────── */
+  --sa-sidebar-w:  256px;   /* 16rem / w-64 */
+  --sa-header-h:    64px;   /* h-16        */
+
+  /* ─── Radius ─────────────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  /* ─── Shadows ────────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px  rgba(28,25,23,0.05);
+  --shadow-sm: 0 1px 3px  rgba(28,25,23,0.08);
+  --shadow-md: 0 4px 12px rgba(28,25,23,0.10);
+  --shadow-lg: 0 8px 24px rgba(28,25,23,0.12);
+
+  /* ─── Legacy dark-theme tokens (AdminLayout / CashierLayout) ─────── */
   --ink:        #1A1410;
   --ink-80:     #3D2F25;
   --ink-50:     #7A6558;
@@ -22,20 +84,8 @@
   --amber-lt:   #FEF4DC;
   --white:      #FFFFFF;
   --border:     #E0D5C8;
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  16px;
-  --radius-xl:  24px;
-  --font-display: 'Playfair Display', serif;
-  --font-ui:      'DM Sans', sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
-  --shadow-sm: 0 1px 3px rgba(26,20,16,0.08);
-  --shadow-md: 0 4px 12px rgba(26,20,16,0.10);
-  --shadow-lg: 0 8px 24px rgba(26,20,16,0.12);
-  --sidebar-w: 240px;
-  --topbar-h:  60px;
-
-  /* Dark-theme semantic tokens used by all feature CSS modules */
+  --sidebar-w:  240px;
+  --topbar-h:    60px;
   --color-bg:           #0f0e0c;
   --color-surface-dark: #141210;
   --color-surface-1:    #1c1a17;

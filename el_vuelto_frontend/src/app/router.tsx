@@ -4,14 +4,18 @@ import ProtectedRoute from '@/utils/ProtectedRoute'
 // Layouts
 import AuthLayout from '@/layouts/AuthLayout'
 import AdminLayout from '@/layouts/AdminLayout'
-import SuperAdminLayout from '@/layouts/SuperAdminLayout'
+import SuperAdminLayout from '@/features/layout/super-admin'
 
 // Auth pages
 import SuperAdminLoginPage from '@/features/auth/SuperAdminLoginPage'
 import TenantLoginPage from '@/features/auth/TenantLoginPage'
 
 // Super admin pages
-import TenantsPage from '@/features/tenants/TenantsPage'
+import HomePage from '@/features/super-admin/home'
+import TenantsPage from '@/features/super-admin/tenants'
+import BillingPage from '@/features/super-admin/billing'
+import SAUsersPage from '@/features/super-admin/users'
+import HistoryPage from '@/features/super-admin/history'
 
 // Admin/Cajero pages
 import DashboardPage from '@/features/dashboard/DashboardPage'
@@ -28,7 +32,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/super-admin/login" replace />,
+        element: <Navigate to="/super-admin/home" replace />,
       },
       {
         path: 'login',
@@ -45,8 +49,12 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
+          { path: 'home',    element: <HomePage />    },
           { path: 'tenants', element: <TenantsPage /> },
-          { index: true, element: <Navigate to="tenants" replace /> },
+          { path: 'billing', element: <BillingPage /> },
+          { path: 'users',   element: <SAUsersPage /> },
+          { path: 'history', element: <HistoryPage /> },
+          { index: true,     element: <Navigate to="home" replace /> },
         ],
       },
     ],

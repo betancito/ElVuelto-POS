@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children, allowedRoles }: Props) {
 
   if (allowedRoles && user && !allowedRoles.includes(user.rol)) {
     if (user.rol === 'CAJERO') return <Navigate to="/pos" replace />
-    if (user.rol === 'SUPERADMIN') return <Navigate to="/super-admin/tenants" replace />
+    if (user.rol === 'SUPERADMIN') return <Navigate to="/super-admin/home" replace />
     return <Navigate to="/dashboard" replace />
   }
 

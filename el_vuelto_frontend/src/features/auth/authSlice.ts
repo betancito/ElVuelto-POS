@@ -1,11 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-interface AuthUser {
+export interface AuthUser {
   id: string
   nombre: string
   correo: string | null
   cedula: string | null
   rol: 'SUPERADMIN' | 'ADMIN' | 'CAJERO'
+  activo: boolean
   tenantId: string | null
   tenantNombre: string | null
 }

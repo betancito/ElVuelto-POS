@@ -1,0 +1,40 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-bottom-color: var(--primary);
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  margin-bottom: 0.25rem;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1.1;
+}
+
+.trend {
+  font-size: 0.75rem;
+  color: var(--tertiary);
+  font-weight: 500;
+  margin-top: 0.5rem;
+}

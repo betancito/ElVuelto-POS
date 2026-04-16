@@ -1,4 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Tailwind v4: font overrides ───────────────────────────────── */
+@theme {
+  --font-sans:  'Plus Jakarta Sans', 'DM Sans', ui-sans-serif, sans-serif;
+  --font-serif: 'Playfair Display', ui-serif, serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ─── Tailwind v4: brand color tokens (inline = reference CSS vars) */
+@theme inline {
+  --color-primary:                    var(--primary);
+  --color-on-primary:                 var(--on-primary);
+  --color-primary-container:          var(--primary-container);
+  --color-on-primary-container:       var(--on-primary-container);
+  --color-secondary-container:        var(--secondary-container);
+  --color-on-secondary-container:     var(--on-secondary-container);
+  --color-surface-lowest:             var(--surface-container-lowest);
+  --color-surface-low:                var(--surface-container-low);
+  --color-surface-c:                  var(--surface-container);
+  --color-surface-high:               var(--surface-container-high);
+  --color-surface-highest:            var(--surface-container-highest);
+  --color-on-surface:                 var(--on-surface);
+  --color-on-surface-variant:         var(--on-surface-variant);
+  --color-outline-c:                  var(--outline);
+  --color-warm-bg:                    var(--background);
+}
 
 :root {
   /* ─── Typography ─────────────────────────────────────────────────── */

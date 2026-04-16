@@ -8,6 +8,7 @@ import SuperAdminLayout from '@/features/layout/super-admin'
 
 // Auth pages
 import SuperAdminLoginPage from '@/features/auth/SuperAdminLoginPage'
+import ColorBendsTestPage from '@/features/test/ColorBendsTestPage'
 import TenantLoginPage from '@/features/auth/TenantLoginPage'
 
 // Super admin pages
@@ -36,11 +37,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'login',
-        element: (
-          <AuthLayout>
-            <SuperAdminLoginPage />
-          </AuthLayout>
-        ),
+        element: <SuperAdminLoginPage />,
       },
       {
         element: (
@@ -98,5 +95,6 @@ export const router = createBrowserRouter([
 
   // Root redirect
   { path: '/', element: <Navigate to="/login" replace /> },
+  { path: '/test/color-bends', element: <ColorBendsTestPage /> },
   { path: '*', element: <Navigate to="/login" replace /> },
 ])

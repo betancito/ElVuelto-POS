@@ -9,11 +9,13 @@ export default function LoginCard({ children }: Props) {
     <Paper
       elevation={0}
       sx={{
-        backgroundColor: '#ffffff',
-        borderRadius: { xs: 0, sm: '1rem' },
+        backgroundColor: 'rgba(255, 255, 255, 0.45)',
+        backdropFilter: 'blur(24px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+        borderRadius: { xs: 0, sm: '1.25rem' },
         p: { xs: 3, sm: 4 },
-        boxShadow: { xs: 'none', sm: '0 32px 64px -12px rgba(30,27,21,0.08)' },
-        border: { xs: 'none', sm: '1px solid rgba(220,193,183,0.2)' },
+        boxShadow: { xs: 'none', sm: '0 8px 40px rgba(139,58,15,0.15), inset 0 1px 0 rgba(255,255,255,0.6)' },
+        border: { xs: 'none', sm: '1px solid rgba(255,255,255,0.55)' },
         position: 'relative',
         overflow: 'hidden',
         minHeight: { xs: '100vh', sm: 'auto' },

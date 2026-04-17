@@ -31,8 +31,6 @@ export default function Header() {
         >
           <MenuIcon fontSize="small" />
         </button>
-
-        <h2 className={styles.title}>Admin Ledger</h2>
       </div>
 
       <div className={styles.right}>

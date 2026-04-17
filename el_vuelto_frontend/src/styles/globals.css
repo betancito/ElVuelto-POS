@@ -2,8 +2,8 @@
 
 /* ─── Tailwind v4: font overrides ───────────────────────────────── */
 @theme {
-  --font-sans:  'Plus Jakarta Sans', 'DM Sans', ui-sans-serif, sans-serif;
-  --font-serif: 'Playfair Display', ui-serif, serif;
+  --font-sans:  'Montserrat', ui-sans-serif, sans-serif;
+  --font-serif: 'Montserrat', ui-sans-serif, sans-serif;
   --font-mono:  'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -28,9 +28,9 @@
 
 :root {
   /* ─── Typography ─────────────────────────────────────────────────── */
-  --font-display: 'Playfair Display', serif;
-  --font-sans:    'Plus Jakarta Sans', 'DM Sans', sans-serif;
-  --font-ui:      'Plus Jakarta Sans', 'DM Sans', sans-serif;
+  --font-display: 'Montserrat', sans-serif;
+  --font-sans:    'Montserrat', sans-serif;
+  --font-ui:      'Montserrat', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
   /* ─── Design-system color tokens (warm light palette) ───────────── */

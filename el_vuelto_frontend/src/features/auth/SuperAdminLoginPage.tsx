@@ -53,20 +53,19 @@ export default function SuperAdminLoginPage() {
       {/* Full-viewport animated background */}
       <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', backgroundColor: '#fff8f0', zIndex: 0 }}>
         <ColorBends
-          colors={['#8b3a0f', '#6a2600', '#C2611E']}
+          colors={['#8B3A0F']}
           rotation={90}
-          speed={0.15}
-          scale={1.2}
-          frequency={0.8}
-          warpStrength={0.8}
-          mouseInfluence={0.4}
-          parallax={0.3}
-          noise={0.08}
-          iterations={2}
-          intensity={1.2}
-          bandWidth={5}
+          autoRotate={5}
+          speed={0.4}
+          scale={1}
+          frequency={2}
+          warpStrength={1}
+          parallax={1.0}
+          noise={0}
+          iterations={4}
+          intensity={1.5}
+          bandWidth={6}
           transparent
-
         />
       </div>
 
@@ -169,7 +168,7 @@ export default function SuperAdminLoginPage() {
               >
                 {isLoading
                   ? <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : 'Ingresar al Ledger'
+                  : 'Ingresar'
                 }
               </MuiButton>
             </Box>

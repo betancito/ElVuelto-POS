@@ -6,6 +6,19 @@
   width: 100%;
 }
 
+.favicon {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.banner {
+  max-width: 210px;
+  height: auto;
+  object-fit: contain;
+}
+
 .brand.collapsed {
   justify-content: center;
   padding-left: 0;

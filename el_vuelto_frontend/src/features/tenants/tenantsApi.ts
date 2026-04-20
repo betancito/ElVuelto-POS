@@ -6,7 +6,7 @@ export interface Tenant {
   nit: string
   ciudad: string
   correo: string
-  logo: string | null
+  logo_url?: string | null
   activo: boolean
   created_at: string
 }
@@ -53,6 +53,14 @@ export const tenantsApi = apiBase.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/tenants/${id}/`, method: 'PATCH', body }),
       invalidatesTags: ['Tenant'],
     }),
+    uploadTenantLogo: builder.mutation<{ logo_url: string }, { id: string; formData: FormData }>({
+      query: ({ id, formData }) => ({
+        url: `/tenants/${id}/upload_logo/`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Tenant'],
+    }),
     toggleTenantActive: builder.mutation<Tenant, string>({
       query: (id) => ({ url: `/tenants/${id}/toggle_active/`, method: 'POST' }),
       invalidatesTags: ['Tenant'],
@@ -65,5 +73,6 @@ export const {
   useGetTenantQuery,
   useCreateTenantMutation,
   useUpdateTenantMutation,
+  useUploadTenantLogoMutation,
   useToggleTenantActiveMutation,
 } = tenantsApi

@@ -43,6 +43,33 @@
   gap: 0.25rem;
 }
 
+/* ── Logo column ── */
+.logoCol {
+  width: 3.5rem;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.logoCell {
+  padding: 0.5rem 0.75rem !important;
+}
+
+.logoThumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--outline);
+  display: block;
+}
+
+.logoEmpty {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  border: 1px dashed var(--outline);
+}
+
 .empty {
   color: var(--on-surface-variant);
   font-size: 0.9375rem;

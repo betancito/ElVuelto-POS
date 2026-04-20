@@ -1,8 +1,10 @@
 Django==5.1.4
-djangorestframework==3.15.2
-djangorestframework-simplejwt==5.3.1
+djangore stframework==3.15.2
+djangore stframework-simplejwt==5.3.1
 django-cors-headers==4.6.0
 python-decouple==3.8
 Pillow==11.1.0
 python-escpos==3.1
 psycopg2-binary==2.9.10
+cloudinary==1.44.2
+cloudinary==1.44.2

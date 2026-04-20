@@ -2,10 +2,12 @@ import secrets
 
 from rest_framework import serializers
 
-from .models import Tenant
+from .models import Tenant, TenantDocument
 
 
 class TenantSerializer(serializers.ModelSerializer):
+    logo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Tenant
         fields = [
@@ -14,12 +16,16 @@ class TenantSerializer(serializers.ModelSerializer):
             "nit",
             "ciudad",
             "correo",
-            "logo",
             "activo",
+            "logo_url",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_logo_url(self, obj):
+        doc = obj.documents.filter(document_type=TenantDocument.DocumentType.LOGO).first()
+        return doc.cloudinary_url if doc else None
 
 
 class TenantCreateSerializer(TenantSerializer):

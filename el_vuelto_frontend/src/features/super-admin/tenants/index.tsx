@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-toastify'
-import { useListTenantsQuery, useCreateTenantMutation, useUpdateTenantMutation } from '@/features/tenants/tenantsApi'
+import {
+  useListTenantsQuery,
+  useCreateTenantMutation,
+  useUpdateTenantMutation,
+  useUploadTenantLogoMutation,
+} from '@/features/tenants/tenantsApi'
 import type { Tenant } from '@/features/tenants/tenantsApi'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -37,19 +42,49 @@ export default function TenantsPage() {
   const { data: tenants = [], isLoading, refetch } = useListTenantsQuery()
   const [createTenant, { isLoading: creating }] = useCreateTenantMutation()
   const [updateTenant, { isLoading: updating }] = useUpdateTenantMutation()
+  const [uploadLogo, { isLoading: uploading }] = useUploadTenantLogoMutation()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editActivo, setEditActivo] = useState(true)
   const [credentials, setCredentials] = useState<CredentialsData | null>(null)
 
+  // Logo file state for create and edit modals
+  const [createLogoFile, setCreateLogoFile] = useState<File | null>(null)
+  const [createLogoPreview, setCreateLogoPreview] = useState<string | null>(null)
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null)
+  const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
+
+  const createLogoInputRef = useRef<HTMLInputElement>(null)
+  const editLogoInputRef = useRef<HTMLInputElement>(null)
+
   const createForm = useForm<CreateFormData>({ resolver: zodResolver(createSchema) })
   const editForm = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
+
+  function handleLogoFile(
+    file: File | null,
+    setFile: (f: File | null) => void,
+    setPreview: (p: string | null) => void,
+  ) {
+    if (!file) return
+    setFile(file)
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+  }
 
   async function onCreateSubmit(data: CreateFormData) {
     try {
       const result = await createTenant(data).unwrap()
+
+      if (createLogoFile) {
+        const fd = new FormData()
+        fd.append('logo', createLogoFile)
+        await uploadLogo({ id: result.id, formData: fd }).unwrap()
+      }
+
       createForm.reset()
+      setCreateLogoFile(null)
+      setCreateLogoPreview(null)
       setShowCreateModal(false)
       await refetch()
       setCredentials({
@@ -66,6 +101,8 @@ export default function TenantsPage() {
   function openEditModal(tenant: Tenant) {
     setEditingTenant(tenant)
     setEditActivo(tenant.activo)
+    setEditLogoFile(null)
+    setEditLogoPreview(tenant.logo_url ?? null)
     editForm.reset({
       nombre: tenant.nombre,
       nit: tenant.nit,
@@ -78,7 +115,16 @@ export default function TenantsPage() {
     if (!editingTenant) return
     try {
       await updateTenant({ id: editingTenant.id, ...data, activo: editActivo }).unwrap()
+
+      if (editLogoFile) {
+        const fd = new FormData()
+        fd.append('logo', editLogoFile)
+        await uploadLogo({ id: editingTenant.id, formData: fd }).unwrap()
+      }
+
       setEditingTenant(null)
+      setEditLogoFile(null)
+      setEditLogoPreview(null)
       await refetch()
       toast.success(`"${data.nombre}" actualizado correctamente.`)
     } catch {
@@ -86,7 +132,7 @@ export default function TenantsPage() {
     }
   }
 
-  const busy = isLoading || creating || updating
+  const busy = isLoading || creating || updating || uploading
 
   return (
     <div className={styles.root}>
@@ -115,6 +161,34 @@ export default function TenantsPage() {
             <Input label="Ciudad" error={createForm.formState.errors.ciudad?.message} {...createForm.register('ciudad')} />
             <Input label="Correo del negocio" type="email" error={createForm.formState.errors.correo?.message} {...createForm.register('correo')} />
           </div>
+
+          {/* Logo upload */}
+          <div className={styles.logoUpload}>
+            <span className={styles.logoUploadLabel}>Logo del negocio (opcional)</span>
+            <div className={styles.logoUploadArea}>
+              {createLogoPreview ? (
+                <img src={createLogoPreview} alt="Logo preview" className={styles.logoPreview} />
+              ) : (
+                <div className={styles.logoPlaceholder}>🖼</div>
+              )}
+              <div>
+                <input
+                  ref={createLogoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className={styles.logoFileInput}
+                  onChange={(e) => handleLogoFile(e.target.files?.[0] ?? null, setCreateLogoFile, setCreateLogoPreview)}
+                />
+                <button type="button" className={styles.logoUploadBtn} onClick={() => createLogoInputRef.current?.click()}>
+                  {createLogoFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                </button>
+                {createLogoFile && (
+                  <p className={styles.logoFileName}>{createLogoFile.name}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <hr className={styles.divider} />
           <p className={styles.sectionLabel}>Administrador inicial</p>
           <div className={styles.formRow}>
@@ -126,7 +200,7 @@ export default function TenantsPage() {
           </p>
           <div className={styles.formActions}>
             <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
-            <Button type="submit" loading={creating}>Crear negocio</Button>
+            <Button type="submit" loading={creating || uploading}>Crear negocio</Button>
           </div>
         </form>
       </Modal>
@@ -142,6 +216,34 @@ export default function TenantsPage() {
             <Input label="Ciudad" error={editForm.formState.errors.ciudad?.message} {...editForm.register('ciudad')} />
             <Input label="Correo del negocio" type="email" error={editForm.formState.errors.correo?.message} {...editForm.register('correo')} />
           </div>
+
+          {/* Logo upload */}
+          <div className={styles.logoUpload}>
+            <span className={styles.logoUploadLabel}>Logo del negocio</span>
+            <div className={styles.logoUploadArea}>
+              {editLogoPreview ? (
+                <img src={editLogoPreview} alt="Logo preview" className={styles.logoPreview} />
+              ) : (
+                <div className={styles.logoPlaceholder}>🖼</div>
+              )}
+              <div>
+                <input
+                  ref={editLogoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className={styles.logoFileInput}
+                  onChange={(e) => handleLogoFile(e.target.files?.[0] ?? null, setEditLogoFile, setEditLogoPreview)}
+                />
+                <button type="button" className={styles.logoUploadBtn} onClick={() => editLogoInputRef.current?.click()}>
+                  {editLogoPreview ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                </button>
+                {editLogoFile && (
+                  <p className={styles.logoFileName}>{editLogoFile.name}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className={styles.toggleRow}>
             <span className={styles.toggleLabel}>Estado del negocio</span>
             <button
@@ -159,7 +261,7 @@ export default function TenantsPage() {
           </div>
           <div className={styles.formActions}>
             <Button type="button" variant="secondary" onClick={() => setEditingTenant(null)}>Cancelar</Button>
-            <Button type="submit" loading={updating}>Guardar cambios</Button>
+            <Button type="submit" loading={updating || uploading}>Guardar cambios</Button>
           </div>
         </form>
       </Modal>
@@ -169,4 +271,3 @@ export default function TenantsPage() {
     </div>
   )
 }
-

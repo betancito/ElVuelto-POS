@@ -19,6 +19,7 @@ export default function TenantsTable({ tenants, onEdit }: Props) {
       <table className={styles.table}>
         <thead>
           <tr>
+            <th className={styles.logoCol}></th>
             <th>Negocio</th>
             <th>NIT</th>
             <th>Ciudad</th>
@@ -30,6 +31,13 @@ export default function TenantsTable({ tenants, onEdit }: Props) {
         <tbody>
           {tenants.map((t) => (
             <tr key={t.id}>
+              <td className={styles.logoCell}>
+                {t.logo_url ? (
+                  <img src={t.logo_url} alt={`${t.nombre} logo`} className={styles.logoThumb} />
+                ) : (
+                  <div className={styles.logoEmpty} aria-hidden="true" />
+                )}
+              </td>
               <td className={styles.name}>{t.nombre}</td>
               <td>{t.nit}</td>
               <td>{t.ciudad}</td>

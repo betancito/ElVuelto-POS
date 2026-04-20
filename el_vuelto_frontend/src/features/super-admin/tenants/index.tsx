@@ -2,95 +2,171 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useListTenantsQuery, useCreateTenantMutation, useToggleTenantActiveMutation } from '@/features/tenants/tenantsApi'
-import { generateAdminPassword } from '@/utils/generatePassword'
+import { toast } from 'react-toastify'
+import { useListTenantsQuery, useCreateTenantMutation, useUpdateTenantMutation } from '@/features/tenants/tenantsApi'
+import type { Tenant } from '@/features/tenants/tenantsApi'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import Spinner from '@/components/ui/Spinner'
+import PageLoader from '@/components/ui/PageLoader'
+import CredentialsModal from '@/components/ui/CredentialsModal'
+import type { CredentialsData } from '@/components/ui/CredentialsModal'
 import TenantsTable from './components/TenantsTable'
-import PasswordBanner from './components/PasswordBanner'
 import styles from './TenantsPage.module.css'
 
-const schema = z.object({
+const createSchema = z.object({
   nombre: z.string().min(2, 'Mínimo 2 caracteres'),
   nit: z.string().min(5, 'NIT inválido'),
   ciudad: z.string().min(2, 'Ciudad requerida'),
   correo: z.string().email('Correo inválido'),
   admin_nombre: z.string().min(2, 'Nombre requerido'),
-  admin_correo: z.string().email('Correo admin inválido'),
+  admin_correo: z.string().email('Correo del administrador inválido'),
 })
 
-type FormData = z.infer<typeof schema>
+const editSchema = z.object({
+  nombre: z.string().min(2, 'Mínimo 2 caracteres'),
+  nit: z.string().min(5, 'NIT inválido'),
+  ciudad: z.string().min(2, 'Ciudad requerida'),
+  correo: z.string().email('Correo inválido'),
+})
+
+type CreateFormData = z.infer<typeof createSchema>
+type EditFormData = z.infer<typeof editSchema>
 
 export default function TenantsPage() {
-  const { data: tenants = [], isLoading } = useListTenantsQuery()
+  const { data: tenants = [], isLoading, refetch } = useListTenantsQuery()
   const [createTenant, { isLoading: creating }] = useCreateTenantMutation()
-  const [toggleActive] = useToggleTenantActiveMutation()
+  const [updateTenant, { isLoading: updating }] = useUpdateTenantMutation()
 
-  const [showModal, setShowModal] = useState(false)
-  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
+  const [editActivo, setEditActivo] = useState(true)
+  const [credentials, setCredentials] = useState<CredentialsData | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  })
+  const createForm = useForm<CreateFormData>({ resolver: zodResolver(createSchema) })
+  const editForm = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
 
-  async function onSubmit(data: FormData) {
-    const password = generateAdminPassword()
+  async function onCreateSubmit(data: CreateFormData) {
     try {
-      await createTenant({ ...data, admin_password: password }).unwrap()
-      setCreatedPassword(password)
-      reset()
-      setShowModal(false)
-    } catch {}
+      const result = await createTenant(data).unwrap()
+      createForm.reset()
+      setShowCreateModal(false)
+      await refetch()
+      setCredentials({
+        tenantNombre: result.nombre,
+        adminNombre: data.admin_nombre,
+        adminCorreo: data.admin_correo,
+        password: result.initial_admin_password,
+      })
+    } catch {
+      toast.error('No se pudo crear el negocio. Verifica los datos e intenta de nuevo.')
+    }
   }
+
+  function openEditModal(tenant: Tenant) {
+    setEditingTenant(tenant)
+    setEditActivo(tenant.activo)
+    editForm.reset({
+      nombre: tenant.nombre,
+      nit: tenant.nit,
+      ciudad: tenant.ciudad,
+      correo: tenant.correo,
+    })
+  }
+
+  async function onEditSubmit(data: EditFormData) {
+    if (!editingTenant) return
+    try {
+      await updateTenant({ id: editingTenant.id, ...data, activo: editActivo }).unwrap()
+      setEditingTenant(null)
+      await refetch()
+      toast.success(`"${data.nombre}" actualizado correctamente.`)
+    } catch {
+      toast.error('No se pudo actualizar el negocio. Intenta de nuevo.')
+    }
+  }
+
+  const busy = isLoading || creating || updating
 
   return (
     <div className={styles.root}>
+      <PageLoader show={busy} />
+
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.heading}>Negocios</h1>
           <p className={styles.sub}>{tenants.length} sucursales registradas</p>
         </div>
-        <Button onClick={() => setShowModal(true)}>+ Nuevo negocio</Button>
+        <Button onClick={() => setShowCreateModal(true)}>+ Nuevo negocio</Button>
       </div>
 
-      {createdPassword && (
-        <PasswordBanner password={createdPassword} onClose={() => setCreatedPassword(null)} />
+      {!isLoading && (
+        <TenantsTable tenants={tenants} onEdit={openEditModal} />
       )}
 
-      {isLoading ? (
-        <div className={styles.loading}><Spinner /></div>
-      ) : (
-        <TenantsTable tenants={tenants} onToggleActive={toggleActive} />
-      )}
-
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Nuevo negocio" size="md">
-        <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
+      {/* ── Create modal ── */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuevo negocio" size="md">
+        <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className={styles.form} noValidate>
           <div className={styles.formRow}>
-            <Input label="Nombre del negocio" error={errors.nombre?.message} {...register('nombre')} />
-            <Input label="NIT" error={errors.nit?.message} {...register('nit')} />
+            <Input label="Nombre del negocio" error={createForm.formState.errors.nombre?.message} {...createForm.register('nombre')} />
+            <Input label="NIT" error={createForm.formState.errors.nit?.message} {...createForm.register('nit')} />
           </div>
           <div className={styles.formRow}>
-            <Input label="Ciudad" error={errors.ciudad?.message} {...register('ciudad')} />
-            <Input label="Correo del negocio" type="email" error={errors.correo?.message} {...register('correo')} />
+            <Input label="Ciudad" error={createForm.formState.errors.ciudad?.message} {...createForm.register('ciudad')} />
+            <Input label="Correo del negocio" type="email" error={createForm.formState.errors.correo?.message} {...createForm.register('correo')} />
           </div>
           <hr className={styles.divider} />
           <p className={styles.sectionLabel}>Administrador inicial</p>
           <div className={styles.formRow}>
-            <Input label="Nombre" error={errors.admin_nombre?.message} {...register('admin_nombre')} />
-            <Input label="Correo" type="email" error={errors.admin_correo?.message} {...register('admin_correo')} />
+            <Input label="Nombre del administrador" error={createForm.formState.errors.admin_nombre?.message} {...createForm.register('admin_nombre')} />
+            <Input label="Correo del administrador" type="email" error={createForm.formState.errors.admin_correo?.message} {...createForm.register('admin_correo')} />
           </div>
           <p className={styles.hint}>
-            Se generará una contraseña automática y se mostrará <strong>una sola vez</strong>.
+            La contraseña se genera automáticamente y se mostrará <strong>una sola vez</strong>.
           </p>
           <div className={styles.formActions}>
-            <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
             <Button type="submit" loading={creating}>Crear negocio</Button>
           </div>
         </form>
       </Modal>
+
+      {/* ── Edit modal ── */}
+      <Modal isOpen={!!editingTenant} onClose={() => setEditingTenant(null)} title="Editar negocio" size="md">
+        <form onSubmit={editForm.handleSubmit(onEditSubmit)} className={styles.form} noValidate>
+          <div className={styles.formRow}>
+            <Input label="Nombre del negocio" error={editForm.formState.errors.nombre?.message} {...editForm.register('nombre')} />
+            <Input label="NIT" error={editForm.formState.errors.nit?.message} {...editForm.register('nit')} />
+          </div>
+          <div className={styles.formRow}>
+            <Input label="Ciudad" error={editForm.formState.errors.ciudad?.message} {...editForm.register('ciudad')} />
+            <Input label="Correo del negocio" type="email" error={editForm.formState.errors.correo?.message} {...editForm.register('correo')} />
+          </div>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Estado del negocio</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={editActivo}
+              onClick={() => setEditActivo((v) => !v)}
+              className={[styles.toggle, editActivo ? styles.toggleOn : styles.toggleOff].join(' ')}
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+            <span className={styles.toggleStatus}>
+              {editActivo ? 'Activo' : 'Inactivo'}
+            </span>
+          </div>
+          <div className={styles.formActions}>
+            <Button type="button" variant="secondary" onClick={() => setEditingTenant(null)}>Cancelar</Button>
+            <Button type="submit" loading={updating}>Guardar cambios</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Credentials modal (shown once after tenant creation) ── */}
+      <CredentialsModal data={credentials} onClose={() => setCredentials(null)} />
     </div>
   )
 }
+

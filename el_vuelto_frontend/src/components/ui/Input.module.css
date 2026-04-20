@@ -7,30 +7,30 @@
 .label {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--on-surface-variant);
   font-family: var(--font-ui);
 }
 
 .inputWrap {
   display: flex;
   align-items: center;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline);
   border-radius: var(--radius-md);
   transition: border-color 0.15s;
 }
 
 .inputWrap:focus-within {
-  border-color: var(--color-amber-500);
+  border-color: var(--primary);
 }
 
 .hasError {
-  border-color: var(--color-error) !important;
+  border-color: #dc2626 !important;
 }
 
 .leftIcon {
   font-size: 1.125rem;
-  color: var(--color-text-muted);
+  color: var(--on-surface-variant);
   padding-left: 0.875rem;
   user-select: none;
 }
@@ -43,12 +43,12 @@
   padding: 0.625rem 0.875rem;
   font-family: var(--font-ui);
   font-size: 0.9375rem;
-  color: var(--color-text-primary);
+  color: var(--on-surface);
   width: 100%;
 }
 
 .input::placeholder {
-  color: var(--color-text-muted);
+  color: var(--on-surface-variant);
 }
 
 .rightElement {
@@ -57,6 +57,6 @@
 
 .errorMsg {
   font-size: 0.75rem;
-  color: var(--color-error);
+  color: #dc2626;
   font-family: var(--font-ui);
 }

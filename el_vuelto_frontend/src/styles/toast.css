@@ -1,0 +1,72 @@
+/* ── El Vuelto — branded react-toastify overrides ───────────────── */
+
+.Toastify__toast-container {
+  --toastify-font-family: 'Montserrat', sans-serif;
+  width: 340px;
+}
+
+/* Base toast */
+.Toastify__toast {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(28, 25, 23, 0.12) !important;
+  padding: 14px 16px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  color: #1c1917 !important;
+  background: #ffffff !important;
+  border: 1px solid #e7e5e4 !important;
+  align-items: flex-start !important;
+}
+
+.Toastify__toast-body {
+  font-family: 'Montserrat', sans-serif !important;
+  padding: 0 !important;
+  gap: 10px !important;
+}
+
+/* ── Success ── */
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #16a34a !important;
+}
+.Toastify__toast--success .Toastify__progress-bar {
+  background: #16a34a !important;
+}
+
+/* ── Error ── */
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #dc2626 !important;
+}
+.Toastify__toast--error .Toastify__progress-bar {
+  background: #dc2626 !important;
+}
+
+/* ── Info / default ── */
+.Toastify__toast--info .Toastify__toast-icon svg {
+  fill: #ea580c !important;
+}
+.Toastify__toast--info .Toastify__progress-bar {
+  background: #ea580c !important;
+}
+
+/* ── Warning ── */
+.Toastify__toast--warning .Toastify__toast-icon svg {
+  fill: #d97706 !important;
+}
+.Toastify__toast--warning .Toastify__progress-bar {
+  background: #d97706 !important;
+}
+
+/* Close button */
+.Toastify__close-button {
+  color: #78716c !important;
+  opacity: 0.7 !important;
+  align-self: center !important;
+}
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+
+/* Progress bar track */
+.Toastify__progress-bar--wrp {
+  border-radius: 0 0 10px 10px !important;
+}

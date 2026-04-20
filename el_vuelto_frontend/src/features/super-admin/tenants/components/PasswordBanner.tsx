@@ -14,7 +14,7 @@ export default function PasswordBanner({ password, onClose }: Props) {
       <div className={styles.body}>
         <strong>Negocio creado.</strong> Contraseña del administrador:{' '}
         <code className={styles.pw}>{password}</code>
-        <span className={styles.warning}> — No se puede recuperar. Entréguala ahora.</span>
+        <span className={styles.warning}> — No se puede recuperar. Entréguela ahora.</span>
       </div>
       <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar">
         <CloseIcon fontSize="small" />

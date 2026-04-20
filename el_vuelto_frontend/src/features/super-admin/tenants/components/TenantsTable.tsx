@@ -1,3 +1,4 @@
+import ModeEditIcon from '@mui/icons-material/ModeEdit'
 import type { Tenant } from '@/features/tenants/tenantsApi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -5,10 +6,10 @@ import styles from './TenantsTable.module.css'
 
 interface Props {
   tenants: Tenant[]
-  onToggleActive: (id: string) => void
+  onEdit: (tenant: Tenant) => void
 }
 
-export default function TenantsTable({ tenants, onToggleActive }: Props) {
+export default function TenantsTable({ tenants, onEdit }: Props) {
   if (tenants.length === 0) {
     return <p className={styles.empty}>No hay negocios registrados aún.</p>
   }
@@ -38,9 +39,9 @@ export default function TenantsTable({ tenants, onToggleActive }: Props) {
                   {t.activo ? 'Activo' : 'Inactivo'}
                 </Badge>
               </td>
-              <td>
-                <Button variant="ghost" size="sm" onClick={() => onToggleActive(t.id)}>
-                  {t.activo ? 'Desactivar' : 'Activar'}
+              <td className={styles.actions}>
+                <Button variant="ghost" size="sm" onClick={() => onEdit(t)} aria-label="Editar negocio">
+                  <ModeEditIcon fontSize="small" />
                 </Button>
               </td>
             </tr>

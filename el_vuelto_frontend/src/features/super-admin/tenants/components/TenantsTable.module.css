@@ -38,6 +38,11 @@
   color: var(--on-surface) !important;
 }
 
+.actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
 .empty {
   color: var(--on-surface-variant);
   font-size: 0.9375rem;

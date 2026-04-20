@@ -17,9 +17,20 @@ export interface CreateTenantArgs {
   ciudad: string
   correo: string
   admin_nombre: string
-  admin_cedula?: string
-  admin_correo?: string
-  admin_password: string
+  admin_correo: string
+}
+
+export interface CreateTenantResponse extends Tenant {
+  initial_admin_password: string
+}
+
+export interface UpdateTenantArgs {
+  id: string
+  nombre?: string
+  nit?: string
+  ciudad?: string
+  correo?: string
+  activo?: boolean
 }
 
 export const tenantsApi = apiBase.injectEndpoints({
@@ -34,13 +45,13 @@ export const tenantsApi = apiBase.injectEndpoints({
       query: (id) => `/tenants/${id}/`,
       providesTags: (_r, _e, id) => [{ type: 'Tenant', id }],
     }),
-    createTenant: builder.mutation<Tenant & { admin_password: string }, CreateTenantArgs>({
+    createTenant: builder.mutation<CreateTenantResponse, CreateTenantArgs>({
       query: (body) => ({ url: '/tenants/', method: 'POST', body }),
       invalidatesTags: ['Tenant'],
     }),
-    updateTenant: builder.mutation<Tenant, { id: string } & Partial<Tenant>>({
+    updateTenant: builder.mutation<Tenant, UpdateTenantArgs>({
       query: ({ id, ...body }) => ({ url: `/tenants/${id}/`, method: 'PATCH', body }),
-      invalidatesTags: (_r, _e, { id }) => [{ type: 'Tenant', id }],
+      invalidatesTags: ['Tenant'],
     }),
     toggleTenantActive: builder.mutation<Tenant, string>({
       query: (id) => ({ url: `/tenants/${id}/toggle_active/`, method: 'POST' }),

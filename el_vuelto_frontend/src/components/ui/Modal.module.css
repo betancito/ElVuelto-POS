@@ -16,8 +16,8 @@
 }
 
 .dialog {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline);
   border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
@@ -40,14 +40,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--outline);
 }
 
 .title {
   font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--on-surface);
   margin: 0;
 }
 

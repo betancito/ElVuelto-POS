@@ -8,7 +8,7 @@ interface LoginSuperAdminArgs {
 }
 
 interface LoginWorkerArgs {
-  tenant_id: string
+  tenant_id?: string
   cedula?: string
   correo?: string
   password: string

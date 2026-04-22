@@ -1,93 +1,329 @@
+/* ─── AdminLayout: Tenant Admin shell ─────────────────────────────
+   Mirrors SuperAdminLayout exactly: same sidebar widths, header height,
+   color tokens, collapsed/mobile behaviour.
+   Design tokens live in src/styles/globals.css
+   ──────────────────────────────────────────────────────────────── */
+
+/* ─── Root ────────────────────────────────────────────────────── */
 .root {
   display: flex;
   min-height: 100vh;
-  background: var(--color-bg);
+  background: var(--background);
+  color: var(--on-surface);
+  font-family: var(--font-sans);
 }
 
-.sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--color-surface-dark);
-  border-right: 1px solid var(--color-border);
+/* ─── Page wrapper — shifts with sidebar ─────────────────────── */
+.pageWrapper {
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 0;
+  flex: 1;
+  min-height: 100vh;
+  margin-left: var(--sa-sidebar-w);
+  transition: margin-left 0.25s ease;
 }
 
+.root[data-collapsed='true'] .pageWrapper {
+  margin-left: var(--sa-sidebar-collapsed-w);
+}
+
+@media (max-width: 768px) {
+  .pageWrapper {
+    margin-left: 0 !important;
+  }
+}
+
+/* ─── Main content area ───────────────────────────────────────── */
+.main {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 1rem;
+  }
+}
+
+/* ─── Mobile backdrop ─────────────────────────────────────────── */
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 25, 23, 0.4);
+    z-index: 49;
+  }
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sa-sidebar-w);
+  background: var(--surface-container);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem;
+  gap: 0.5rem;
+  z-index: 50;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+/* Desktop collapsed: icon-only rail */
+.sidebar[data-collapsed='true'] {
+  width: var(--sa-sidebar-collapsed-w);
+  padding-left: 0;
+  padding-right: 0;
+  align-items: center;
+}
+
+/* Mobile: hidden off-screen, slides in as overlay */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.25s ease, width 0.25s ease;
+    width: var(--sa-sidebar-w) !important;
+    padding: 2rem 1rem;
+    align-items: flex-start;
+  }
+
+  .sidebar[data-mobile-open='true'] {
+    transform: translateX(0);
+  }
+}
+
+/* ─── Brand block ─────────────────────────────────────────────── */
 .brand {
-  padding: 0 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.5rem 2rem;
+  width: 100%;
 }
 
-.brandName {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-amber-500);
+.brandCollapsed {
+  align-items: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.brandSub {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin-top: 0.125rem;
+.favicon {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.banner {
+  max-width: 210px;
+  height: auto;
+  object-fit: contain;
+}
+
+.brandTenant {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  margin-top: 0.125rem;
 }
 
+/* ─── Nav ─────────────────────────────────────────────────────── */
 .nav {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 1rem 0.75rem;
+  width: 100%;
 }
 
+.navCollapsed {
+  align-items: center;
+}
+
+/* Nav link */
 .navItem {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.625rem 0.875rem;
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  font-family: var(--font-ui);
-  color: var(--color-text-secondary);
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--on-surface-variant);
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease;
 }
 
-.navItem:hover {
-  background: var(--color-surface-2);
-  color: var(--color-text-primary);
+.navItem:hover:not(.navItemActive) {
+  transform: translateX(4px);
 }
 
-.navItem.active {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--color-amber-500);
+/* Collapsed: icon-only square */
+.navItemCollapsed {
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.navItemCollapsed:hover:not(.navItemActive) {
+  transform: none;
+  background: var(--surface-container-high);
+}
+
+/* Active state — same pill as super-admin */
+.navItemActive {
+  background: var(--surface);
+  color: var(--on-primary-container);
+  box-shadow: var(--shadow-xs);
+}
+
+.navIcon  { flex-shrink: 0; }
+.navLabel { white-space: nowrap; overflow: hidden; }
+
+/* ─── Sidebar footer ──────────────────────────────────────────── */
+.sidebarFooter {
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.footerDivider {
+  height: 1px;
+  background: var(--outline-variant);
+  margin-bottom: 1.5rem;
 }
 
 .logoutBtn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.625rem 1.5rem;
-  background: transparent;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--on-surface-variant);
+  background: none;
   border: none;
-  color: var(--color-text-muted);
-  font-size: 0.9375rem;
-  font-family: var(--font-ui);
   cursor: pointer;
-  transition: color 0.15s;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  transition: transform 0.2s ease;
 }
 
 .logoutBtn:hover {
-  color: var(--color-error);
+  transform: translateX(4px);
 }
 
-.main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
+.logoutBtnCollapsed {
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.logoutBtnCollapsed:hover {
+  transform: none;
+  background: var(--surface-container-high);
+}
+
+.logoutIcon { flex-shrink: 0; }
+
+.versionTag {
+  padding: 0.25rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.4;
+  letter-spacing: 0.08em;
+}
+
+/* ─── Header ──────────────────────────────────────────────────── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  height: var(--sa-header-h);
+  background: rgba(250, 250, 249, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.06);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Icon button — shared between header buttons */
+.iconBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  color: var(--on-surface-variant);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.iconBtn:hover {
+  background: rgba(251, 146, 60, 0.1);
+}
+
+/* User avatar circle */
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }

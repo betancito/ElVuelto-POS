@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e8e2d7",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#ffb596",
+                        "primary-fixed": "#ffdbcd",
+                        "on-surface": "#1e1b15",
+                        "surface-dim": "#e0d9ce",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffdcbf",
+                        "on-secondary-fixed": "#2d1600",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fff8f0",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#ffb596",
+                        "outline-variant": "#dcc1b7",
+                        "secondary-fixed-dim": "#ecbe95",
+                        "background": "#fff8f0",
+                        "surface-tint": "#9a451a",
+                        "primary": "#6a2600",
+                        "surface-container": "#f4ede2",
+                        "inverse-on-surface": "#f7f0e5",
+                        "tertiary": "#00452d",
+                        "on-surface-variant": "#55433b",
+                        "on-tertiary-container": "#95d4b3",
+                        "primary-fixed-dim": "#ffb596",
+                        "surface-container-high": "#eee7dc",
+                        "tertiary-fixed-dim": "#95d4b3",
+                        "on-secondary-container": "#795635",
+                        "tertiary-container": "#1e5d43",
+                        "secondary": "#7a5736",
+                        "on-tertiary-fixed": "#002114",
+                        "secondary-container": "#fecea5",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container-highest": "#e8e2d7",
+                        "primary-container": "#8b3a0f",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#b1f0ce",
+                        "on-secondary-fixed-variant": "#5f4021",
+                        "outline": "#89726a",
+                        "on-tertiary-fixed-variant": "#0e5138",
+                        "inverse-surface": "#333029",
+                        "surface-container-low": "#faf3e8",
+                        "surface-bright": "#fff8f0",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#7b2f03",
+                        "on-error": "#ffffff",
+                        "on-background": "#1e1b15"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Serif"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fff8f0; }
+        .font-serif { font-family: 'Noto Serif', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .baked-gradient { background: linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-stone-900 dark:bg-black flex flex-col py-8 shadow-2xl z-50">
+<div class="px-8 mb-12">
+<h1 class="text-2xl font-serif italic text-amber-50">El Vuelto</h1>
+<p class="text-stone-500 text-xs tracking-widest uppercase mt-1">Administración</p>
+</div>
+<nav class="flex-grow space-y-2">
+<a class="flex items-center space-x-3 text-stone-400 hover:text-amber-50 pl-6 py-3 transition-colors hover:bg-stone-800 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="font-medium">Ventas</span>
+</a>
+<a class="flex items-center space-x-3 text-stone-400 hover:text-amber-50 pl-6 py-3 transition-colors hover:bg-stone-800 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-medium">Inventario</span>
+</a>
+<a class="flex items-center space-x-3 text-stone-400 hover:text-amber-50 pl-6 py-3 transition-colors hover:bg-stone-800 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-medium">Reportes</span>
+</a>
+<a class="flex items-center space-x-3 bg-[#8B3A0F] text-white rounded-r-full font-bold ml-0 mr-4 pl-6 py-3" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-medium">Personal</span>
+</a>
+<a class="flex items-center space-x-3 text-stone-400 hover:text-amber-50 pl-6 py-3 transition-colors hover:bg-stone-800 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-medium">Configuración</span>
+</a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full baked-gradient text-white py-4 rounded-xl font-bold flex items-center justify-center space-x-2 shadow-lg active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span>Nuevo Pedido</span>
+</button>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-[#fff8f0]/80 backdrop-blur-md border-b border-[#8B3A0F]/10 flex justify-between items-center px-8 z-40">
+<div class="flex items-center space-x-8">
+<div class="flex space-x-6">
+<a class="text-stone-500 font-medium hover:text-[#8B3A0F] transition-colors" href="#">Dashboard</a>
+<a class="text-stone-500 font-medium hover:text-[#8B3A0F] transition-colors" href="#">Turnos</a>
+<a class="text-stone-500 font-medium hover:text-[#8B3A0F] transition-colors" href="#">Caja</a>
+<a class="text-[#6a2600] border-b-2 border-[#6a2600] font-bold pb-1" href="#">Usuarios</a>
+</div>
+</div>
+<div class="flex items-center space-x-6">
+<div class="relative group">
+<span class="material-symbols-outlined text-stone-600 cursor-pointer hover:text-[#6a2600] transition-colors" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+</div>
+<div class="flex items-center space-x-3 opacity-80 hover:opacity-100 transition-opacity cursor-pointer">
+<img alt="Bakery Admin Profile" class="w-8 h-8 rounded-full bg-surface-container-highest" data-alt="close-up portrait of a friendly artisan baker wearing a clean white apron in a sunlit kitchen environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVdQBzhVF8hB-lx65qW16ZqIY6adz--nrgC-GN87fBj3Lr_Dufq0mLDYsmJVL6GcK2KY2KCV7GjBcRFDa71DR3GGuBzkOOAQZqOz5IF9mtNE0sttpBw5dVU5HXQVwzAxs2uob2XONACXmlr4xHvYH9jHbAm7p86lpmvwhjc3JR6LwAsbDQRkSH9gmdRKscl641tAMcSEj1P9TKYXcCLf5AaaiwYnOk3IBQ4PI3Ioz3lMVLUI7m8LurtjFte56Qb-kDo0JI6srsQuTh"/>
+<span class="material-symbols-outlined text-stone-600" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-12 pb-12">
+<!-- Top Banner: Panadería La Esperanza -->
+<section class="mb-12 bg-surface-container-low rounded-lg p-8 flex justify-between items-center relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-full opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[10rem]" data-icon="bakery_dining">bakery_dining</span>
+</div>
+<div class="relative z-10">
+<h2 class="text-4xl font-serif text-primary mb-1">Panadería La Esperanza</h2>
+<div class="flex items-center space-x-4 text-on-surface-variant font-mono">
+<span>NIT: 901.234.567-8</span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<span>Sede: Principal - Chapinero</span>
+</div>
+</div>
+<div class="bg-surface-container-highest p-4 rounded-xl text-right border-l-4 border-primary shadow-sm">
+<p class="text-xs uppercase tracking-tighter text-on-surface-variant font-bold mb-1">Plan Actual</p>
+<p class="text-xl font-bold text-primary-container">Premium Artesanal</p>
+<p class="text-xs text-on-surface-variant">Próxima renovación: 12 Oct 2024</p>
+</div>
+</section>
+<!-- User Management Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="text-2xl font-serif text-on-surface">Gestión de Usuarios</h3>
+<p class="text-on-surface-variant">Control de accesos y roles del equipo de trabajo.</p>
+</div>
+<button class="bg-primary text-white px-6 py-3 rounded-lg font-bold flex items-center space-x-2 shadow-md hover:brightness-110 transition-all">
+<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+<span>Nuevo usuario</span>
+</button>
+</div>
+<!-- Users Table (Editorial Style) -->
+<div class="bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-high text-on-surface-variant text-sm font-bold uppercase tracking-wider">
+<th class="px-8 py-5">Usuario</th>
+<th class="px-8 py-5">Rol</th>
+<th class="px-8 py-5">Estado</th>
+<th class="px-8 py-5">Último Acceso</th>
+<th class="px-8 py-5 text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant/30">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-6">
+<div class="flex items-center space-x-4">
+<img alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-primary-fixed shadow-sm" data-alt="professional portrait of a young woman with a warm smile, wearing a professional uniform in a bright office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-LmIP3VIGu6GrZCdWUC9jdazNTaCAJ4FnCoq14dlviUs_5pJ_aM9pI3gOfbvy0xOIldNBr89g4SR3aTRBqevASfZGeMNTJYN1YiMroo9U6zLs7CUnichM7eTaLk35uXApft3LHjHKYkdDE1XXz_bhC0JRjTrxI3akEvAFCFq-ubUSBZbPqRlZxuP8h6Or8SY4dmQwkCiSVlvSsK41_0yGNwyz0sfQ44NxaiVh85HCMRN6tV0XUd6IKZwUAVgsUKV_7yxCGNiRmv9i"/>
+<div>
+<p class="font-bold text-on-surface">Mariana Gómez</p>
+<p class="text-sm text-on-surface-variant">mariana.g@elvuelto.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<span class="px-4 py-1.5 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-xs font-bold uppercase tracking-widest">Admin</span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center space-x-2 text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-sm font-medium">Activo</span>
+</div>
+</td>
+<td class="px-8 py-6 font-mono text-sm text-on-surface-variant">2024-05-18 08:30</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end space-x-3">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="edit">edit</span></button>
+<button class="text-outline hover:text-error transition-colors"><span class="material-symbols-outlined" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-6">
+<div class="flex items-center space-x-4">
+<img alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-surface-variant shadow-sm" data-alt="portrait of a male employee with a friendly expression wearing a bakery apron in a rustic environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu9a2LaMdlV6rYOT8CULXGSn0fivzrzJTzNauXZhCv8YUUqSTU-R3M0a7002kjBGgodHyUpjz_CgkoSf-dr3m0EjfpeekDT8KbGMc-m6n357Rct7n6en2gJgfb4R5EHKLDgfEj26lPu2darrkOD8C2zrXvtgGTCaIs2AeVGQdn1RA38MZEEdOc5AMyyDJQsxiYqlCxY0GHnUS-hxw6hEyDUEFRsoLV6XNeFZHmAv_JMSjOvqA8R2cekYjbt01AplhoXrGPSyQekyAV"/>
+<div>
+<p class="font-bold text-on-surface">Carlos Ruiz</p>
+<p class="text-sm text-on-surface-variant">carlos.pos@elvuelto.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<span class="px-4 py-1.5 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-widest">Cajero</span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center space-x-2 text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-sm font-medium">Activo</span>
+</div>
+</td>
+<td class="px-8 py-6 font-mono text-sm text-on-surface-variant">2024-05-18 06:15</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end space-x-3">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="edit">edit</span></button>
+<button class="text-outline hover:text-error transition-colors"><span class="material-symbols-outlined" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-6">
+<div class="flex items-center space-x-4">
+<img alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-surface-variant shadow-sm" data-alt="portrait of a young man with glasses and a focused expression in a modern workplace setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfad-Jg-6_PHsKZestTxRFy3G4BuRJtgiFi1UtXWSJC17XLoCr9B7p0psKy1vfrdFe-F6FcBZhf1cq3PUma_2BZMCS7LcXiimSeHBECwbrtUfFqYMBvwWpHnrRusbLin1z0GenUbMr1C4dKAcFCzuKnSUgF7Gmt6nXbwnbG24pr5odvRhmzVTO91jOzTazJR6UXvTPQWVRNjmP69v4DRlF3K09PmcMwsWWoBnA1sqfLVJG7bNhBhv_wKZmfQeC9byg92B11fq3NIAa"/>
+<div>
+<p class="font-bold text-on-surface">Felipe Mora</p>
+<p class="text-sm text-on-surface-variant">felipe.m@elvuelto.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<span class="px-4 py-1.5 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-widest">Cajero</span>
+</td>
+<td class="px-8 py-6">
+<div class="flex items-center space-x-2 text-outline">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="text-sm font-medium">Inactivo</span>
+</div>
+</td>
+<td class="px-8 py-6 font-mono text-sm text-on-surface-variant">2024-05-12 18:45</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end space-x-3">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="edit">edit</span></button>
+<button class="text-outline hover:text-error transition-colors"><span class="material-symbols-outlined" data-icon="delete">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</main>
+<!-- Modal Overlay: Nuevo usuario -->
+<div class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+<div class="bg-surface w-full max-w-lg rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+<div class="p-8 border-b border-surface-variant/20 flex justify-between items-center">
+<h4 class="text-2xl font-serif text-primary">Nuevo usuario</h4>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<form class="p-8 space-y-6">
+<!-- Name -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider ml-1">Nombre Completo</label>
+<input class="w-full px-6 py-4 bg-surface-container-highest rounded-md border-none focus:ring-0 focus:border-b-2 focus:border-primary transition-all text-on-surface placeholder:text-outline-variant" placeholder="Ej. Juan Pérez" type="text"/>
+</div>
+<!-- Email -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider ml-1">Correo Electrónico</label>
+<input class="w-full px-6 py-4 bg-surface-container-highest rounded-md border-none focus:ring-0 focus:border-b-2 focus:border-primary transition-all text-on-surface placeholder:text-outline-variant" placeholder="usuario@correo.com" type="email"/>
+</div>
+<!-- Role Toggle / Selector -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider ml-1">Rol de Usuario</label>
+<div class="grid grid-cols-2 gap-4">
+<label class="cursor-pointer">
+<input checked="" class="hidden peer" name="role" type="radio"/>
+<div class="p-4 rounded-xl bg-surface-container-low border-2 border-transparent peer-checked:border-primary peer-checked:bg-white transition-all flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline peer-checked:text-primary" data-icon="person">person</span>
+<div>
+<p class="font-bold text-sm">Cajero</p>
+<p class="text-[10px] text-on-surface-variant">Acceso a ventas y caja</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="hidden peer" name="role" type="radio"/>
+<div class="p-4 rounded-xl bg-surface-container-low border-2 border-transparent peer-checked:border-primary peer-checked:bg-white transition-all flex items-center space-x-3">
+<span class="material-symbols-outlined text-outline peer-checked:text-primary" data-icon="admin_panel_settings">admin_panel_settings</span>
+<div>
+<p class="font-bold text-sm">Admin</p>
+<p class="text-[10px] text-on-surface-variant">Control total del sistema</p>
+</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Temporary Password -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider ml-1">Contraseña Temporal</label>
+<div class="relative">
+<input class="w-full px-6 py-4 bg-surface-container-highest rounded-md border-none focus:ring-0 focus:border-b-2 focus:border-primary transition-all text-on-surface font-mono" type="password" value="Bakery2024*"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Info Note -->
+<div class="bg-primary-fixed/30 p-4 rounded-xl flex items-start space-x-3">
+<span class="material-symbols-outlined text-primary-container text-xl" data-icon="info">info</span>
+<p class="text-xs text-on-primary-fixed-variant leading-relaxed">
+                        Se enviará un correo electrónico al usuario con sus credenciales de acceso y un enlace para restablecer su contraseña en el primer inicio de sesión.
+                    </p>
+</div>
+<!-- Actions -->
+<div class="flex space-x-4 pt-4">
+<button class="flex-1 py-4 text-on-surface-variant font-bold hover:underline transition-all" type="button">Cancelar</button>
+<button class="flex-[2] py-4 baked-gradient text-white rounded-lg font-bold shadow-lg hover:brightness-110 active:scale-[0.98] transition-all" type="submit">Crear Usuario</button>
+</div>
+</form>
+</div>
+</div>
+</body></html>

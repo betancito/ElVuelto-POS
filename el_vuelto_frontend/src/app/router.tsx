@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import ProtectedRoute from '@/utils/ProtectedRoute'
 
 // Layouts
-import AuthLayout from '@/layouts/AuthLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import SuperAdminLayout from '@/features/layout/super-admin'
 
@@ -10,6 +9,7 @@ import SuperAdminLayout from '@/features/layout/super-admin'
 import SuperAdminLoginPage from '@/features/auth/SuperAdminLoginPage'
 import ColorBendsTestPage from '@/features/test/ColorBendsTestPage'
 import TenantLoginPage from '@/features/auth/TenantLoginPage'
+import StaffLoginPage from '@/features/auth/StaffLoginPage'
 
 // Super admin pages
 import HomePage from '@/features/super-admin/home'
@@ -57,14 +57,16 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Tenant login
+  // Tenant admin login
   {
     path: '/login',
-    element: (
-      <AuthLayout>
-        <TenantLoginPage />
-      </AuthLayout>
-    ),
+    element: <TenantLoginPage />,
+  },
+
+  // Staff login (via tenant-specific URL)
+  {
+    path: '/login/:tenantSlug',
+    element: <StaffLoginPage />,
   },
 
   // Cashier POS (no layout chrome needed)

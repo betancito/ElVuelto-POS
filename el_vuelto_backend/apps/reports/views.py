@@ -12,23 +12,19 @@ BOGOTA_TZ = ZoneInfo("America/Bogota")
 
 
 class SummaryReportView(APIView):
-    """GET /api/reports/summary/?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD"""
+    """GET /api/reports/summary/?fecha=YYYY-MM-DD"""
 
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        fecha = request.query_params.get("fecha")
 
         sales_qs = Sale.objects.filter(tenant=request.tenant)
         items_qs = SaleItem.objects.filter(sale__tenant=request.tenant)
 
-        if fecha_inicio:
-            sales_qs = sales_qs.filter(created_at__date__gte=fecha_inicio)
-            items_qs = items_qs.filter(sale__created_at__date__gte=fecha_inicio)
-        if fecha_fin:
-            sales_qs = sales_qs.filter(created_at__date__lte=fecha_fin)
-            items_qs = items_qs.filter(sale__created_at__date__lte=fecha_fin)
+        if fecha:
+            sales_qs = sales_qs.filter(created_at__date=fecha)
+            items_qs = items_qs.filter(sale__created_at__date=fecha)
 
         agg = sales_qs.aggregate(
             total_ventas=Sum("total"),
@@ -36,31 +32,21 @@ class SummaryReportView(APIView):
         )
 
         total_unidades = items_qs.aggregate(total=Sum("cantidad"))["total"] or 0
-
-        total_ventas = agg["total_ventas"] or 0
+        total_ventas = float(agg["total_ventas"] or 0)
         num_transacciones = agg["num_transacciones"] or 0
-        ticket_promedio = (
-            (total_ventas / num_transacciones) if num_transacciones > 0 else 0
-        )
 
-        por_metodo = {}
-        for metodo in [PaymentMethod.EFECTIVO, PaymentMethod.NEQUI_TRANSFERENCIA]:
-            m_agg = sales_qs.filter(metodo_pago=metodo).aggregate(
-                count=Count("id"),
-                total=Sum("total"),
-            )
-            por_metodo[metodo] = {
-                "count": m_agg["count"] or 0,
-                "total": f"{m_agg['total'] or 0:.2f}",
-            }
+        efectivo_count = sales_qs.filter(metodo_pago=PaymentMethod.EFECTIVO).aggregate(c=Count("id"))["c"] or 0
+        nequi_count = sales_qs.filter(metodo_pago=PaymentMethod.NEQUI_TRANSFERENCIA).aggregate(c=Count("id"))["c"] or 0
+        pct_efectivo = round((efectivo_count / num_transacciones) * 100) if num_transacciones else 0
+        pct_nequi = round((nequi_count / num_transacciones) * 100) if num_transacciones else 0
 
         return Response(
             {
-                "total_ventas": f"{total_ventas:.2f}",
+                "total_ventas": total_ventas,
                 "num_transacciones": num_transacciones,
-                "total_unidades": total_unidades,
-                "ticket_promedio": f"{ticket_promedio:.2f}",
-                "por_metodo": por_metodo,
+                "unidades_vendidas": total_unidades,
+                "porcentaje_efectivo": pct_efectivo,
+                "porcentaje_nequi": pct_nequi,
             }
         )
 
@@ -83,49 +69,48 @@ class VentasPorHoraView(APIView):
             .order_by("hour")
         )
 
-        result = {str(h): {"total": "0.00", "count": 0} for h in range(24)}
-        for row in qs:
-            result[str(row["hour"])] = {
-                "total": f"{row['total']:.2f}",
-                "count": row["count"],
+        by_hour = {row["hour"]: row for row in qs}
+        result = [
+            {
+                "hora": h,
+                "total": float(by_hour[h]["total"]) if h in by_hour else 0.0,
+                "transacciones": by_hour[h]["count"] if h in by_hour else 0,
             }
+            for h in range(24)
+        ]
 
         return Response(result)
 
 
 class TopProductosView(APIView):
-    """GET /api/reports/top-productos/?fecha_inicio=&fecha_fin=&limit=10"""
+    """GET /api/reports/top-productos/?fecha=YYYY-MM-DD&limit=10"""
 
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        fecha = request.query_params.get("fecha")
         limit = min(int(request.query_params.get("limit", 10)), 100)
 
         qs = SaleItem.objects.filter(sale__tenant=request.tenant)
 
-        if fecha_inicio:
-            qs = qs.filter(sale__created_at__date__gte=fecha_inicio)
-        if fecha_fin:
-            qs = qs.filter(sale__created_at__date__lte=fecha_fin)
+        if fecha:
+            qs = qs.filter(sale__created_at__date=fecha)
 
         top = (
-            qs.values("product_id", "product_nombre", "product__tipo")
+            qs.values("product_id", "product_nombre")
             .annotate(
-                total_unidades=Sum("cantidad"),
-                total_revenue=Sum("subtotal"),
+                unidades=Sum("cantidad"),
+                total=Sum("subtotal"),
             )
-            .order_by("-total_unidades")[:limit]
+            .order_by("-unidades")[:limit]
         )
 
         data = [
             {
                 "product_id": str(row["product_id"]),
                 "nombre": row["product_nombre"],
-                "tipo": row["product__tipo"],
-                "total_unidades": row["total_unidades"],
-                "total_revenue": f"{row['total_revenue']:.2f}",
+                "unidades": row["unidades"],
+                "total": float(row["total"]),
             }
             for row in top
         ]

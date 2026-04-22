@@ -1,0 +1,781 @@
+/* ═══════════════════════════════════════════════════════════════════
+   tenant-admin.css — Normalized design system for Tenant Admin modules
+   "The Hearth & The Ledger" — warm artisan editorial aesthetic.
+
+   USAGE: Use these global ta-* class names directly in JSX classNames.
+   Never recreate these styles in a per-page CSS module.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Page Structure ────────────────────────────────────────────── */
+
+/* Main page container — use as root div of every page */
+.ta-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Hero row at top of page: title left, action buttons right */
+.ta-page-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Serif headline, large, primary terracotta */
+.ta-page-title {
+  font-family: var(--font-headline);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.1;
+}
+
+/* Muted subtitle below page title */
+.ta-page-sub {
+  font-size: 0.9375rem;
+  color: var(--on-surface-variant);
+  margin-top: 0.25rem;
+}
+
+/* ─── Cards ─────────────────────────────────────────────────────── */
+
+/* White card — surface-container-lowest */
+.ta-card {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+}
+
+/* Tinted card — surface-container-low (warm parchment) */
+.ta-card-low {
+  background: var(--surface-container-low);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+}
+
+/* Flex row header inside a card: title left, actions right */
+.ta-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+/* Serif card section title */
+.ta-card-title {
+  font-family: var(--font-headline);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* ─── KPI Grid ──────────────────────────────────────────────────── */
+
+/* Responsive grid for KPI cards (4-col on desktop) */
+.ta-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Individual KPI card */
+.ta-kpi-card {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent variant: primary tinted bottom border */
+.ta-kpi-card--accent {
+  border-bottom: 2px solid rgba(106, 38, 0, 0.15);
+}
+
+/* Accent variant: secondary-container background */
+.ta-kpi-card--secondary {
+  background: var(--secondary-container);
+}
+
+/* Small uppercase label above value */
+.ta-kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
+}
+
+/* Large monospace number value */
+.ta-kpi-value {
+  font-family: var(--font-mono);
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-top: 0.5rem;
+  line-height: 1;
+}
+
+/* Serif headline value (for non-numeric KPIs like "Efectivo") */
+.ta-kpi-value--serif {
+  font-family: var(--font-headline);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin-top: 0.5rem;
+  line-height: 1;
+}
+
+/* Trend row below value */
+.ta-kpi-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.ta-kpi-meta--up   { color: var(--tertiary); }
+.ta-kpi-meta--flat { color: var(--on-surface-variant); }
+.ta-kpi-meta--down { color: var(--error); }
+
+/* Ghost background icon — decorative, absolute positioned */
+.ta-kpi-bg-icon {
+  position: absolute;
+  right: -1rem;
+  top: -1rem;
+  opacity: 0.05;
+  pointer-events: none;
+  font-size: 5rem !important;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────── */
+
+.ta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.ta-btn:active { transform: scale(0.97); }
+
+/* Primary: baked gradient (terracotta to brown) */
+.ta-btn-primary {
+  background: var(--gradient-baked);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 16px rgba(106, 38, 0, 0.25);
+}
+.ta-btn-primary:hover { opacity: 0.9; }
+
+/* Secondary: tonal surface button */
+.ta-btn-secondary {
+  background: var(--surface-container-highest);
+  color: var(--primary);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-lg);
+}
+.ta-btn-secondary:hover { background: var(--surface-container-high); }
+
+/* Ghost: no background, muted text */
+.ta-btn-ghost {
+  background: transparent;
+  color: var(--on-surface-variant);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+}
+.ta-btn-ghost:hover { color: var(--primary); background: var(--surface-container-low); }
+
+/* Circular icon button */
+.ta-btn-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--on-surface-variant);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.ta-btn-icon:hover { background: var(--surface-container-high); color: var(--primary); }
+
+/* Danger variant of icon button */
+.ta-btn-icon--danger:hover {
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+/* ─── Filter Chips ──────────────────────────────────────────────── */
+
+/* Chip strip container */
+.ta-chips { display: flex; flex-wrap: wrap; gap: 0.625rem; }
+
+/* Inactive chip */
+.ta-chip {
+  padding: 0.375rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ta-chip:hover { background: var(--secondary-fixed); }
+
+/* Active / selected chip */
+.ta-chip-active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.ta-chip-active:hover { background: var(--primary-container); }
+
+/* ─── Status Indicators ─────────────────────────────────────────── */
+
+/* Wrapper: dot + label inline */
+.ta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Coloured dot */
+.ta-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ta-status--active .ta-status-dot  { background: var(--tertiary); }
+.ta-status--active                  { color: var(--tertiary); }
+
+.ta-status--inactive .ta-status-dot { background: var(--outline); }
+.ta-status--inactive                 { color: var(--outline); }
+
+.ta-status--error .ta-status-dot   { background: var(--error); }
+.ta-status--error                   { color: var(--error); }
+
+/* ─── Role / Tag Badges ─────────────────────────────────────────── */
+
+/* Pill badge — for roles, product types, payment methods */
+.ta-badge {
+  display: inline-block;
+  padding: 0.25rem 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Variants */
+.ta-badge--admin   { background: var(--tertiary-fixed);      color: var(--on-tertiary-fixed-variant); }
+.ta-badge--cashier { background: var(--secondary-container);  color: var(--on-secondary-container); }
+.ta-badge--success { background: var(--tertiary-fixed);      color: var(--on-tertiary-fixed-variant); }
+.ta-badge--warning { background: var(--secondary-container);  color: var(--on-secondary-container); }
+.ta-badge--error   { background: var(--error-container);     color: var(--on-error-container); }
+.ta-badge--neutral { background: var(--surface-container-highest); color: var(--on-surface-variant); }
+.ta-badge--primary { background: var(--primary-fixed);       color: var(--on-primary-fixed); }
+
+/* Payment chip — slightly smaller pill for method tags */
+.ta-pay-chip {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+.ta-pay-chip--efectivo    { background: var(--secondary-container); color: var(--on-secondary-container); }
+.ta-pay-chip--nequi       { background: var(--tertiary-fixed);      color: var(--on-tertiary-fixed-variant); }
+.ta-pay-chip--bancolombia { background: var(--tertiary-fixed);      color: var(--on-tertiary-fixed-variant); }
+
+/* ─── Tables ────────────────────────────────────────────────────── */
+
+/* Rounded card wrapper for tables */
+.ta-table-wrap {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* The table itself */
+.ta-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+/* Header row */
+.ta-thead { background: var(--surface-container-low); }
+
+/* Header cell */
+.ta-th {
+  padding: 1rem 1.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
+}
+
+/* Data cell */
+.ta-td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+}
+
+/* Data row with hover */
+.ta-tr { transition: background 0.12s; }
+.ta-tr:hover { background: var(--surface-container-low); }
+.ta-tr + .ta-tr { border-top: 1px solid rgba(106, 38, 0, 0.06); }
+
+/* ─── Typography utilities ──────────────────────────────────────── */
+
+/* Monospace number */
+.ta-mono {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.ta-mono--primary  { color: var(--primary); }
+.ta-mono--tertiary { color: var(--tertiary); }
+.ta-mono--muted    { color: var(--on-surface-variant); }
+
+/* Serif headline utility */
+.ta-serif { font-family: var(--font-headline); }
+
+/* ─── Form Fields ───────────────────────────────────────────────── */
+
+/* Field wrapper (label + input stack) */
+.ta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Field label */
+.ta-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-surface-variant);
+}
+
+/* Input — surface-container-highest bg, bottom-border focus */
+.ta-input {
+  background: var(--surface-container-highest);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.ta-input:focus        { border-bottom-color: var(--primary); }
+.ta-input::placeholder { color: var(--outline-variant); }
+
+/* Select — same as input */
+.ta-select {
+  background: var(--surface-container-highest);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+}
+.ta-select:focus { border-bottom-color: var(--primary); }
+
+/* Two-column form grid */
+.ta-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2.5rem;
+}
+
+/* Error message below field */
+.ta-field-error {
+  font-size: 0.75rem;
+  color: var(--error);
+  margin-top: 0.25rem;
+}
+
+/* ─── Modals ────────────────────────────────────────────────────── */
+
+/* Full-screen backdrop */
+.ta-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* Modal container */
+.ta-modal {
+  background: var(--surface);
+  width: 100%;
+  max-width: 38rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgba(28, 25, 23, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+/* Large modal variant */
+.ta-modal--lg { max-width: 56rem; }
+
+/* Modal header (tinted, border-bottom) */
+.ta-modal-header {
+  padding: 2rem 2.5rem;
+  background: var(--surface-container-low);
+  border-bottom: 1px solid rgba(220, 193, 183, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+/* Modal serif title */
+.ta-modal-title {
+  font-family: var(--font-headline);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Modal subtitle */
+.ta-modal-sub {
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin-top: 0.25rem;
+}
+
+/* Scrollable modal body */
+.ta-modal-body {
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Modal footer (tinted, border-top, actions right) */
+.ta-modal-footer {
+  padding: 1.25rem 2.5rem;
+  background: var(--surface-container-low);
+  border-top: 1px solid rgba(220, 193, 183, 0.3);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* ─── Bar Chart ─────────────────────────────────────────────────── */
+
+/* Chart container — set explicit height on this */
+.ta-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 12rem;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
+}
+
+/* Individual bar column */
+.ta-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Filled bar element (height set via inline style as percentage of max) */
+.ta-bar-fill {
+  width: 100%;
+  background: rgba(106, 38, 0, 0.2);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: background 0.15s;
+}
+.ta-bar-fill:hover { background: var(--primary-container); }
+
+/* Peak / highlighted bar */
+.ta-bar-fill--peak { background: var(--primary-container); }
+
+/* Time label below bar */
+.ta-bar-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  font-weight: 500;
+}
+.ta-bar-label--peak { color: var(--primary); font-weight: 700; }
+
+/* ─── Ranking / Top Products List ───────────────────────────────── */
+
+.ta-rank-list { display: flex; flex-direction: column; gap: 1rem; }
+
+.ta-rank-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Rank number circle */
+.ta-rank-badge {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: rgba(106, 38, 0, 0.1);
+  color: var(--primary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ta-rank-name  { font-size: 0.875rem; font-weight: 600; color: var(--on-surface); flex: 1; }
+.ta-rank-units { font-family: var(--font-mono); font-size: 0.875rem; color: var(--on-surface-variant); }
+.ta-rank-total { font-family: var(--font-mono); font-size: 0.875rem; font-weight: 700; color: var(--primary); }
+
+/* ─── Progress Bars ─────────────────────────────────────────────── */
+
+/* Track */
+.ta-progress-wrap {
+  height: 0.5rem;
+  background: var(--surface-container-highest);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+/* Fill (width set via inline style) */
+.ta-progress-fill {
+  height: 100%;
+  background: var(--primary-container);
+  border-radius: 9999px;
+}
+
+/* ─── Info Note ─────────────────────────────────────────────────── */
+
+/* Informational box (primary-fixed tint) */
+.ta-info-note {
+  background: rgba(255, 219, 205, 0.35);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.ta-info-text {
+  font-size: 0.8125rem;
+  color: var(--on-primary-fixed-variant);
+  line-height: 1.5;
+}
+
+/* ─── Role Selector Cards (modal radio-like UI) ─────────────────── */
+
+.ta-role-card {
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-low);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.ta-role-card--selected {
+  border-color: var(--primary);
+  background: var(--surface-container-lowest);
+}
+
+.ta-role-card-title { font-size: 0.9375rem; font-weight: 700; color: var(--on-surface); }
+.ta-role-card-sub   { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: 0.125rem; }
+
+/* ─── Toggle Switch ─────────────────────────────────────────────── */
+
+.ta-toggle-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.ta-toggle-track {
+  width: 3rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: var(--surface-container-high);
+  transition: background 0.2s;
+  position: relative;
+}
+.ta-toggle-track--on { background: var(--primary); }
+.ta-toggle-thumb {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.ta-toggle-track--on .ta-toggle-thumb { transform: translateX(1.5rem); }
+
+/* ─── Staff URL Card ────────────────────────────────────────────── */
+
+/* Info card for staff login URL */
+.ta-url-card {
+  background: var(--surface-container-low);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.ta-url-card-body { flex: 1; min-width: 0; }
+.ta-url-card-title { font-size: 0.8125rem; font-weight: 600; color: var(--on-surface-variant); }
+.ta-url-code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* ─── Password Banner ───────────────────────────────────────────── */
+
+/* Temporary password reveal banner */
+.ta-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--tertiary-fixed);
+  color: var(--on-tertiary-fixed-variant);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.ta-banner-pw {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: rgba(0, 69, 45, 0.12);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+.ta-banner-warn { color: var(--on-tertiary-fixed); font-size: 0.8125rem; }
+
+/* ─── Divider ───────────────────────────────────────────────────── */
+
+.ta-divider {
+  height: 1px;
+  background: rgba(220, 193, 183, 0.4);
+}
+
+/* ─── Empty state ───────────────────────────────────────────────── */
+
+.ta-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: var(--on-surface-variant);
+  font-size: 0.9375rem;
+}
+
+/* ─── Two-pane layout (table + slide panel) ─────────────────────── */
+
+.ta-pane-layout {
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-lowest);
+}
+
+.ta-pane-main  { flex: 1; overflow-y: auto; }
+
+.ta-pane-side {
+  width: 22rem;
+  flex-shrink: 0;
+  background: var(--surface-container-lowest);
+  border-left: 1px solid rgba(220, 193, 183, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.ta-pane-side-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(220, 193, 183, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ta-pane-side-body {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ta-pane-side-footer {
+  padding: 1.5rem;
+  background: var(--surface-container-low);
+  border-top: 1px solid rgba(220, 193, 183, 0.3);
+}

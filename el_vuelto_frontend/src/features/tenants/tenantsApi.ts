@@ -1,5 +1,11 @@
 import { apiBase } from '@/app/apiBase'
 
+export interface TenantSlugCheck {
+  exists: boolean
+  nombre: string | null
+  logo_url: string | null
+}
+
 export interface Tenant {
   id: string
   nombre: string
@@ -35,6 +41,9 @@ export interface UpdateTenantArgs {
 
 export const tenantsApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
+    checkTenantBySlug: builder.query<TenantSlugCheck, string>({
+      query: (slug) => `/tenants/check-by-slug/${slug}/`,
+    }),
     listTenants: builder.query<Tenant[], void>({
       query: () => '/tenants/',
       transformResponse: (response: Tenant[] | { results: Tenant[] }) =>
@@ -69,6 +78,7 @@ export const tenantsApi = apiBase.injectEndpoints({
 })
 
 export const {
+  useCheckTenantBySlugQuery,
   useListTenantsQuery,
   useGetTenantQuery,
   useCreateTenantMutation,

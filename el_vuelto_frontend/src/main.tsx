@@ -8,6 +8,7 @@ import { store, persistor } from '@/app/store'
 import { router } from '@/app/router'
 import '@/styles/globals.css'
 import '@/styles/utils.css'
+import '@/styles/tenant-admin.css'
 import 'react-toastify/dist/ReactToastify.css'
 import '@/styles/toast.css'
 

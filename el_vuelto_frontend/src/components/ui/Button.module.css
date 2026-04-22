@@ -28,7 +28,7 @@
   color: var(--on-primary);
 }
 .primary:hover:not(:disabled) {
-  background: #c2410c;
+  background: #8b3a0f;
 }
 
 .secondary {

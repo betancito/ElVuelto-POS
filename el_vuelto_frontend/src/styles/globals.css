@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 /* ─── Tailwind v4: font overrides ───────────────────────────────── */
 @theme {
-  --font-sans:  'Montserrat', ui-sans-serif, sans-serif;
-  --font-serif: 'Montserrat', ui-sans-serif, sans-serif;
+  --font-sans:  'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  --font-serif: 'Playfair Display', ui-serif, serif;
   --font-mono:  'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -28,53 +29,86 @@
 
 :root {
   /* ─── Typography ─────────────────────────────────────────────────── */
-  --font-display: 'Montserrat', sans-serif;
-  --font-sans:    'Montserrat', sans-serif;
-  --font-ui:      'Montserrat', sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
+  --font-display:      'Plus Jakarta Sans', sans-serif;
+  --font-sans:         'Plus Jakarta Sans', sans-serif;
+  --font-ui:           'Plus Jakarta Sans', sans-serif;
+  --font-mono:         'JetBrains Mono', monospace;
+  --font-headline:     'Noto Serif', serif;
+  --font-serif-brand:  'Playfair Display', serif;
 
-  /* ─── Design-system color tokens (warm light palette) ───────────── */
+  /* ─── Brand palette (warm artisan browns) ────────────────────────── */
 
   /* Backgrounds */
-  --background:                  #fafaf9;  /* stone-50  */
-  --on-background:               #1c1917;  /* stone-900 */
+  --background:                  #fff8f0;
+  --on-background:               #1e1b15;
 
   /* Surface containers */
-  --surface:                     #ffffff;
+  --surface:                     #fff8f0;
+  --surface-bright:              #fff8f0;
+  --surface-dim:                 #e0d9ce;
   --surface-container-lowest:    #ffffff;
-  --surface-container-low:       #fafaf9;  /* stone-50  */
-  --surface-container:           #f5f5f4;  /* stone-100 */
-  --surface-container-high:      #e7e5e4;  /* stone-200 */
-  --surface-container-highest:   #d6d3d1;  /* stone-300 */
+  --surface-container-low:       #faf3e8;
+  --surface-container:           #f4ede2;
+  --surface-container-high:      #eee7dc;
+  --surface-container-highest:   #e8e2d7;
 
   /* On-surface text */
-  --on-surface:                  #1c1917;  /* stone-900 */
-  --on-surface-variant:          #78716c;  /* stone-500 */
+  --on-surface:                  #1e1b15;
+  --on-surface-variant:          #55433b;
 
-  /* Primary – orange */
-  --primary:                     #ea580c;  /* orange-600 */
+  /* Primary – deep artisan brown */
+  --primary:                     #6a2600;
   --on-primary:                  #ffffff;
-  --primary-container:           #ffedd5;  /* orange-100 */
-  --on-primary-container:        #7c2d12;  /* orange-900 */
+  --primary-container:           #8b3a0f;
+  --on-primary-container:        #ffb596;
+  --primary-fixed:               #ffdbcd;
+  --primary-fixed-dim:           #ffb596;
+  --on-primary-fixed:            #360f00;
+  --on-primary-fixed-variant:    #7b2f03;
+  --inverse-primary:             #ffb596;
+  --surface-tint:                #9a451a;
 
-  /* Secondary – same warm orange family */
-  --secondary-container:         #ffedd5;  /* orange-100 */
-  --on-secondary-container:      #7c2d12;  /* orange-900 */
+  /* Secondary */
+  --secondary:                   #7a5736;
+  --on-secondary:                #ffffff;
+  --secondary-container:         #fecea5;
+  --on-secondary-container:      #795635;
+  --secondary-fixed:             #ffdcbf;
+  --secondary-fixed-dim:         #ecbe95;
+  --on-secondary-fixed:          #2d1600;
+  --on-secondary-fixed-variant:  #5f4021;
 
-  /* Tertiary – green (used for "Active" status) */
-  --tertiary:                    #16a34a;  /* green-600  */
+  /* Tertiary – forest green (active status) */
+  --tertiary:                    #00452d;
   --on-tertiary:                 #ffffff;
+  --tertiary-container:          #1e5d43;
+  --on-tertiary-container:       #95d4b3;
+  --tertiary-fixed:              #b1f0ce;
+  --tertiary-fixed-dim:          #95d4b3;
+  --on-tertiary-fixed:           #002114;
+  --on-tertiary-fixed-variant:   #0e5138;
+
+  /* Error */
+  --error:                       #ba1a1a;
+  --on-error:                    #ffffff;
+  --error-container:             #ffdad6;
+  --on-error-container:          #93000a;
 
   /* Outline / border */
-  --outline:                     #d6d3d1;  /* stone-300  */
-  --outline-variant:             rgba(214,211,208,0.5);
+  --outline:                     #89726a;
+  --outline-variant:             #dcc1b7;
+
+  /* Inverse */
+  --inverse-surface:             #333029;
+  --inverse-on-surface:          #f7f0e5;
 
   /* Gradient */
-  --gradient-baked: linear-gradient(135deg, #ea580c 0%, #b45309 100%);
+  --gradient-baked: linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%);
 
   /* ─── Layout ─────────────────────────────────────────────────────── */
-  --sa-sidebar-w:  256px;   /* 16rem / w-64 */
-  --sa-header-h:    64px;   /* h-16        */
+  --sa-sidebar-w:            256px;  /* full expanded width, both layouts */
+  --sa-sidebar-collapsed-w:   72px;  /* icon-only rail width, both layouts */
+  --sa-header-h:              64px;  /* topbar height, both layouts */
 
   /* ─── Radius ─────────────────────────────────────────────────────── */
   --radius-sm:   6px;
@@ -141,8 +175,8 @@ html {
 
 body {
   font-family: var(--font-ui);
-  background: var(--color-bg);
-  color: var(--color-text-primary);
+  background: var(--background);
+  color: var(--on-surface);
   line-height: 1.5;
   min-height: 100vh;
 }

@@ -14,6 +14,7 @@ import AdminBadge from './components/AdminBadge'
 import LoginCard from './components/LoginCard'
 import LoginField from './components/LoginField'
 import ColorBends from '@/components/ui/ColorBends'
+import { APP_VERSION } from '@/constants/version'
 
 const schema = z.object({
   correo: z.string().email('Correo inválido'),
@@ -90,6 +91,10 @@ export default function SuperAdminLoginPage() {
           }}
         >
           <LoginCard>
+            {/* Version */}
+            <Typography sx={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'rgba(0,0,0,0.3)', mb: 1, letterSpacing: '0.08em' }}>
+              El Vuelto {APP_VERSION}
+            </Typography>
             {/* Logo centered inside card */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
               <Box

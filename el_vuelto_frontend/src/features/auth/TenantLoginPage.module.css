@@ -1,132 +1,342 @@
-.centered {
+/* ── Admin tenant login page ─────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  background: var(--background);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
 }
 
-.root {
-  width: min(90vw, 560px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2.5rem 0;
+/* Decorative blobs */
+.blob1 {
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(254, 206, 165, 0.2);
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
 }
 
-.heading {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0;
-  text-align: center;
+.blob2 {
+  position: absolute;
+  bottom: -10%;
+  right: -5%;
+  width: 32rem;
+  height: 32rem;
+  background: rgba(255, 219, 205, 0.3);
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
 }
 
-.sub {
-  font-size: 0.9375rem;
-  color: var(--color-text-secondary);
-  margin: -0.75rem 0 0;
-  text-align: center;
-}
-
-/* Branch grid */
-.tenantGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+/* Decorative side card mockups */
+.sideCardLeft,
+.sideCardRight {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 256px;
+  height: 320px;
+  background: var(--surface-container);
+  box-shadow: 0 20px 48px rgba(28, 25, 23, 0.12);
+  border-radius: 1rem;
+  padding: 1.5rem;
   gap: 1rem;
-  width: 100%;
+  flex-direction: column;
+  opacity: 0.4;
 }
 
-.tenantCard {
+.sideCardLeft {
+  left: 5rem;
+  rotate: -6deg;
+}
+
+.sideCardRight {
+  right: 5rem;
+  rotate: 6deg;
+}
+
+@media (min-width: 1024px) {
+  .sideCardLeft,
+  .sideCardRight {
+    display: flex;
+  }
+}
+
+.sideCardAvatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: var(--secondary-container);
+}
+
+.sideCardAvatarAlt {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: var(--primary-fixed);
+}
+
+.sideCardLine {
+  height: 1rem;
+  background: var(--surface-container-highest);
+  border-radius: 0.5rem;
+}
+
+.sideCardBlock {
+  height: 5rem;
+  width: 100%;
+  background: var(--surface-container-highest);
+  border-radius: 0.5rem;
+}
+
+/* Center content */
+.container {
+  width: 100%;
+  max-width: 448px;
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  align-items: flex-start;
-}
-
-.tenantName {
-  font-weight: 600;
-  font-size: 0.9375rem;
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.tenantCity {
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-/* Back button */
-.backBtn {
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: transparent;
-  border: none;
-  color: var(--color-amber-500);
-  font-size: 0.9375rem;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  align-self: flex-start;
-  padding: 0;
 }
 
-.backBtn:hover {
-  color: var(--color-amber-400);
+/* Brand section */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.brandLogo {
+  width: 40%;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+}
+
+.brandSub {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 0;
 }
 
 /* Login card */
-.loginCard {
+.card {
   width: 100%;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: 2rem;
+  background: var(--surface-container-lowest);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  box-shadow: 0 24px 64px rgba(106, 38, 0, 0.08), 0 4px 16px rgba(106, 38, 0, 0.06);
+}
+
+.form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
-/* PIN boxes */
-.pinLabel {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  margin: 0 0 0.5rem;
-}
-
-.pinRow {
+.fieldGroup {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.pinBox {
-  width: 60px;
-  height: 72px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 1.75rem;
-  text-align: center;
-  color: var(--color-text-primary);
+.fieldLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin-left: 0.25rem;
+}
+
+.fieldWrap {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--surface-container-highest);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--on-surface);
   outline: none;
-  transition: border-color 0.15s;
-  -webkit-text-security: disc;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.pinBox:focus {
-  border-color: var(--color-amber-500);
+.input::placeholder {
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+.input:focus {
+  border-bottom-color: var(--primary);
+}
+
+/* animated underline (CSS-only approach) */
+.focusLine {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--primary);
+  transition: width 0.3s;
+  pointer-events: none;
+}
+
+.fieldWrap:focus-within .focusLine {
+  width: 100%;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.eyeBtn:hover {
+  color: var(--primary);
 }
 
 .apiError {
   font-size: 0.875rem;
-  color: var(--color-error);
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: var(--radius-md);
+  color: var(--error);
+  background: rgba(186, 26, 26, 0.06);
+  border: 1px solid rgba(186, 26, 26, 0.15);
+  border-radius: 0.5rem;
   padding: 0.625rem 0.875rem;
   margin: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  background: var(--gradient-baked);
+  color: var(--on-primary);
+  font-family: var(--font-ui);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(106, 38, 0, 0.2);
+  transition: opacity 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Secondary links */
+.secondaryLinks {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(220, 193, 183, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.linkSeparator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--outline-variant);
+}
+
+/* Footer */
+.footer {
+  margin-top: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+  text-align: center;
+}
+
+/* Bottom gradient bar */
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--gradient-baked);
+  opacity: 0.3;
 }

@@ -77,7 +77,9 @@ class StockSerializer(serializers.ModelSerializer):
             "stock_actual",
             "stock_minimo",
             "bajo_minimo",
+            "precio_costo",
             "proveedor",
+            "imagen_url",
         ]
 
     def get_bajo_minimo(self, obj):

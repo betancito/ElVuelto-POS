@@ -13,6 +13,8 @@ class ProductType(models.TextChoices):
 class Category(TenantMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nombre = models.CharField(max_length=100)
+    imagen_url = models.URLField(max_length=500, null=True, blank=True)
+    imagen_public_id = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -42,7 +44,8 @@ class Product(TenantMixin):
     proveedor = models.CharField(max_length=200, null=True, blank=True)
     stock_actual = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=0)
-    imagen = models.ImageField(upload_to="products/", null=True, blank=True)
+    imagen_url = models.URLField(max_length=500, null=True, blank=True)
+    imagen_public_id = models.CharField(max_length=255, null=True, blank=True)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

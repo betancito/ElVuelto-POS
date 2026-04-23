@@ -118,8 +118,8 @@ export default function PosPage() {
             <div className={styles.grid}>
               {filtered.map((p) => (
                 <button key={p.id} className={styles.productCard} onClick={() => handleAddProduct(p)}>
-                  {p.imagen ? (
-                    <img src={p.imagen} alt={p.nombre} className={styles.productImg} />
+                  {p.imagen_url ? (
+                    <img src={p.imagen_url} alt={p.nombre} className={styles.productImg} />
                   ) : (
                     <div className={styles.productImgPlaceholder}>
                       <span className="material-symbols-outlined">bakery_dining</span>

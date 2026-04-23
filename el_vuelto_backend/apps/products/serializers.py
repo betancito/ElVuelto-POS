@@ -6,8 +6,8 @@ from .models import Category, Product, ProductType
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "tenant", "nombre", "created_at"]
-        read_only_fields = ["id", "tenant", "created_at"]
+        fields = ["id", "tenant", "nombre", "imagen_url", "created_at"]
+        read_only_fields = ["id", "tenant", "imagen_url", "created_at"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -28,12 +28,12 @@ class ProductSerializer(serializers.ModelSerializer):
             "proveedor",
             "stock_actual",
             "stock_minimo",
-            "imagen",
+            "imagen_url",
             "activo",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "tenant", "created_at", "updated_at"]
+        read_only_fields = ["id", "tenant", "imagen_url", "created_at", "updated_at"]
 
     def validate(self, data):
         tipo = data.get("tipo", getattr(self.instance, "tipo", None))
@@ -55,7 +55,6 @@ class ProductSerializer(serializers.ModelSerializer):
         return data
 
     def validate_category(self, value):
-        """Ensure the category belongs to the same tenant."""
         if value is None:
             return value
         request = self.context.get("request")
@@ -79,4 +78,5 @@ class ProductPOSSerializer(serializers.ModelSerializer):
             "barcode",
             "category",
             "stock_actual",
+            "imagen_url",
         ]

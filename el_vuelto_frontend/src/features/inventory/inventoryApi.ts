@@ -9,15 +9,20 @@ export interface InventoryMovement {
   tipo_movimiento: 'ENTRADA' | 'SALIDA_VENTA' | 'AJUSTE'
   cantidad: number
   precio_costo: string
-  nota: string
+  nota: string | null
   created_at: string
 }
 
 export interface StockItem {
-  product_id: string
+  id: string
   nombre: string
+  barcode: string | null
   stock_actual: number
-  precio_costo: string
+  stock_minimo: number
+  bajo_minimo: boolean
+  precio_costo: string | null
+  proveedor: string | null
+  imagen_url: string | null
 }
 
 export const inventoryApi = apiBase.injectEndpoints({
@@ -36,7 +41,7 @@ export const inventoryApi = apiBase.injectEndpoints({
       query: () => '/inventory/stock/',
       transformResponse: (response: StockItem[] | { results: StockItem[] }) =>
         Array.isArray(response) ? response : response.results,
-      providesTags: ['InventoryMovement'],
+      providesTags: ['InventoryMovement', 'Product'],
     }),
   }),
 })

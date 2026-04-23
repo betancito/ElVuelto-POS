@@ -17,7 +17,7 @@ import styles from './AdminLayout.module.css'
 // ─── Navigation items ─────────────────────────────────────────────
 const NAV_ITEMS = [
   { to: '/dashboard', Icon: HomeOutlinedIcon,        label: 'Inicio'     },
-  { to: '/products',  Icon: CategoryOutlinedIcon,    label: 'Productos'  },
+  { to: '/products',  Icon: CategoryOutlinedIcon,    label: 'Productos y Categorías' },
   { to: '/inventory', Icon: Inventory2OutlinedIcon,  label: 'Inventario' },
   { to: '/reports',   Icon: BarChartOutlinedIcon,    label: 'Reportes'   },
   { to: '/users',     Icon: GroupOutlinedIcon,        label: 'Usuarios'   },

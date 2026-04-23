@@ -177,3 +177,146 @@ export async function downloadCredentialCard(data: CredentialCardData): Promise<
   const slug = data.tenantNombre.toLowerCase().replace(/\s+/g, '-')
   doc.save(`credenciales-${slug}.pdf`)
 }
+
+// ─── User credential card ─────────────────────────────────────────────────────
+
+export interface UserCredentialCardData {
+  tenantNombre: string
+  userName: string
+  rol: 'ADMIN' | 'CAJERO'
+  loginIdentifier: string
+  password: string
+}
+
+export async function downloadUserCredentialCard(data: UserCredentialCardData): Promise<void> {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' })
+  const PW  = doc.internal.pageSize.getWidth()
+  const PH  = doc.internal.pageSize.getHeight()
+  const PAD = 12
+
+  const isCajero = data.rol === 'CAJERO'
+
+  doc.setFillColor(...CREAM)
+  doc.rect(0, 0, PW, PH, 'F')
+
+  const HDR = 28
+  doc.setFillColor(...BRAND)
+  doc.rect(0, 0, PW, HDR, 'F')
+  doc.setFillColor(...BRAND_MID)
+  doc.rect(PW / 2, 0, PW / 2, HDR, 'F')
+  doc.setFillColor(...BRAND)
+  doc.rect(0, 0, PW / 2, HDR, 'F')
+
+  try {
+    const logoData = await loadImageAsDataURL(LOGO_URL)
+    doc.addImage(logoData, 'PNG', PAD, 4, 18, 18)
+  } catch { /* skip */ }
+
+  doc.setTextColor(...WHITE)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.text('El Vuelto', PAD + 22, 13)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7.5)
+  doc.setTextColor(255, 237, 213)
+  doc.text(
+    `Credenciales del ${isCajero ? 'colaborador' : 'administrador'} — Documento confidencial`,
+    PAD + 22, 20,
+  )
+
+  let y = HDR + 9
+
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...STONE_500)
+  doc.text('NEGOCIO', PAD, y)
+
+  y += 5
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...STONE_900)
+  doc.text(data.tenantNombre, PAD, y)
+
+  y += 3
+  doc.setDrawColor(...STONE_200)
+  doc.setLineWidth(0.3)
+  doc.line(PAD, y, PW - PAD, y)
+
+  y += 6
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...STONE_500)
+  doc.text(isCajero ? 'COLABORADOR' : 'ADMINISTRADOR', PAD, y)
+
+  y += 5
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...STONE_900)
+  doc.text(data.userName, PAD, y)
+
+  y += 8
+  const cardH  = 22
+  const cardW  = (PW - PAD * 2 - 6) / 2
+  const card2X = PAD + cardW + 6
+
+  // Login identifier card
+  doc.setFillColor(...WHITE)
+  doc.setDrawColor(...STONE_200)
+  doc.setLineWidth(0.4)
+  doc.roundedRect(PAD, y, cardW, cardH, 2, 2, 'FD')
+
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...STONE_500)
+  doc.text(isCajero ? 'CÉDULA DE ACCESO' : 'CORREO DE ACCESO', PAD + 4, y + 7)
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...STONE_900)
+  doc.text(data.loginIdentifier, PAD + 4, y + 15)
+
+  // Password card
+  doc.setFillColor(255, 248, 245)
+  doc.setDrawColor(...BRAND)
+  doc.setLineWidth(0.6)
+  doc.roundedRect(card2X, y, cardW, cardH, 2, 2, 'FD')
+
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BRAND)
+  doc.text(isCajero ? 'PIN DE ACCESO' : 'CONTRASEÑA INICIAL', card2X + 4, y + 7)
+
+  doc.setFontSize(11)
+  doc.setFont('courier', 'bold')
+  doc.setTextColor(...STONE_900)
+  doc.text(data.password, card2X + 4, y + 16)
+
+  y += cardH + 8
+  const warnH = 16
+  doc.setFillColor(...AMBER_50)
+  doc.setDrawColor(...AMBER_200)
+  doc.setLineWidth(0.3)
+  doc.roundedRect(PAD, y, PW - PAD * 2, warnH, 2, 2, 'FD')
+
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...AMBER_700)
+  doc.text('⚠  Documento confidencial — uso interno exclusivo', PAD + 4, y + 6)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(...STONE_500)
+  doc.text(
+    `Este ${isCajero ? 'PIN' : 'contraseña'} se muestra una sola vez. Entrégalo de forma segura antes de eliminar este archivo.`,
+    PAD + 4, y + 12,
+  )
+
+  const date = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+  doc.setFontSize(6)
+  doc.setTextColor(...STONE_500)
+  doc.text(`Generado el ${date}  ·  El Vuelto POS`, PAD, PH - 5)
+
+  const slug = data.tenantNombre.toLowerCase().replace(/\s+/g, '-')
+  doc.save(`credenciales-${data.userName.toLowerCase().replace(/\s+/g, '-')}-${slug}.pdf`)
+}

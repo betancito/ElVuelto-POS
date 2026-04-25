@@ -11,10 +11,9 @@ class UserRole(models.TextChoices):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, correo, password=None, **extra_fields):
-        if not correo:
-            raise ValueError("El correo es requerido.")
-        correo = self.normalize_email(correo)
+    def create_user(self, correo=None, password=None, **extra_fields):
+        if correo:
+            correo = self.normalize_email(correo)
         extra_fields.setdefault("activo", True)
         user = self.model(correo=correo, **extra_fields)
         user.set_password(password)
@@ -40,7 +39,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name="users",
     )
     nombre = models.CharField(max_length=200)
-    correo = models.EmailField(unique=True)
+    correo = models.EmailField(null=True, blank=True, unique=True)
+    cedula = models.CharField(max_length=20, null=True, blank=True)
     rol = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CAJERO)
     activo = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -56,6 +56,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = "users"
         verbose_name = "Usuario"
         verbose_name_plural = "Usuarios"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "cedula"],
+                name="unique_cedula_por_tenant",
+                condition=models.Q(cedula__isnull=False),
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nombre} ({self.correo})"

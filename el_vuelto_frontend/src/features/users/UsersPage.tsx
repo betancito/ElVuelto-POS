@@ -11,15 +11,14 @@ import {
 import { generateAdminPassword, generatePin } from '@/utils/generatePassword'
 import { useAppSelector } from '@/app/hooks'
 import Spinner from '@/components/ui/Spinner'
+import UserCredentialsModal from '@/components/ui/UserCredentialsModal'
+import type { UserCredentialsData } from '@/components/ui/UserCredentialsModal'
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined'
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined'
@@ -45,15 +44,14 @@ export default function UsersPage() {
   const [resetPassword]                              = useResetPasswordMutation()
 
   const tenantNombre = useAppSelector((s) => s.auth.user?.tenantNombre)
-  const tenantNIT    = useAppSelector((s) => s.auth.user?.tenantId)
+  const tenantId     = useAppSelector((s) => s.auth.user?.tenantId)
   const staffLoginUrl = tenantNombre
     ? `${window.location.origin}/login/${toSlug(tenantNombre)}`
     : null
 
-  const [copied, setCopied]   = useState(false)
+  const [copied, setCopied]       = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [createdPassword, setCreatedPassword]       = useState<string | null>(null)
-  const [resetResult, setResetResult]               = useState<{ userId: string; pw: string } | null>(null)
+  const [userCreds, setUserCreds] = useState<UserCredentialsData | null>(null)
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -72,17 +70,39 @@ export default function UsersPage() {
 
   async function onSubmit(data: FormData) {
     const password = data.rol === 'CAJERO' ? generatePin() : generateAdminPassword()
+    const payload = {
+      ...data,
+      cedula: data.cedula?.trim() || undefined,
+      correo: data.correo?.trim() || undefined,
+      password,
+    }
     try {
-      await createUser({ ...data, password }).unwrap()
-      setCreatedPassword(password)
+      await createUser(payload).unwrap()
       reset()
       setShowModal(false)
+      setUserCreds({
+        tenantNombre: tenantNombre ?? '',
+        userName: payload.nombre,
+        rol: payload.rol,
+        loginIdentifier: payload.rol === 'CAJERO' ? (payload.cedula ?? '') : (payload.correo ?? ''),
+        password,
+      })
     } catch {}
   }
 
   async function handleReset(id: string) {
     const r = await resetPassword(id).unwrap()
-    setResetResult({ userId: id, pw: r.new_password })
+    const u = (users ?? []).find((u) => u.id === id)
+    if (u) {
+      setUserCreds({
+        tenantNombre: tenantNombre ?? '',
+        userName: u.nombre,
+        rol: u.rol,
+        loginIdentifier: u.correo ?? u.cedula ?? '',
+        password: r.new_password,
+        isReset: true,
+      })
+    }
   }
 
   return (
@@ -114,7 +134,7 @@ export default function UsersPage() {
                 {tenantNombre}
               </h2>
               <p className="ta-mono ta-mono--muted" style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                {tenantNIT ? `ID: ${tenantNIT}` : 'Administración del negocio'}
+                {tenantId ? `ID: ${tenantId}` : 'Administración del negocio'}
               </p>
             </div>
             <div style={{
@@ -145,33 +165,6 @@ export default function UsersPage() {
             {copied
               ? <><CheckOutlinedIcon style={{ fontSize: '1rem' }} /> Copiado</>
               : <><ContentCopyOutlinedIcon style={{ fontSize: '1rem' }} /> Copiar</>}
-          </button>
-        </div>
-      )}
-
-      {/* ── Password banners ── */}
-      {createdPassword && (
-        <div className="ta-banner">
-          <KeyOutlinedIcon style={{ fontSize: '1.25rem', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            Usuario creado — Contraseña/PIN: <code className="ta-banner-pw">{createdPassword}</code>
-            <span className="ta-banner-warn"> Entregar ahora, no se puede recuperar.</span>
-          </div>
-          <button className="ta-btn-icon" onClick={() => setCreatedPassword(null)} style={{ color: 'var(--on-tertiary-fixed-variant)' }}>
-            <CloseIcon style={{ fontSize: '1.125rem' }} />
-          </button>
-        </div>
-      )}
-
-      {resetResult && (
-        <div className="ta-banner">
-          <LockResetOutlinedIcon style={{ fontSize: '1.25rem', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            Nueva contraseña: <code className="ta-banner-pw">{resetResult.pw}</code>
-            <span className="ta-banner-warn"> Entregar ahora.</span>
-          </div>
-          <button className="ta-btn-icon" onClick={() => setResetResult(null)} style={{ color: 'var(--on-tertiary-fixed-variant)' }}>
-            <CloseIcon style={{ fontSize: '1.125rem' }} />
           </button>
         </div>
       )}
@@ -238,7 +231,11 @@ export default function UsersPage() {
                       >
                         {u.activo ? 'Desactivar' : 'Activar'}
                       </button>
-                      <button className="ta-btn-icon" onClick={() => handleReset(u.id)} title="Reset contraseña">
+                      <button
+                        className="ta-btn-icon"
+                        onClick={() => handleReset(u.id)}
+                        title="Restablecer contraseña"
+                      >
                         <LockResetOutlinedIcon style={{ fontSize: '1.125rem' }} />
                       </button>
                     </div>
@@ -260,13 +257,19 @@ export default function UsersPage() {
         <div className="ta-modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="ta-modal">
             <div className="ta-modal-header">
-              <h3 className="ta-modal-title">Nuevo usuario</h3>
+              <div>
+                <h3 className="ta-modal-title">Nuevo usuario</h3>
+              </div>
               <button className="ta-btn-icon" onClick={() => setShowModal(false)}>
                 <CloseIcon style={{ fontSize: '1.25rem' }} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+            >
               <div className="ta-modal-body">
                 {/* Name */}
                 <div className="ta-field">
@@ -322,14 +325,14 @@ export default function UsersPage() {
                   <InfoOutlinedIcon style={{ color: 'var(--primary-container)', fontSize: '1.25rem', flexShrink: 0 }} />
                   <p className="ta-info-text">
                     {rol === 'CAJERO'
-                      ? 'Se generará un PIN de 4 dígitos automáticamente. Anótalo antes de cerrar esta ventana.'
-                      : 'Se generará una contraseña segura automáticamente. Compártela de forma segura con el administrador.'}
+                      ? 'Se generará un PIN de 4 dígitos automáticamente. La tarjeta de credenciales se mostrará una sola vez al crear el usuario.'
+                      : 'Se generará una contraseña segura automáticamente. La tarjeta de credenciales se mostrará una sola vez al crear el usuario.'}
                   </p>
                 </div>
               </div>
 
               <div className="ta-modal-footer">
-                <button type="button" className="ta-btn ta-btn-ghost" onClick={() => setShowModal(false)}>
+                <button type="button" className="ta-btn ta-btn-secondary" onClick={() => setShowModal(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="ta-btn ta-btn-primary" disabled={creating}>
@@ -340,6 +343,9 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* ── Credentials modal (shown once after create / reset) ── */}
+      <UserCredentialsModal data={userCreds} onClose={() => setUserCreds(null)} />
     </div>
   )
 }

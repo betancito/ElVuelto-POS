@@ -36,6 +36,7 @@ class TenantBySlugView(APIView):
                 return Response(
                     {
                         "exists": True,
+                        "id": str(tenant.id),
                         "nombre": tenant.nombre,
                         "logo_url": doc.cloudinary_url if doc else None,
                     }

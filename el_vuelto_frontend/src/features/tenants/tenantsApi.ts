@@ -2,6 +2,7 @@ import { apiBase } from '@/app/apiBase'
 
 export interface TenantSlugCheck {
   exists: boolean
+  id: string | null
   nombre: string | null
   logo_url: string | null
 }

@@ -69,7 +69,8 @@ export const router = createBrowserRouter([
     element: <StaffLoginPage />,
   },
 
-  // Cashier POS (no layout chrome needed)
+  // Cajero routes — /staff redirects directly to POS
+  { path: '/staff', element: <Navigate to="/pos" replace /> },
   {
     path: '/pos',
     element: (

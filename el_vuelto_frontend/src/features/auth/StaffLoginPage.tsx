@@ -90,16 +90,25 @@ export default function StaffLoginPage() {
   async function handleSubmit() {
     if (!tenantCheck?.exists) return
     setApiError(null)
+    const cedulaTrimmed = cedula.trim()
     try {
-      const result = await loginWorker({ cedula, password: pin }).unwrap()
+      const result = await loginWorker({
+        cedula: cedulaTrimmed,
+        password: pin,
+        ...(tenantCheck.id ? { tenant_id: tenantCheck.id } : {}),
+      }).unwrap()
       if (result.user.rol === 'CAJERO') {
-        navigate('/pos')
+        navigate('/staff')
       } else {
         navigate('/dashboard')
       }
     } catch (err: unknown) {
-      const e = err as { data?: { detail?: string } }
-      setApiError(e?.data?.detail ?? 'Credenciales incorrectas')
+      const e = err as { status?: number; data?: { detail?: string; message?: string } }
+      const message =
+        e?.data?.detail ??
+        e?.data?.message ??
+        (e?.status === 401 ? 'Credenciales incorrectas' : 'Error al iniciar sesión. Intenta de nuevo.')
+      setApiError(message)
       setPin('')
     }
   }

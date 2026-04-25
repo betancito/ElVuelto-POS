@@ -41,8 +41,11 @@ export interface PosProduct {
   nombre: string
   precio_venta: string
   imagen_url: string | null
+  /** Category name (not UUID) — POS serializer returns category.nombre */
   category: string | null
   tipo: 'SIN_CODIGO' | 'CON_CODIGO'
+  barcode: string | null
+  stock_actual: number
 }
 
 export const productsApi = apiBase.injectEndpoints({

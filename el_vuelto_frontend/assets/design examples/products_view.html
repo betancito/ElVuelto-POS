@@ -1,0 +1,339 @@
+<!DOCTYPE html><html class="h-full" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>El Vuelto - Cashier Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@500;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Noto+Serif:wght@700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#eee7dc",
+                        "tertiary-fixed": "#b1f0ce",
+                        "surface-container": "#f4ede2",
+                        "on-tertiary-container": "#95d4b3",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#95d4b3",
+                        "secondary-fixed-dim": "#ecbe95",
+                        "on-secondary-fixed": "#2d1600",
+                        "on-primary-fixed-variant": "#7b2f03",
+                        "surface": "#fff8f0",
+                        "secondary-fixed": "#ffdcbf",
+                        "outline": "#89726a",
+                        "on-secondary-fixed-variant": "#5f4021",
+                        "tertiary-container": "#1e5d43",
+                        "primary-fixed-dim": "#ffb596",
+                        "primary": "#6a2600",
+                        "on-primary-fixed": "#360f00",
+                        "inverse-primary": "#ffb596",
+                        "surface-dim": "#e0d9ce",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#fecea5",
+                        "secondary": "#7a5736",
+                        "tertiary": "#00452d",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e8e2d7",
+                        "on-background": "#1e1b15",
+                        "on-tertiary-fixed-variant": "#0e5138",
+                        "inverse-surface": "#333029",
+                        "inverse-on-surface": "#f7f0e5",
+                        "on-secondary-container": "#795635",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#fff8f0",
+                        "primary-container": "#8b3a0f",
+                        "on-surface-variant": "#55433b",
+                        "surface-tint": "#9a451a",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#002114",
+                        "outline-variant": "#dcc1b7",
+                        "on-primary-container": "#ffb596",
+                        "surface-container-low": "#faf3e8",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e8e2d7",
+                        "surface-bright": "#fff8f0",
+                        "on-surface": "#1e1b15"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Serif"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"],
+                        "mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .baked-gradient {
+            background: linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fff8f0;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #faf3e8;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #dcc1b7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col text-on-surface">
+<!-- TopNavBar -->
+<header class="bg-[#fff8f0] dark:bg-stone-950 backdrop-blur-md opacity-90 flex justify-between items-center w-full px-8 py-4 max-w-full z-50">
+<div class="flex items-center gap-6">
+<span class="font-['Playfair_Display'] text-2xl font-bold text-[#6a2600] dark:text-[#d4a373]" style="">El Vuelto</span>
+<div class="h-6 w-[1px] bg-outline-variant opacity-30"></div>
+<span class="text-stone-500 font-medium" style="">Panadería BambiPan</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2 rounded-full border border-outline-variant text-[#6a2600] font-bold hover:bg-stone-100/50 transition-all duration-300 active:scale-95" style="">
+                Cerrar Turno
+            </button>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Panel: Product Catalog (60%) -->
+<section class="w-[60%] flex flex-col bg-surface-container-low h-full p-8 space-y-8 overflow-hidden">
+<!-- Barcode Scanner -->
+<div class="relative group">
+<span class="absolute inset-y-0 left-6 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="barcode_scanner" style="">barcode_scanner</span>
+</span>
+<input class="w-full pl-16 pr-6 py-5 bg-surface-container-highest border-none rounded-lg focus:ring-0 focus:border-b-2 focus:border-primary transition-all text-lg placeholder:text-on-surface-variant/50" placeholder="Escanear código de barras o buscar producto..." type="text">
+</div>
+<!-- Category Pills -->
+<div class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+<button class="px-8 py-3 rounded-full baked-gradient text-white font-bold whitespace-nowrap shadow-md active:scale-95 transition-transform" style="">Todos</button>
+<button class="px-8 py-3 rounded-full bg-secondary-container text-on-secondary-container font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors" style="">Panes</button>
+<button class="px-8 py-3 rounded-full bg-secondary-container text-on-secondary-container font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors" style="">Bebidas</button>
+<button class="px-8 py-3 rounded-full bg-secondary-container text-on-secondary-container font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors" style="">Dulces</button>
+<button class="px-8 py-3 rounded-full bg-secondary-container text-on-secondary-container font-medium whitespace-nowrap hover:bg-surface-container-high transition-colors" style="">Cafetería</button>
+</div>
+<!-- Product Grid -->
+<div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+<div class="grid grid-cols-3 gap-6">
+<!-- Product 1 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Close-up of golden brown Colombian pandebonos stacked on a rustic wooden plate with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI27rQlfbCy2AnO7nWoNX4QtzNQV7PGiGr8D23TIgzIBY3-ZECJP4zFctTZpaT1C2j526QOnPm5YkzijVBXYbh6ghg86ld3gzwpsUCClju7c4uhYnQ0ELwYSw2uw--x2JFSRqfbiA6LfuxB7B0f2BMC7b-Hm8KzD619Sihgw8IXdfsonseprScaHJ9PWRjYZe2PyApWbjdMq_XBQWY0OdD3WxxCnkKbTcvScTiC3kxxmrcnvH7G7jUty1hGfDnv7VMteVHlj_Qukin" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Pan de Bono</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 3.500</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+<!-- Product 2 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Fresh buttery croissant on a piece of parchment paper with crumbs scattered around, warm bakery aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAtcVZqXk7VWxvyCBYfkiokO7XagXQk2Fr99KdD0UDdy4zFypscfjwXL_FMWFfd8cvgkz8DGJyjt8Xg_RCsMoOtvxSTzmLn1k_stTzwwWjpm5KJ33cy1knJ3DHJE4Q9fFwWbFmJhf7GYawGyRK7Y3htmSNAjuCDhWRmVM-dYYGFW5dXhieSi9bfde1Kh8vsjlRSswEsTXHaq-Y74X5b1GLgUrpKuoqipMao-9isdTzLApMeX9KIhZhkdsz0QH9mUR4pdStpqYM5n0c" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Croissant</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 4.200</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+<!-- Product 3 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Traditional Colombian tinto coffee in a clear glass on a dark wooden table with soft steam rising" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI_fvr2jkzVAeTk1LRgRYW9o6OUht7U7nWu1oRffm4cMMRCvyvYr3APajgG8rw6KzEbWsm5PyYrh046Ts2eESc4O5Y1w5YUTK1CG0XzvOF4d37OMLWHd5l2j52P8AOToTeA1X2A_Kg3OwmdomWo03cj6wG8b_7ZRMuJsDw-J_4G-haEBmU9mhCISJkaQce_RoxHb-PhtG6PiUtyoek3beHCnTSHiSJklkt1SI5KBHp7-eVxRaVhqF6G1AtuCC2miSnQEj-X1lxiF3L" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Tinto Grande</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 2.800</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+<!-- Product 4 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Artisan whole wheat loaf of bread sliced on a wooden board with flour dusting in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4qlnjTMOyhCvqbSOnzwrl9uCUa0QCYNW-2GtLcN-2IpWNS5tjKXQos9lpz-bh3gmpAU33je6b9j6o-FX8fdgOAi5BLJjyMpY6AY7ZOwA5Ek8ksZwZmro4WyHVLGWC9zuhwYJhs0sTk-dMAxzOr5m2zf-hG2CitKSNS1WjH6rZSH79GQ6mzAFSSsKK4Dcwn-dhVwO19EIPZ-vskxvcWxTKixSgQt9IGtsLWssG_a5MZstHEzPwripOAaJkFsUi7UPBuyRnMRTiglYF" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Pan Integral</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 8.500</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+<!-- Product 5 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Traditional Latin American alfajores filled with dulce de leche and rolled in coconut flakes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRhEV0YrDr3AZSO32O4Fi7GtpIiDcb5CrP1XOMYonrE7lxV4IGLyfSJIV_n7N9zJL6tsYCWhq328X4DkQ3GGAaOcTY-sbhizYCFPNTu7rn9DIYZCLS0kjKf2S-6PXfS1rIQk7PNYEBrT1ch4l9MOEuPigcfULEOnENX1JxLRYJwswDDThMRZxp1eeAcr4rFUPDKga2ap-aHGVkmWpgqE61cyhINhuuwQ_WdSylypwRJzVKY9OyMZyEKV0cHBa2l_Cxe7z738uarr-K" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Alfajor</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 4.500</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+<!-- Product 6 -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer">
+<div class="h-40 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Freshly squeezed orange juice in a tall glass with orange slices in a bright sunlit kitchen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgNBuEUrdAbiRzhYSh3geAg6HEOyAAMpI4FISn63dFxBhqxi4mdJNIi2smUYWvEFeQAf-VAG8DNLSbk8FLG2XO2wKK9TZOjIVD7tSoYlObIhBhAYo8vqU77qPvlkgpYhkPopK2MVnuG85xb_x_M8KyPr85ePXGBnQ_GP_bmqp_S4QKGoY7Y6zuksRJzzWQRHc7NFRtl1gLQPI9mFq-PFXE750GvTYyZK9bIsYfahA4J1IKwxGtkkCwCv5t_VRvR-Ct-zl-JFCOJQdA" style="">
+</div>
+<div class="p-5 flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Jugo Natural</h3>
+<p class="font-mono text-primary font-bold mt-1" style="">$ 6.000</p>
+</div>
+<button class="mt-4 w-full h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors" style="">
+<span class="material-symbols-outlined" data-icon="add" style="">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: Cart/Checkout (40%) -->
+<section class="w-[40%] bg-surface flex flex-col border-l border-outline-variant/10 shadow-[-8px_0_32px_rgba(106,38,0,0.04)] h-full overflow-hidden">
+<!-- Cart Header -->
+<div class="p-8 flex justify-between items-center">
+<h2 class="font-['Noto_Serif'] text-2xl font-bold" style="">Venta Actual</h2>
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center gap-2 font-medium" style="">
+<span class="material-symbols-outlined text-sm" data-icon="close" style="">close</span>
+                    Cancelar
+                </button>
+</div>
+<!-- Cart Items -->
+<div class="flex-1 overflow-y-auto px-8 custom-scrollbar">
+<div class="space-y-6">
+<!-- Cart Item 1 -->
+<div class="flex justify-between items-center group">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Small preview of pandebono" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr9KwO-xp7bq-aChSn5TVztno92w-WDy7ezYBb5urdGKiYTbsD-9K59Z_KcSu-NcoH-GKspUzXdWP0cF0gkeUUUk9tbO19mBSzeVPc5YbllK2d_Nojpi6SY83syraQZ4ncffdsTGicPURT9EbJ6rccRLhUku0ZtRXC27LupSajLbArWbfA8QrQekspeEfKLR-UwmY8TwIfuoeVpx7r1zRFvQ2S5hweLKJWngJVqtkxRd10El7QNA_qnBbBUpD1NRCWyVLuEKf12wDr" style="">
+</div>
+<div>
+<h4 class="font-bold text-on-surface" style="">Pan de Bono</h4>
+<p class="font-mono text-sm text-on-surface-variant" style="">$ 3.500 c/u</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-high rounded-full p-1">
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors" style=""><span class="material-symbols-outlined text-sm" data-icon="remove" style="">remove</span></button>
+<span class="w-10 text-center font-mono font-bold" style="">3</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors" style=""><span class="material-symbols-outlined text-sm" data-icon="add" style="">add</span></button>
+</div>
+<p class="font-mono font-bold w-24 text-right" style="">$ 10.500</p>
+</div>
+</div>
+<!-- Cart Item 2 -->
+<div class="flex justify-between items-center group">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Small preview of tinto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhKJETG1TTU_JAaC9c07978k8yWkCQnK3KUI476Q3ukys0-fvdiweIReqLhOuezQnmjiQxVxtYeuwyCVWn1AyM-9DYtOSOURJR7HvxZ33llwK7-0os8WMXxxEDx7p_aTRntYYBi6ATsNfmytBwwlA1Cq_UJaaALKbwT7ThqGSSvBIVKZO_VhCmmzmzesZrrfgOFFfeZWdAx9J3F84kF_q-lScqiA9Mw06CUMtfBAW1hsvNPnRXspO0eJZUa-iX_42kYz_eJwvh-s4F" style="">
+</div>
+<div>
+<h4 class="font-bold text-on-surface" style="">Tinto Grande</h4>
+<p class="font-mono text-sm text-on-surface-variant" style="">$ 2.800 c/u</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-high rounded-full p-1">
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors" style=""><span class="material-symbols-outlined text-sm" data-icon="remove" style="">remove</span></button>
+<span class="w-10 text-center font-mono font-bold" style="">1</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors" style=""><span class="material-symbols-outlined text-sm" data-icon="add" style="">add</span></button>
+</div>
+<p class="font-mono font-bold w-24 text-right" style="">$ 2.800</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary & Payment -->
+<div class="p-8 bg-surface-container-low rounded-t-xl space-y-6">
+<!-- Total -->
+<div class="flex justify-between items-end">
+<span class="text-on-surface-variant font-medium" style="">Total a pagar</span>
+<span class="font-mono text-4xl font-bold text-primary" style="">$ 13.300</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-lg bg-surface-container-lowest border-2 border-primary shadow-sm active:scale-95 transition-all" style="">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="payments" style="">payments</span>
+<span class="font-bold text-primary" style="">Efectivo</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-lg bg-surface-container-highest border-2 border-transparent hover:border-outline-variant transition-all active:scale-95" style="">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant" data-icon="account_balance_wallet" style="">account_balance_wallet</span>
+<span class="font-bold text-on-surface-variant" style="">Nequi</span>
+</button>
+</div>
+<!-- Cash Section (Conditional) -->
+<div class="space-y-4 pt-2">
+<div class="flex items-center gap-4">
+<div class="flex-1">
+<label class="block text-xs uppercase tracking-widest font-bold text-on-surface-variant mb-2" style="">Recibido</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-lg text-on-surface-variant" style="">$</span>
+<input class="w-full pl-8 pr-4 py-4 rounded-lg bg-surface-container-highest border-none focus:ring-0 focus:border-b-2 focus:border-primary font-mono text-xl" type="text" value="20.000">
+</div>
+</div>
+<div class="flex-1">
+<label class="block text-xs uppercase tracking-widest font-bold text-on-surface-variant mb-2" style="">Vuelto</label>
+<div class="bg-tertiary-fixed h-14 flex items-center px-4 rounded-lg">
+<span class="font-mono text-2xl font-bold text-tertiary" style="">$ 6.700</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Final Action -->
+<button class="w-full baked-gradient py-6 rounded-lg text-white text-xl font-bold flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform" style="">
+<span class="material-symbols-outlined" data-icon="check_circle" style="">check_circle</span>
+                    Cobrar Venta
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Hidden on desktop but present for structure) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-2 bg-[#fff8f0] dark:bg-stone-900 shadow-[0_-4px_32px_rgba(106,38,0,0.06)] md:hidden">
+<div class="flex flex-col items-center justify-center bg-[#8b3a0f] text-white rounded-full px-6 py-2">
+<span class="material-symbols-outlined" data-icon="point_of_sale" style="">point_of_sale</span>
+<span class="font-['DM_Sans'] text-xs uppercase tracking-widest font-bold" style="">Venta Actual</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-400 px-6 py-2">
+<span class="material-symbols-outlined" data-icon="receipt_long" style="">receipt_long</span>
+<span class="font-['DM_Sans'] text-xs uppercase tracking-widest font-bold" style="">Historial Turno</span>
+</div>
+</nav>
+</body></html>

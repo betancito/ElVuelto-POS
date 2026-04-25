@@ -56,7 +56,7 @@ export const authApi = apiBase.injectEndpoints({
       },
     }),
     loginWorker: builder.mutation<LoginResponse, LoginWorkerArgs>({
-      query: (body) => ({ url: '/auth/login/', method: 'POST', body }),
+      query: (body) => ({ url: '/auth/login/cashier/', method: 'POST', body }),
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled

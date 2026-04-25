@@ -27,16 +27,29 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
 
   return (
     <div className="flex items-center justify-between gap-4 group">
-      {/* Left: avatar + name + unit price */}
+      {/* Left: avatar/image + name + unit price */}
       <div className="flex items-center gap-4 min-w-0">
-        <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0 text-xl font-bold"
-          style={{ background: bg, color: text }}
-        >
-          {item.nombre.charAt(0).toUpperCase()}
+        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+          {item.imagen_url ? (
+            <img
+              src={item.imagen_url}
+              alt={item.nombre}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center text-xl font-bold"
+              style={{ background: bg, color: text }}
+            >
+              {item.nombre.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
         <div className="min-w-0">
-          <h4 className="font-bold text-sm leading-snug truncate" style={{ color: 'var(--on-surface)' }}>
+          <h4
+            className="font-bold text-sm leading-snug truncate"
+            style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-headline)' }}
+          >
             {item.nombre}
           </h4>
           <p className="text-sm mt-0.5" style={{ color: 'var(--on-surface-variant)', fontFamily: 'var(--font-mono)' }}>
@@ -53,7 +66,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
           style={{ background: 'var(--surface-container-high)' }}
         >
           <button
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white min-w-[44px] min-h-[44px]"
             style={{ color: 'var(--on-surface)' }}
             onClick={() => onUpdateQuantity(item.productId, item.cantidad - 1)}
           >
@@ -66,7 +79,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
             {item.cantidad}
           </span>
           <button
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white min-w-[44px] min-h-[44px]"
             style={{ color: 'var(--on-surface)' }}
             onClick={() => onUpdateQuantity(item.productId, item.cantidad + 1)}
           >

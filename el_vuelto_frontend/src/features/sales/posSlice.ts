@@ -6,6 +6,7 @@ export interface CartItem {
   precioUnitario: number
   cantidad: number
   tipo: 'SIN_CODIGO' | 'CON_CODIGO'
+  imagen_url?: string | null
 }
 
 interface PosState {

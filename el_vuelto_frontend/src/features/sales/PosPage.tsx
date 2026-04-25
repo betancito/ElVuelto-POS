@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
+import PersonIcon from '@mui/icons-material/Person'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useGetPosProductsQuery, useListCategoriesQuery } from '@/features/products/productsApi'
 import { useCreateSaleMutation } from '@/features/sales/salesApi'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
@@ -81,6 +83,7 @@ export default function PosPage() {
           nombre: p.nombre,
           precioUnitario: parseFloat(p.precio_venta),
           tipo: p.tipo,
+          imagen_url: p.imagen_url,
         }),
       )
     },
@@ -168,67 +171,76 @@ export default function PosPage() {
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--background)' }}>
       {/* ── Header ── */}
       <header
-        className="flex justify-between items-center w-full px-8 py-4 shrink-0 z-10"
+        className="flex justify-between items-center w-full shrink-0 z-10"
         style={{
+          paddingTop: '1.25rem',
+          paddingBottom: '1.25rem',
+          paddingLeft: '5vw',
+          paddingRight: '5vw',
           background: 'rgba(255,248,240,0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(220,193,183,0.25)',
         }}
       >
         <div className="flex items-center gap-6">
-          <span
-            className="text-2xl font-bold"
-            style={{ color: 'var(--primary)', fontFamily: "'Playfair Display', serif" }}
-          >
-            El Vuelto
-          </span>
+          <img
+            src="/logos/El%20Vuelto%20-%20El_Vuelto_banner_v1_NO_BG.png"
+            alt="El Vuelto"
+            style={{ height: '2.5rem', maxHeight: '2.5rem', objectFit: 'contain' }}
+          />
           {user?.tenantNombre && (
             <>
               <div
-                className="h-6 w-px"
+                className="h-7 w-px"
                 style={{ background: 'var(--outline-variant)', opacity: 0.4 }}
               />
-              <span className="font-medium text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+              <span
+                className="font-bold text-xl"
+                style={{ color: 'var(--primary)', fontFamily: 'var(--font-headline)' }}
+              >
                 {user.tenantNombre}
               </span>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {user?.nombre && (
             <div
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full"
-              style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface-variant)' }}
+              className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-full"
+              style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}
             >
-              <span className="text-sm font-medium uppercase tracking-wider">
-                Cajero: {user.nombre.split(' ')[0]}
+              <PersonIcon style={{ fontSize: '1rem' }} />
+              <span className="text-sm font-semibold tracking-wide">
+                {user.nombre.split(' ')[0]}
               </span>
             </div>
           )}
           <button
             onClick={() => { dispatch(logout()); navigate('/login') }}
-            className="px-6 py-2 rounded-full font-bold transition-all hover:bg-surface-container active:scale-95 touch-manipulation"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all active:scale-95 touch-manipulation"
             style={{
-              border: '1px solid var(--outline-variant)',
-              color: 'var(--primary)',
+              background: 'var(--primary-container)',
+              color: 'var(--on-primary-container)',
             }}
           >
+            <LogoutIcon style={{ fontSize: '1rem' }} />
             Cerrar Turno
           </button>
         </div>
       </header>
 
       {/* ── Body ── */}
-      <main className="flex flex-1 overflow-hidden">
+      <main className="flex flex-1 overflow-hidden p-6 gap-5">
         {/* Left panel */}
         <section
-          className="flex flex-col h-full overflow-hidden"
+          className="flex flex-col overflow-hidden rounded-2xl"
           style={{
             flex: 1,
-            background: view === 'products' ? 'var(--surface-container-low)' : 'var(--background)',
+            background: view === 'products' ? 'var(--surface-container-low)' : 'var(--surface-container-low)',
             padding: '2rem',
             gap: '2rem',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {/* Search bar — always visible */}

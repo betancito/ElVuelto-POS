@@ -171,12 +171,8 @@ export default function PosPage() {
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--background)' }}>
       {/* ── Header ── */}
       <header
-        className="flex justify-between items-center w-full shrink-0 z-10"
+        className="flex justify-between items-center w-full px-8 py-4 shrink-0 z-10"
         style={{
-          paddingTop: '1.25rem',
-          paddingBottom: '1.25rem',
-          paddingLeft: '5vw',
-          paddingRight: '5vw',
           background: 'rgba(255,248,240,0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(220,193,183,0.25)',
@@ -231,16 +227,15 @@ export default function PosPage() {
       </header>
 
       {/* ── Body ── */}
-      <main className="flex flex-1 overflow-hidden p-6 gap-5">
+      <main className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <section
-          className="flex flex-col overflow-hidden rounded-2xl"
+          className="flex flex-col h-full overflow-hidden"
           style={{
             flex: 1,
-            background: view === 'products' ? 'var(--surface-container-low)' : 'var(--surface-container-low)',
+            background: 'var(--surface-container-low)',
             padding: '2rem',
             gap: '2rem',
-            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {/* Search bar — always visible */}

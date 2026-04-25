@@ -32,16 +32,16 @@ const ProductGrid = React.memo(function ProductGrid({ products, isLoading, onAdd
   }
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-3 gap-6">
       {products.map((product) => (
         <div
           key={product.id}
           onClick={() => onAddProduct(product)}
-          className="bg-surface-container-lowest rounded-xl overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-          style={{ boxShadow: '0 1px 4px rgba(106,38,0,0.07)' }}
+          className="bg-surface-container-lowest rounded-2xl overflow-hidden group hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+          style={{ boxShadow: 'var(--shadow-sm)' }}
         >
           {/* Image */}
-          <div className="h-28 overflow-hidden" style={{ background: 'var(--surface-container)' }}>
+          <div className="h-40 overflow-hidden" style={{ background: 'var(--surface-container)' }}>
             {product.imagen_url ? (
               <img
                 src={product.imagen_url}
@@ -50,23 +50,26 @@ const ProductGrid = React.memo(function ProductGrid({ products, isLoading, onAdd
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <BakeryDiningOutlinedIcon style={{ fontSize: '2rem', color: 'var(--outline)' }} />
+                <BakeryDiningOutlinedIcon style={{ fontSize: '2.5rem', color: 'var(--outline)' }} />
               </div>
             )}
           </div>
 
           {/* Info */}
-          <div className="p-3 flex flex-col gap-2.5">
+          <div className="p-5 flex flex-col justify-between">
             <div>
-              <h3 className="font-bold text-sm leading-snug" style={{ color: 'var(--on-surface)' }}>
+              <h3
+                className="font-bold text-lg leading-snug"
+                style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-headline)' }}
+              >
                 {product.nombre}
               </h3>
-              <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
+              <p className="font-bold mt-1" style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
                 {formatCOP(parseFloat(product.precio_venta))}
               </p>
             </div>
             <button
-              className="w-full h-9 rounded-full flex items-center justify-center transition-colors touch-manipulation"
+              className="mt-4 w-full h-12 rounded-full flex items-center justify-center transition-colors touch-manipulation"
               style={{
                 background: 'var(--surface-container-high)',
                 color: 'var(--primary)',
@@ -80,7 +83,7 @@ const ProductGrid = React.memo(function ProductGrid({ products, isLoading, onAdd
                 e.currentTarget.style.color = 'var(--primary)'
               }}
             >
-              <AddOutlinedIcon style={{ fontSize: '1.125rem' }} />
+              <AddOutlinedIcon style={{ fontSize: '1.25rem' }} />
             </button>
           </div>
         </div>

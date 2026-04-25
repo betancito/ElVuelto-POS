@@ -29,7 +29,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
     <div className="flex items-center justify-between gap-4 group">
       {/* Left: avatar/image + name + unit price */}
       <div className="flex items-center gap-4 min-w-0">
-        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+        <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
           {item.imagen_url ? (
             <img
               src={item.imagen_url}
@@ -38,7 +38,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
             />
           ) : (
             <div
-              className="w-full h-full flex items-center justify-center text-xl font-bold"
+              className="w-full h-full rounded-lg flex items-center justify-center text-xl font-bold"
               style={{ background: bg, color: text }}
             >
               {item.nombre.charAt(0).toUpperCase()}
@@ -66,20 +66,20 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
           style={{ background: 'var(--surface-container-high)' }}
         >
           <button
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white min-w-[44px] min-h-[44px]"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
             style={{ color: 'var(--on-surface)' }}
             onClick={() => onUpdateQuantity(item.productId, item.cantidad - 1)}
           >
             <RemoveOutlinedIcon style={{ fontSize: '1rem' }} />
           </button>
           <span
-            className="w-9 text-center font-bold text-sm"
+            className="w-10 text-center font-bold text-sm"
             style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-mono)' }}
           >
             {item.cantidad}
           </span>
           <button
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white min-w-[44px] min-h-[44px]"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
             style={{ color: 'var(--on-surface)' }}
             onClick={() => onUpdateQuantity(item.productId, item.cantidad + 1)}
           >
@@ -89,7 +89,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
 
         {/* Total */}
         <p
-          className="font-bold text-sm w-20 text-right"
+          className="font-bold text-sm w-24 text-right"
           style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-mono)' }}
         >
           {formatCOP(item.precioUnitario * item.cantidad)}

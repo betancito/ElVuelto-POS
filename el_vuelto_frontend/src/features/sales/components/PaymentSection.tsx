@@ -31,7 +31,7 @@ export default function PaymentSection({
 
   return (
     <div
-      className="px-8 pt-7 pb-6 rounded-t-2xl space-y-5"
+      className="p-8 rounded-t-2xl space-y-6"
       style={{ background: 'var(--surface-container-low)' }}
     >
       {/* Total */}
@@ -51,7 +51,7 @@ export default function PaymentSection({
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onMetodoPago('EFECTIVO')}
-          className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl transition-all active:scale-95 touch-manipulation min-h-[5rem]"
+          className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl transition-all active:scale-95 touch-manipulation"
           style={{
             background: metodoPago === 'EFECTIVO' ? 'var(--surface-container-lowest)' : 'var(--surface-container-highest)',
             border: metodoPago === 'EFECTIVO' ? '2px solid var(--primary)' : '2px solid transparent',
@@ -75,7 +75,7 @@ export default function PaymentSection({
         </button>
         <button
           onClick={() => onMetodoPago('NEQUI_TRANSFERENCIA')}
-          className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl transition-all active:scale-95 touch-manipulation min-h-[5rem]"
+          className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl transition-all active:scale-95 touch-manipulation"
           style={{
             background: metodoPago === 'NEQUI_TRANSFERENCIA' ? 'var(--surface-container-lowest)' : 'var(--surface-container-highest)',
             border: metodoPago === 'NEQUI_TRANSFERENCIA' ? '2px solid var(--primary)' : '2px solid transparent',
@@ -168,7 +168,7 @@ export default function PaymentSection({
       <button
         onClick={onCobrar}
         disabled={disabled || isLoading}
-        className="w-full py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 transition-transform active:scale-[0.98] touch-manipulation min-h-[44px]"
+        className="w-full py-6 rounded-2xl text-white text-xl font-bold flex items-center justify-center gap-3 transition-transform active:scale-[0.98] touch-manipulation"
         style={{
           background: disabled || isLoading ? 'var(--surface-dim)' : 'var(--gradient-baked)',
           color: disabled || isLoading ? 'var(--on-surface-variant)' : 'white',

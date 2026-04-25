@@ -28,8 +28,8 @@ const CatalogGrid = React.memo(function CatalogGrid({
       {/* "Todos los productos" card */}
       <button
         onClick={onShowAll}
-        className="group relative overflow-hidden rounded-xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
-        style={{ boxShadow: '0 2px 8px rgba(106,38,0,0.10)' }}
+        className="group relative overflow-hidden rounded-2xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
+        style={{ boxShadow: 'var(--shadow-md)' }}
       >
         <div className="aspect-[4/3] w-full relative overflow-hidden">
           <div
@@ -56,8 +56,8 @@ const CatalogGrid = React.memo(function CatalogGrid({
           <button
             key={cat.id}
             onClick={() => onCategorySelect(cat)}
-            className="group relative overflow-hidden rounded-xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
-            style={{ boxShadow: '0 2px 8px rgba(106,38,0,0.10)' }}
+            className="group relative overflow-hidden rounded-2xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
+            style={{ boxShadow: 'var(--shadow-md)' }}
           >
             <div className="aspect-[4/3] w-full relative overflow-hidden">
               {cat.imagen_url ? (

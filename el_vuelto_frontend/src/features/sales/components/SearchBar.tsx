@@ -24,7 +24,7 @@ export default function SearchBar({ value, onChange, onScanEnter, placeholder }:
         className="absolute inset-y-0 left-5 flex items-center pointer-events-none"
         style={{ color: 'var(--on-surface-variant)' }}
       >
-        <SearchIcon style={{ fontSize: '1.375rem' }} />
+        <SearchIcon style={{ fontSize: '1.5rem' }} />
       </span>
       <input
         ref={inputRef}
@@ -33,7 +33,7 @@ export default function SearchBar({ value, onChange, onScanEnter, placeholder }:
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder ?? 'Escanear código de barras o buscar producto...'}
-        className="w-full pl-14 pr-10 py-5 rounded-2xl text-base outline-none transition-all"
+        className="w-full pl-16 pr-10 py-5 rounded-2xl text-lg outline-none transition-all"
         style={{
           background: 'var(--surface-container-highest)',
           color: 'var(--on-surface)',

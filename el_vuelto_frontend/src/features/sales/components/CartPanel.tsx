@@ -14,16 +14,17 @@ interface Props {
 export default function CartPanel({ items, onUpdateQuantity, onRemove, onClear, children }: Props) {
   return (
     <section
-      className="flex flex-col overflow-hidden rounded-2xl"
+      className="flex flex-col h-full overflow-hidden"
       style={{
         width: '30%',
         minWidth: '300px',
-        background: 'var(--surface-container-lowest)',
-        boxShadow: 'var(--shadow-md)',
+        background: 'var(--surface)',
+        borderLeft: '1px solid rgba(220,193,183,0.2)',
+        boxShadow: '-8px 0 32px rgba(106,38,0,0.04)',
       }}
     >
       {/* Header */}
-      <div className="px-8 py-6 flex justify-between items-center shrink-0">
+      <div className="px-8 py-8 flex justify-between items-center shrink-0">
         <h2
           className="text-2xl font-bold"
           style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-headline)' }}
@@ -86,7 +87,7 @@ export default function CartPanel({ items, onUpdateQuantity, onRemove, onClear, 
       </div>
 
       {/* Payment section slot */}
-      <div className="shrink-0 pb-2">{children}</div>
+      <div className="shrink-0">{children}</div>
     </section>
   )
 }

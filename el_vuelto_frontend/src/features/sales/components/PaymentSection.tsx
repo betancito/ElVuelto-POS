@@ -31,7 +31,7 @@ export default function PaymentSection({
 
   return (
     <div
-      className="p-8 rounded-t-2xl space-y-6"
+      className="px-8 pt-7 pb-6 rounded-t-2xl space-y-5"
       style={{ background: 'var(--surface-container-low)' }}
     >
       {/* Total */}
@@ -48,10 +48,10 @@ export default function PaymentSection({
       </div>
 
       {/* Payment method cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onMetodoPago('EFECTIVO')}
-          className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg transition-all active:scale-95 touch-manipulation"
+          className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl transition-all active:scale-95 touch-manipulation min-h-[5rem]"
           style={{
             background: metodoPago === 'EFECTIVO' ? 'var(--surface-container-lowest)' : 'var(--surface-container-highest)',
             border: metodoPago === 'EFECTIVO' ? '2px solid var(--primary)' : '2px solid transparent',
@@ -75,7 +75,7 @@ export default function PaymentSection({
         </button>
         <button
           onClick={() => onMetodoPago('NEQUI_TRANSFERENCIA')}
-          className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg transition-all active:scale-95 touch-manipulation"
+          className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl transition-all active:scale-95 touch-manipulation min-h-[5rem]"
           style={{
             background: metodoPago === 'NEQUI_TRANSFERENCIA' ? 'var(--surface-container-lowest)' : 'var(--surface-container-highest)',
             border: metodoPago === 'NEQUI_TRANSFERENCIA' ? '2px solid var(--primary)' : '2px solid transparent',
@@ -101,7 +101,7 @@ export default function PaymentSection({
 
       {/* Cash: recibido + vuelto */}
       {metodoPago === 'EFECTIVO' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label
               className="block text-xs uppercase tracking-widest font-bold mb-2"
@@ -111,7 +111,7 @@ export default function PaymentSection({
             </label>
             <button
               onClick={onOpenCashModal}
-              className="w-full px-4 py-3.5 rounded-2xl text-left transition-all touch-manipulation"
+              className="w-full h-14 px-4 rounded-2xl text-left transition-all touch-manipulation flex items-center min-h-[44px]"
               style={{
                 background: 'var(--surface-container-highest)',
                 color: 'var(--on-surface)',
@@ -143,7 +143,7 @@ export default function PaymentSection({
               Vuelto
             </label>
             <div
-              className="w-full h-[3.25rem] flex items-center px-4 rounded-2xl"
+              className="w-full h-14 flex items-center px-4 rounded-2xl"
               style={{
                 background: vuelto !== null ? 'var(--tertiary-fixed)' : 'var(--surface-container-high)',
                 border: '1.5px solid transparent',
@@ -168,7 +168,7 @@ export default function PaymentSection({
       <button
         onClick={onCobrar}
         disabled={disabled || isLoading}
-        className="w-full py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 transition-transform active:scale-[0.98] touch-manipulation"
+        className="w-full py-5 rounded-2xl text-white text-lg font-bold flex items-center justify-center gap-3 transition-transform active:scale-[0.98] touch-manipulation min-h-[44px]"
         style={{
           background: disabled || isLoading ? 'var(--surface-dim)' : 'var(--gradient-baked)',
           color: disabled || isLoading ? 'var(--on-surface-variant)' : 'white',

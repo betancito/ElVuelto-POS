@@ -60,10 +60,10 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
         >
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'var(--primary-fixed)', color: 'var(--primary)' }}
             >
-              <PaymentsOutlinedIcon style={{ fontSize: '1.25rem' }} />
+              <PaymentsOutlinedIcon style={{ fontSize: '1.375rem' }} />
             </div>
             <div>
               <h3
@@ -81,20 +81,20 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
             </div>
           </div>
           <button
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors touch-manipulation"
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors touch-manipulation min-w-[44px] min-h-[44px]"
             style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-container-high)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface-container)')}
             onClick={onClose}
           >
-            <CloseIcon style={{ fontSize: '1.125rem' }} />
+            <CloseIcon style={{ fontSize: '1.25rem' }} />
           </button>
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-6 flex flex-col gap-5">
           {/* Amount display */}
           <div
-            className="rounded-2xl px-5 py-4 flex items-center justify-between"
+            className="rounded-2xl px-5 py-5 flex items-center justify-between"
             style={{
               background: amount > 0 && isEnough ? 'var(--tertiary-fixed)' : 'var(--primary-fixed)',
               border: `1.5px solid ${amount > 0 && isEnough ? 'var(--tertiary)' : 'var(--outline-variant)'}`,
@@ -121,14 +121,14 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
           {/* Vuelto / faltante indicator */}
           {vuelto !== null && (
             <div
-              className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+              className="rounded-xl px-4 py-3 flex items-center justify-between"
               style={{
                 background: isEnough ? 'rgba(0,69,45,0.08)' : 'var(--error-container)',
                 color: isEnough ? 'var(--tertiary)' : 'var(--on-error-container)',
                 border: `1px solid ${isEnough ? 'rgba(0,69,45,0.15)' : 'transparent'}`,
               }}
             >
-              <span className="text-xs font-bold uppercase tracking-wide">
+              <span className="text-sm font-bold uppercase tracking-wide">
                 {isEnough ? 'Vuelto' : 'Faltante'}
               </span>
               <span className="text-base font-bold" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -140,19 +140,19 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
           {/* Preset bills */}
           <div>
             <p
-              className="text-xs font-bold uppercase tracking-widest mb-2"
+              className="text-xs font-bold uppercase tracking-widest mb-2.5"
               style={{ color: 'var(--on-surface-variant)' }}
             >
               Billetes
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2.5">
               {BILLS.map((b) => {
                 const active = display === String(b)
                 return (
                   <button
                     key={b}
                     onClick={() => setDisplay(String(b))}
-                    className="py-2.5 rounded-xl text-sm font-bold transition-all touch-manipulation"
+                    className="py-4 rounded-2xl text-sm font-bold transition-all touch-manipulation active:scale-95 min-h-[44px]"
                     style={{
                       background: active ? 'var(--gradient-baked)' : 'var(--surface-container-highest)',
                       color: active ? 'white' : 'var(--on-surface)',
@@ -171,19 +171,19 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
           {/* Preset coins */}
           <div>
             <p
-              className="text-xs font-bold uppercase tracking-widest mb-2"
+              className="text-xs font-bold uppercase tracking-widest mb-2.5"
               style={{ color: 'var(--on-surface-variant)' }}
             >
               Monedas
             </p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-2.5">
               {COINS.map((c) => {
                 const active = display === String(c)
                 return (
                   <button
                     key={c}
                     onClick={() => setDisplay(String(c))}
-                    className="py-2 rounded-xl text-xs font-bold transition-all touch-manipulation"
+                    className="py-3 rounded-2xl text-sm font-bold transition-all touch-manipulation active:scale-95 min-h-[44px]"
                     style={{
                       background: active ? 'var(--gradient-baked)' : 'var(--surface-container-highest)',
                       color: active ? 'white' : 'var(--on-surface)',
@@ -200,12 +200,12 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
           </div>
 
           {/* Numpad */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             {NUMPAD_KEYS.map((k) => (
               <button
                 key={k}
                 onClick={() => appendDigits(k)}
-                className="py-4 rounded-xl text-xl font-bold transition-all touch-manipulation active:scale-95"
+                className="py-5 rounded-2xl text-xl font-bold transition-all touch-manipulation active:scale-95 min-h-[56px]"
                 style={{
                   background: 'var(--surface-container-highest)',
                   color: 'var(--on-surface)',
@@ -226,14 +226,14 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
             ))}
             <button
               onClick={() => setDisplay((prev) => prev.slice(0, -1))}
-              className="py-4 rounded-xl flex items-center justify-center transition-all touch-manipulation active:scale-95"
+              className="py-5 rounded-2xl flex items-center justify-center transition-all touch-manipulation active:scale-95 min-h-[56px]"
               style={{
                 background: 'var(--error-container)',
                 color: 'var(--on-error-container)',
                 border: '1.5px solid transparent',
               }}
             >
-              <BackspaceOutlinedIcon style={{ fontSize: '1.25rem' }} />
+              <BackspaceOutlinedIcon style={{ fontSize: '1.375rem' }} />
             </button>
           </div>
 
@@ -241,7 +241,7 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
           <button
             onClick={handleConfirm}
             disabled={amount <= 0}
-            className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.98]"
+            className="w-full py-5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.98] min-h-[56px]"
             style={{
               background: amount > 0 ? 'var(--gradient-baked)' : 'var(--surface-dim)',
               color: amount > 0 ? 'white' : 'var(--on-surface-variant)',
@@ -251,7 +251,7 @@ export default function CashInputModal({ total, initial, onConfirm, onClose }: P
               letterSpacing: '0.02em',
             }}
           >
-            <CheckCircleOutlinedIcon style={{ fontSize: '1.25rem' }} />
+            <CheckCircleOutlinedIcon style={{ fontSize: '1.375rem' }} />
             Confirmar — {display ? formatCOP(amount) : '$0'}
           </button>
         </div>

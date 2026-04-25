@@ -16,7 +16,7 @@ export default function CartPanel({ items, onUpdateQuantity, onRemove, onClear, 
     <section
       className="flex flex-col overflow-hidden rounded-2xl"
       style={{
-        width: '34%',
+        width: '30%',
         minWidth: '300px',
         background: 'var(--surface-container-lowest)',
         boxShadow: 'var(--shadow-md)',

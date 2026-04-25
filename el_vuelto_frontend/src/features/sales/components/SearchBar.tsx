@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import QrCodeScannerOutlinedIcon from '@mui/icons-material/QrCodeScannerOutlined'
+import SearchIcon from '@mui/icons-material/Search'
 
 interface Props {
   value: string
@@ -24,7 +24,7 @@ export default function SearchBar({ value, onChange, onScanEnter, placeholder }:
         className="absolute inset-y-0 left-5 flex items-center pointer-events-none"
         style={{ color: 'var(--on-surface-variant)' }}
       >
-        <QrCodeScannerOutlinedIcon style={{ fontSize: '1.25rem' }} />
+        <SearchIcon style={{ fontSize: '1.375rem' }} />
       </span>
       <input
         ref={inputRef}
@@ -33,7 +33,7 @@ export default function SearchBar({ value, onChange, onScanEnter, placeholder }:
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder ?? 'Escanear código de barras o buscar producto...'}
-        className="w-full pl-13 pr-10 py-4 rounded-2xl text-base outline-none transition-all"
+        className="w-full pl-14 pr-10 py-5 rounded-2xl text-base outline-none transition-all"
         style={{
           background: 'var(--surface-container-highest)',
           color: 'var(--on-surface)',

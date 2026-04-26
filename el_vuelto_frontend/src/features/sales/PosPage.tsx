@@ -1,4 +1,6 @@
-import { useState, useMemo, useCallback } from 'react'
+import './pos.css'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import PersonIcon from '@mui/icons-material/Person'
@@ -46,6 +48,10 @@ export default function PosPage() {
   const { data: products = [], isLoading: loadingProducts } = useGetPosProductsQuery()
   const { data: categories = [] } = useListCategoriesQuery()
   const [createSale, { isLoading: creating }] = useCreateSaleMutation()
+
+  // Stable ref — never goes stale inside the barcode listener closure
+  const productsRef = useRef(products)
+  useEffect(() => { productsRef.current = products }, [products])
 
   const totalVenta = items.reduce((acc, i) => acc + i.precioUnitario * i.cantidad, 0)
 
@@ -117,21 +123,86 @@ export default function PosPage() {
     setSearchQuery('')
   }
 
-  function handleScanEnter() {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return
-    const barcodeMatch = products.find((p) => p.barcode?.toLowerCase() === q)
+  // SearchBar calls this on Enter with the live DOM value (bypasses stale React state).
+  // Handles manual text search; also catches scans when the input happens to be focused.
+  function handleScanEnter(domValue: string) {
+    const code = domValue.trim()
+    console.log('[POS] handleScanEnter — value:', JSON.stringify(code))
+    if (!code) return
+
+    const barcodeMatch = products.find(
+      (p) => p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
+    )
     if (barcodeMatch) {
+      console.log('[POS] barcode match via input:', barcodeMatch.nombre)
       handleAddProduct(barcodeMatch)
       setSearchQuery('')
+      toast.success(`${barcodeMatch.nombre} agregado al carrito`, { position: 'bottom-left' })
       return
     }
-    const nameMatch = filteredProducts.find((p) => p.nombre.toLowerCase() === q)
+
+    const nameMatch = filteredProducts.find((p) => p.nombre.toLowerCase() === code.toLowerCase())
     if (nameMatch) {
+      console.log('[POS] name match via input:', nameMatch.nombre)
       handleAddProduct(nameMatch)
       setSearchQuery('')
+      toast.success(`${nameMatch.nombre} agregado al carrito`, { position: 'bottom-left' })
     }
   }
+
+  // Global barcode listener — mirrors the inventory module pattern exactly.
+  // Activates only when no INPUT/TEXTAREA/SELECT has focus (scanner fired while page-level focus).
+  // Uses a 300 ms idle timer (same as inventory) instead of a per-keystroke timing check.
+  useEffect(() => {
+    let buffer = ''
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    function flush() {
+      const code = buffer.trim()
+      buffer = ''
+      if (timer) { clearTimeout(timer); timer = null }
+
+      console.log('[POS Barcode] flush — code:', JSON.stringify(code), '| products loaded:', productsRef.current.length)
+      if (code.length < 3) return
+
+      const match = productsRef.current.find(
+        (p) => p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
+      )
+      console.log('[POS Barcode] match result:', match ? match.nombre : 'NOT FOUND')
+
+      if (match) {
+        handleAddProduct(match)
+        setSearchQuery('')
+        toast.success(`${match.nombre} agregado al carrito`, { position: 'bottom-left' })
+      } else {
+        toast.error(`Código "${code}" no encontrado`, { position: 'bottom-left' })
+      }
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      console.log('[POS Barcode] key:', e.key, '| buffer so far:', buffer)
+
+      if (e.key === 'Enter') {
+        if (timer) clearTimeout(timer)
+        flush()
+        return
+      }
+      if (e.key.length === 1) {
+        buffer += e.key
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(flush, 300)
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (timer) clearTimeout(timer)
+    }
+  }, [handleAddProduct])
 
   async function handleCobrar() {
     if (items.length === 0) return
@@ -168,57 +239,33 @@ export default function PosPage() {
       (montoRecibido === null || montoRecibido < totalVenta))
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'var(--background)' }}>
+    <div className="pos-root">
       {/* ── Header ── */}
-      <header
-        className="flex justify-between items-center w-full px-8 py-4 shrink-0 z-10"
-        style={{
-          background: 'rgba(255,248,240,0.92)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(220,193,183,0.25)',
-        }}
-      >
-        <div className="flex items-center gap-6">
+      <header className="pos-header">
+        <div className="flex items-center">
           <img
             src="/logos/El%20Vuelto%20-%20El_Vuelto_banner_v1_NO_BG.png"
             alt="El Vuelto"
-            style={{ height: '2.5rem', maxHeight: '2.5rem', objectFit: 'contain' }}
+            className="pos-header__logo"
           />
           {user?.tenantNombre && (
             <>
-              <div
-                className="h-7 w-px"
-                style={{ background: 'var(--outline-variant)', opacity: 0.4 }}
-              />
-              <span
-                className="font-bold text-xl"
-                style={{ color: 'var(--primary)', fontFamily: 'var(--font-headline)' }}
-              >
-                {user.tenantNombre}
-              </span>
+              <div className="pos-header__divider" />
+              <span className="pos-header__tenant">{user.tenantNombre}</span>
             </>
           )}
         </div>
 
         <div className="flex items-center gap-3">
           {user?.nombre && (
-            <div
-              className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-full"
-              style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}
-            >
+            <div className="pos-header__user-chip">
               <PersonIcon style={{ fontSize: '1rem' }} />
-              <span className="text-sm font-semibold tracking-wide">
-                {user.nombre.split(' ')[0]}
-              </span>
+              <span>{user.nombre.split(' ')[0]}</span>
             </div>
           )}
           <button
+            className="pos-header__close-btn"
             onClick={() => { dispatch(logout()); navigate('/login') }}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all active:scale-95 touch-manipulation"
-            style={{
-              background: 'var(--primary-container)',
-              color: 'var(--on-primary-container)',
-            }}
           >
             <LogoutIcon style={{ fontSize: '1rem' }} />
             Cerrar Turno
@@ -227,17 +274,9 @@ export default function PosPage() {
       </header>
 
       {/* ── Body ── */}
-      <main className="flex flex-1 overflow-hidden">
+      <main className="pos-body">
         {/* Left panel */}
-        <section
-          className="flex flex-col h-full overflow-hidden"
-          style={{
-            flex: 1,
-            background: 'var(--surface-container-low)',
-            padding: '2rem',
-            gap: '2rem',
-          }}
-        >
+        <section className="pos-left">
           {/* Search bar — always visible */}
           <SearchBar
             value={searchQuery}
@@ -247,32 +286,24 @@ export default function PosPage() {
 
           {view === 'catalog' ? (
             /* ── Catalog view ── */
-            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--outline-variant) transparent' }}>
-              <CatalogGrid
-                categories={categories}
-                productCountByCategory={productCountByCategory}
-                onCategorySelect={handleCategorySelect}
-                onShowAll={handleShowAll}
-              />
-            </div>
+            <CatalogGrid
+              categories={categories}
+              productCountByCategory={productCountByCategory}
+              onCategorySelect={handleCategorySelect}
+              onShowAll={handleShowAll}
+            />
           ) : (
             /* ── Products view ── */
             <>
               {/* Back + breadcrumb + chips */}
               <div className="flex flex-col gap-4 shrink-0">
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleBackToCatalog}
-                    className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg transition-colors touch-manipulation"
-                    style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
-                  >
+                  <button className="pos-back-btn" onClick={handleBackToCatalog}>
                     <ArrowBackOutlinedIcon style={{ fontSize: '1rem' }} />
                     Categorías
                   </button>
                   {activeCategoryName && (
-                    <span className="text-sm font-bold" style={{ color: 'var(--on-surface)' }}>
-                      / {activeCategoryName}
-                    </span>
+                    <span className="pos-breadcrumb">/ {activeCategoryName}</span>
                   )}
                 </div>
                 <CategoryChips
@@ -287,30 +318,20 @@ export default function PosPage() {
 
               {/* Error banner */}
               {saleError && (
-                <div
-                  className="px-5 py-3 rounded-xl text-sm font-medium shrink-0"
-                  style={{ background: 'var(--error-container)', color: 'var(--on-error-container)' }}
-                >
-                  {saleError}
-                </div>
+                <div className="pos-error-banner">{saleError}</div>
               )}
 
               {/* Product grid */}
-              <div
-                className="flex-1 overflow-y-auto pr-1"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--outline-variant) transparent' }}
-              >
-                <ProductGrid
-                  products={filteredProducts}
-                  isLoading={loadingProducts}
-                  onAddProduct={handleAddProduct}
-                />
-              </div>
+              <ProductGrid
+                products={filteredProducts}
+                isLoading={loadingProducts}
+                onAddProduct={handleAddProduct}
+              />
             </>
           )}
         </section>
 
-        {/* Right panel — cart (34% width = −15% relative to original 40%) */}
+        {/* Right panel — cart */}
         <CartPanel
           items={items}
           onUpdateQuantity={(id, qty) =>

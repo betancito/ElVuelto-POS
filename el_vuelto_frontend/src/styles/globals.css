@@ -10,31 +10,85 @@
 
 /* ─── Tailwind v4: brand color tokens (inline = reference CSS vars) */
 @theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-background:                 var(--background);
+  --color-foreground:                 var(--foreground);
   --color-primary:                    var(--primary);
+  --color-primary-foreground:         var(--primary-foreground);
   --color-on-primary:                 var(--on-primary);
   --color-primary-container:          var(--primary-container);
   --color-on-primary-container:       var(--on-primary-container);
+  --color-primary-fixed:              var(--primary-fixed);
+  --color-secondary:                  var(--secondary);
+  --color-secondary-foreground:       var(--secondary-foreground);
   --color-secondary-container:        var(--secondary-container);
   --color-on-secondary-container:     var(--on-secondary-container);
+  --color-muted:                      var(--muted);
+  --color-muted-foreground:           var(--muted-foreground);
+  --color-accent:                     var(--accent);
+  --color-accent-foreground:          var(--accent-foreground);
+  --color-destructive:                var(--destructive);
+  --color-border:                     var(--border);
+  --color-input:                      var(--input);
+  --color-ring:                       var(--ring);
+  --color-tertiary:                   var(--tertiary);
+  --color-tertiary-fixed:             var(--tertiary-fixed);
+  --color-on-tertiary-fixed:          var(--on-tertiary-fixed);
+  --color-surface:                    var(--surface);
   --color-surface-lowest:             var(--surface-container-lowest);
   --color-surface-low:                var(--surface-container-low);
   --color-surface-c:                  var(--surface-container);
   --color-surface-high:               var(--surface-container-high);
   --color-surface-highest:            var(--surface-container-highest);
+  --color-surface-dim:                var(--surface-dim);
+  --color-surface-container-lowest:   var(--surface-container-lowest);
+  --color-surface-container-low:      var(--surface-container-low);
+  --color-surface-container:          var(--surface-container);
+  --color-surface-container-high:     var(--surface-container-high);
+  --color-surface-container-highest:  var(--surface-container-highest);
   --color-on-surface:                 var(--on-surface);
   --color-on-surface-variant:         var(--on-surface-variant);
+  --color-outline:                    var(--outline);
+  --color-outline-variant:            var(--outline-variant);
   --color-outline-c:                  var(--outline);
+  --color-error:                      var(--error);
+  --color-error-container:            var(--error-container);
+  --color-on-error-container:         var(--on-error-container);
   --color-warm-bg:                    var(--background);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
 }
 
 :root {
   /* ─── Typography ─────────────────────────────────────────────────── */
-  --font-display:      'Plus Jakarta Sans', sans-serif;
-  --font-sans:         'Plus Jakarta Sans', sans-serif;
+  --font-display:      'Playfair Display', Georgia, serif;
+  --font-sans:         'Plus Jakarta Sans', system-ui, sans-serif;
   --font-ui:           'Plus Jakarta Sans', sans-serif;
-  --font-mono:         'JetBrains Mono', monospace;
-  --font-headline:     'Noto Serif', serif;
+  --font-mono:         'JetBrains Mono', 'Courier New', monospace;
+  --font-headline:     'Noto Serif', Georgia, serif;
   --font-serif-brand:  'Playfair Display', serif;
+
+  /* ─── Base semantic tokens ───────────────────────────────────────── */
+  --foreground:                  #1e1b15;
+  --card:                        #ffffff;
+  --card-foreground:             #1e1b15;
+  --muted:                       #f4ede2;
+  --muted-foreground:            #55433b;
+  --accent:                      #eee7dc;
+  --accent-foreground:           #1e1b15;
+  --destructive:                 #ba1a1a;
+  --border:                      #dcc1b7;
+  --input:                       #e8e2d7;
+  --ring:                        #6a2600;
+  --radius:                      1rem;
+  --primary-foreground:          #ffffff;
+  --secondary-foreground:        #795635;
 
   /* ─── Brand palette (warm artisan browns) ────────────────────────── */
 
@@ -45,7 +99,7 @@
   /* Surface containers */
   --surface:                     #fff8f0;
   --surface-bright:              #fff8f0;
-  --surface-dim:                 #e0d9ce;
+  --surface-dim:                 #d8d0c4;
   --surface-container-lowest:    #ffffff;
   --surface-container-low:       #faf3e8;
   --surface-container:           #f4ede2;
@@ -59,9 +113,9 @@
   /* Primary – deep artisan brown */
   --primary:                     #6a2600;
   --on-primary:                  #ffffff;
-  --primary-container:           #8b3a0f;
-  --on-primary-container:        #ffb596;
-  --primary-fixed:               #ffdbcd;
+  --primary-container:           #ffdbcd;
+  --on-primary-container:        #6a2600;
+  --primary-fixed:               #ffe0d0;
   --primary-fixed-dim:           #ffb596;
   --on-primary-fixed:            #360f00;
   --on-primary-fixed-variant:    #7b2f03;
@@ -79,13 +133,13 @@
   --on-secondary-fixed-variant:  #5f4021;
 
   /* Tertiary – forest green (active status) */
-  --tertiary:                    #00452d;
+  --tertiary:                    #006c47;
   --on-tertiary:                 #ffffff;
   --tertiary-container:          #1e5d43;
   --on-tertiary-container:       #95d4b3;
   --tertiary-fixed:              #b1f0ce;
   --tertiary-fixed-dim:          #95d4b3;
-  --on-tertiary-fixed:           #002114;
+  --on-tertiary-fixed:           #00452d;
   --on-tertiary-fixed-variant:   #0e5138;
 
   /* Error */
@@ -116,11 +170,11 @@
   --radius-lg:  16px;
   --radius-xl:  24px;
 
-  /* ─── Shadows ────────────────────────────────────────────────────── */
-  --shadow-xs: 0 1px 2px  rgba(28,25,23,0.05);
-  --shadow-sm: 0 1px 3px  rgba(28,25,23,0.08);
-  --shadow-md: 0 4px 12px rgba(28,25,23,0.10);
-  --shadow-lg: 0 8px 24px rgba(28,25,23,0.12);
+  /* ─── Shadows (warm-tinted) ──────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px  rgba(106,38,0,0.05);
+  --shadow-sm: 0 1px 3px  rgba(106,38,0,0.08), 0 1px 2px rgba(106,38,0,0.04);
+  --shadow-md: 0 4px 12px rgba(106,38,0,0.10), 0 2px 4px rgba(106,38,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(106,38,0,0.16), 0 4px 12px rgba(106,38,0,0.08);
 
   /* ─── Legacy dark-theme tokens (AdminLayout / CashierLayout) ─────── */
   --ink:        #1A1410;
@@ -212,3 +266,12 @@ h1, h2, h3, h4 {
   vertical-align: middle;
   user-select: none;
 }
+
+.baked-gradient {
+  background: linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%);
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #faf3e8; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #dcc1b7; border-radius: 10px; }
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: #dcc1b7 #faf3e8; }

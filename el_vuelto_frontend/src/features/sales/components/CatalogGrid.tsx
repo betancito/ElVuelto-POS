@@ -24,69 +24,33 @@ const CatalogGrid = React.memo(function CatalogGrid({
   onShowAll,
 }: Props) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-      {/* "Todos los productos" card */}
-      <button
-        onClick={onShowAll}
-        className="group relative overflow-hidden rounded-2xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
-        style={{ boxShadow: 'var(--shadow-md)' }}
-      >
-        <div className="aspect-[4/3] w-full relative overflow-hidden">
-          <div
-            className="w-full h-full"
-            style={{ background: 'linear-gradient(135deg,#1e1b15 0%,#3d2f25 100%)' }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
-          <div className="absolute inset-0 flex items-end p-3">
-            <h3
-              className="text-sm text-white leading-snug"
-              style={{ fontFamily: 'var(--font-headline)', fontWeight: 700 }}
-            >
-              Todos los productos
-            </h3>
-          </div>
+    <div className="pos-catalog-grid">
+      <button className="pos-catalog-card" onClick={onShowAll}>
+        <div className="pos-catalog-card__overlay" />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#1e1b15 0%,#3d2f25 100%)' }} />
+        <div className="pos-catalog-card__footer">
+          <span className="pos-catalog-card__name">Todos los productos</span>
         </div>
       </button>
 
-      {categories.map((cat, idx) => {
-        const count = productCountByCategory[cat.nombre] ?? 0
-        const placeholder = GRADIENT_PLACEHOLDERS[idx % GRADIENT_PLACEHOLDERS.length]
-
-        return (
-          <button
-            key={cat.id}
-            onClick={() => onCategorySelect(cat)}
-            className="group relative overflow-hidden rounded-2xl bg-surface-container-lowest transition-all hover:-translate-y-1 touch-manipulation text-left"
-            style={{ boxShadow: 'var(--shadow-md)' }}
-          >
-            <div className="aspect-[4/3] w-full relative overflow-hidden">
-              {cat.imagen_url ? (
-                <img
-                  src={cat.imagen_url}
-                  alt={cat.nombre}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              ) : (
-                <div className="w-full h-full" style={{ background: placeholder }} />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-60 group-hover:opacity-85 transition-opacity" />
-              <div className="absolute inset-0 flex flex-col items-start justify-end p-3 gap-0.5">
-                <h3
-                  className="text-sm text-white leading-snug"
-                  style={{ fontFamily: 'var(--font-headline)', fontWeight: 700 }}
-                >
-                  {cat.nombre}
-                </h3>
-                {count > 0 && (
-                  <span className="text-white/70 text-xs font-medium">
-                    {count} {count === 1 ? 'producto' : 'productos'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
-        )
-      })}
+      {categories.map((cat, idx) => (
+        <button key={cat.id} className="pos-catalog-card" onClick={() => onCategorySelect(cat)}>
+          {cat.imagen_url ? (
+            <img className="pos-catalog-card__bg" src={cat.imagen_url} alt={cat.nombre} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, background: GRADIENT_PLACEHOLDERS[idx % GRADIENT_PLACEHOLDERS.length] }} />
+          )}
+          <div className="pos-catalog-card__overlay" />
+          <div className="pos-catalog-card__footer">
+            <span className="pos-catalog-card__name">{cat.nombre}</span>
+            {(productCountByCategory[cat.nombre] ?? 0) > 0 && (
+              <span className="pos-catalog-card__count">
+                {productCountByCategory[cat.nombre]} {productCountByCategory[cat.nombre] === 1 ? 'producto' : 'productos'}
+              </span>
+            )}
+          </div>
+        </button>
+      ))}
     </div>
   )
 })

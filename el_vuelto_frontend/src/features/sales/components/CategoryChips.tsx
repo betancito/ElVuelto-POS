@@ -9,31 +9,18 @@ interface Props {
 
 const CategoryChips = React.memo(function CategoryChips({ categories, activeNombre, onSelect }: Props) {
   return (
-    <div
-      className="flex gap-3 overflow-x-auto pb-1"
-      style={{ scrollbarWidth: 'none' }}
-    >
+    <div className="pos-chips">
       <button
+        className={`pos-chip ${activeNombre === null ? 'pos-chip--active' : 'pos-chip--inactive'}`}
         onClick={() => onSelect(null)}
-        className="shrink-0 px-10 py-4 rounded-full font-bold whitespace-nowrap transition-all active:scale-95 touch-manipulation"
-        style={
-          activeNombre === null
-            ? { background: 'var(--gradient-baked)', color: 'white', boxShadow: '0 2px 8px rgba(106,38,0,0.25)' }
-            : { background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }
-        }
       >
         Todos
       </button>
       {categories.map((cat) => (
         <button
           key={cat.id}
+          className={`pos-chip ${activeNombre === cat.nombre ? 'pos-chip--active' : 'pos-chip--inactive'}`}
           onClick={() => onSelect(cat.nombre)}
-          className="shrink-0 px-10 py-4 rounded-full font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation"
-          style={
-            activeNombre === cat.nombre
-              ? { background: 'var(--gradient-baked)', color: 'white', boxShadow: '0 2px 8px rgba(106,38,0,0.25)' }
-              : { background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }
-          }
         >
           {cat.nombre}
         </button>

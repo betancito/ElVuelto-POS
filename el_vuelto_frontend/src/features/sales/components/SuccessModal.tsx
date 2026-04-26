@@ -23,7 +23,7 @@ export default function SuccessModal({ total, vuelto, metodoPago, onNewSale, onC
         {/* Success header */}
         <div
           className="flex flex-col items-center py-8 px-6 gap-3"
-          style={{ background: 'var(--gradient-baked)' }}
+          style={{ background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)' }}
         >
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
@@ -92,7 +92,11 @@ export default function SuccessModal({ total, vuelto, metodoPago, onNewSale, onC
             <button
               onClick={onNewSale}
               className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 touch-manipulation"
-              style={{ background: 'var(--gradient-baked)', color: 'white' }}
+              style={{
+                background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)',
+                color: 'white',
+                boxShadow: '0 6px 20px rgba(106,38,0,0.28)',
+              }}
             >
               <AddShoppingCartOutlinedIcon style={{ fontSize: '1.25rem' }} />
               Nueva Venta

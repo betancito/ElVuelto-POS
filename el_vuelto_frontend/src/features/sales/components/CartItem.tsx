@@ -1,6 +1,9 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import RemoveOutlinedIcon from '@mui/icons-material/RemoveOutlined'
+import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { formatCOP } from '@/utils/formatCOP'
 import type { CartItem as CartItemType } from '@/features/sales/posSlice'
 
@@ -22,79 +25,170 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[idx]
 }
 
-const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove }: Props) {
+const NUMPAD: string[] = ['1','2','3','4','5','6','7','8','9','⌫','0','✓']
+
+const NUMPAD_WIDTH = 224 // px — must match CSS width
+
+const CartItem = React.memo(function CartItem({ item, onUpdateQuantity }: Props) {
   const { bg, text } = avatarColor(item.nombre)
+  const [editingQty, setEditingQty] = useState(false)
+  const [qtyInput, setQtyInput] = useState('')
+  const [numpadPos, setNumpadPos] = useState({ top: 0, left: 0 })
+  const qtyBtnRef = useRef<HTMLButtonElement>(null)
+
+  function openEditor() {
+    if (qtyBtnRef.current) {
+      const rect = qtyBtnRef.current.getBoundingClientRect()
+      // Center horizontally over the button, clamped to viewport
+      let left = rect.left + rect.width / 2 - NUMPAD_WIDTH / 2
+      left = Math.max(8, Math.min(left, window.innerWidth - NUMPAD_WIDTH - 8))
+      setNumpadPos({ top: rect.bottom + 8, left })
+    }
+    setQtyInput('')   // always start blank — display shows 0
+    setEditingQty(true)
+  }
+
+  function closeEditor() {
+    setEditingQty(false)
+    setQtyInput('')
+  }
+
+  function appendDigit(d: string) {
+    setQtyInput((prev) => {
+      const base = prev === '0' ? '' : prev
+      const next = base + d
+      return parseInt(next, 10) > 999 ? prev : next
+    })
+  }
+
+  function applyQty() {
+    const val = parseInt(qtyInput, 10)
+    if (!isNaN(val) && val > 0) {
+      onUpdateQuantity(item.productId, val)
+    }
+    closeEditor()
+  }
+
+  function handleNumpadKey(k: string) {
+    if (k === '⌫') { setQtyInput((p) => p.slice(0, -1)); return }
+    if (k === '✓') { applyQty(); return }
+    appendDigit(k)
+  }
+
+  const hasInput = qtyInput.length > 0 && parseInt(qtyInput, 10) > 0
 
   return (
-    <div className="flex items-center justify-between gap-4 group">
-      {/* Left: avatar/image + name + unit price */}
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
-          {item.imagen_url ? (
-            <img
-              src={item.imagen_url}
-              alt={item.nombre}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full rounded-lg flex items-center justify-center text-xl font-bold"
-              style={{ background: bg, color: text }}
+    <div className="pos-cart-item-wrap">
+      {/* ── Item row ── */}
+      <div className="pos-cart-item">
+        <div className="pos-cart-item__left">
+          <div className="pos-cart-item__thumb">
+            {item.imagen_url ? (
+              <img src={item.imagen_url} alt={item.nombre} />
+            ) : (
+              <div className="pos-cart-item__avatar" style={{ background: bg, color: text }}>
+                {item.nombre.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p className="pos-cart-item__name">{item.nombre}</p>
+            <p className="pos-cart-item__unit">{formatCOP(item.precioUnitario)} c/u</p>
+          </div>
+        </div>
+
+        <div className="pos-cart-item__right">
+          <div className="pos-cart-item__qty-pill">
+            <button
+              className="pos-cart-item__qty-btn"
+              onClick={() => onUpdateQuantity(item.productId, item.cantidad - 1)}
             >
-              {item.nombre.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="min-w-0">
-          <h4
-            className="font-bold text-sm leading-snug truncate"
-            style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-headline)' }}
-          >
-            {item.nombre}
-          </h4>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--on-surface-variant)', fontFamily: 'var(--font-mono)' }}>
-            {formatCOP(item.precioUnitario)} c/u
-          </p>
-        </div>
-      </div>
+              <RemoveOutlinedIcon style={{ fontSize: '1rem' }} />
+            </button>
 
-      {/* Right: qty controls + total */}
-      <div className="flex items-center gap-4 shrink-0">
-        {/* Qty pill */}
-        <div
-          className="flex items-center rounded-full p-1"
-          style={{ background: 'var(--surface-container-high)' }}
-        >
-          <button
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
-            style={{ color: 'var(--on-surface)' }}
-            onClick={() => onUpdateQuantity(item.productId, item.cantidad - 1)}
-          >
-            <RemoveOutlinedIcon style={{ fontSize: '1rem' }} />
-          </button>
-          <span
-            className="w-10 text-center font-bold text-sm"
-            style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-mono)' }}
-          >
-            {item.cantidad}
+            <button
+              ref={qtyBtnRef}
+              className={`pos-cart-item__qty-num${editingQty ? ' pos-cart-item__qty-num--active' : ''}`}
+              onClick={openEditor}
+              title="Cambiar cantidad"
+            >
+              {item.cantidad}
+            </button>
+
+            <button
+              className="pos-cart-item__qty-btn"
+              onClick={() => onUpdateQuantity(item.productId, item.cantidad + 1)}
+            >
+              <AddOutlinedIcon style={{ fontSize: '1rem' }} />
+            </button>
+          </div>
+
+          <span className="pos-cart-item__total">
+            {formatCOP(item.precioUnitario * item.cantidad)}
           </span>
-          <button
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors touch-manipulation hover:bg-white"
-            style={{ color: 'var(--on-surface)' }}
-            onClick={() => onUpdateQuantity(item.productId, item.cantidad + 1)}
-          >
-            <AddOutlinedIcon style={{ fontSize: '1rem' }} />
-          </button>
         </div>
-
-        {/* Total */}
-        <p
-          className="font-bold text-sm w-24 text-right"
-          style={{ color: 'var(--on-surface)', fontFamily: 'var(--font-mono)' }}
-        >
-          {formatCOP(item.precioUnitario * item.cantidad)}
-        </p>
       </div>
+
+      {/* ── Qty editor — rendered as a fixed overlay via portal ── */}
+      {editingQty && createPortal(
+        <>
+          {/* Transparent backdrop — click to cancel */}
+          <div className="pos-qty-editor-backdrop" onClick={closeEditor} />
+
+          {/* Floating numpad */}
+          <div
+            className="pos-qty-editor"
+            style={{ top: numpadPos.top, left: numpadPos.left }}
+          >
+            {/* Display */}
+            <div className="pos-qty-editor__display">
+              <span className="pos-qty-editor__display-label">Nueva cantidad</span>
+              <span className={`pos-qty-editor__display-value${!hasInput ? ' pos-qty-editor__display-value--empty' : ''}`}>
+                {qtyInput || '0'}
+              </span>
+            </div>
+
+            {/* 3 × 4 numpad */}
+            <div className="pos-qty-editor__numpad">
+              {NUMPAD.map((k) => {
+                if (k === '⌫') {
+                  return (
+                    <button
+                      key="back"
+                      className="pos-qty-editor__key pos-qty-editor__key--backspace"
+                      onClick={() => handleNumpadKey('⌫')}
+                    >
+                      <BackspaceOutlinedIcon style={{ fontSize: '1.125rem' }} />
+                    </button>
+                  )
+                }
+                if (k === '✓') {
+                  return (
+                    <button
+                      key="confirm"
+                      className={`pos-qty-editor__key pos-qty-editor__key--confirm${!hasInput ? ' pos-qty-editor__key--confirm-disabled' : ''}`}
+                      onClick={() => handleNumpadKey('✓')}
+                      disabled={!hasInput}
+                    >
+                      <CheckOutlinedIcon style={{ fontSize: '1.125rem' }} />
+                    </button>
+                  )
+                }
+                return (
+                  <button
+                    key={k}
+                    className="pos-qty-editor__key"
+                    onClick={() => handleNumpadKey(k)}
+                  >
+                    {k}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
     </div>
   )
 })

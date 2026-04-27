@@ -25,6 +25,7 @@ import ProductsPage from '@/features/products/ProductsPage'
 import InventoryPage from '@/features/inventory/InventoryPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import UsersPage from '@/features/users/UsersPage'
+import SalesHistoryPage from '@/features/sales/SalesHistoryPage'
 
 export const router = createBrowserRouter([
   // Super admin flow
@@ -91,6 +92,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/products', element: <ProductsPage /> },
       { path: '/inventory', element: <InventoryPage /> },
+      { path: '/ventas', element: <SalesHistoryPage /> },
       { path: '/reports', element: <ReportsPage /> },
       { path: '/users', element: <UsersPage /> },
     ],

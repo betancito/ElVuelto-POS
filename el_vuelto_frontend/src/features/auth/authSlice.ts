@@ -9,6 +9,7 @@ export interface AuthUser {
   activo: boolean
   tenantId: string | null
   tenantNombre: string | null
+  tenantLogoUrl: string | null
 }
 
 export interface AuthState {

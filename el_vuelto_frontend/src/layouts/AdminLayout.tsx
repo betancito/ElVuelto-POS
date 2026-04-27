@@ -7,6 +7,7 @@ import type { SvgIconComponent } from '@mui/icons-material'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
+import PointOfSaleOutlinedIcon from '@mui/icons-material/PointOfSaleOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -16,11 +17,12 @@ import styles from './AdminLayout.module.css'
 
 // ─── Navigation items ─────────────────────────────────────────────
 const NAV_ITEMS = [
-  { to: '/dashboard', Icon: HomeOutlinedIcon,        label: 'Inicio'     },
-  { to: '/products',  Icon: CategoryOutlinedIcon,    label: 'Productos y Categorías' },
-  { to: '/inventory', Icon: Inventory2OutlinedIcon,  label: 'Inventario' },
-  { to: '/reports',   Icon: BarChartOutlinedIcon,    label: 'Reportes'   },
-  { to: '/users',     Icon: GroupOutlinedIcon,        label: 'Usuarios'   },
+  { to: '/dashboard', Icon: HomeOutlinedIcon,           label: 'Inicio'     },
+  { to: '/products',  Icon: CategoryOutlinedIcon,       label: 'Productos y Categorías' },
+  { to: '/inventory', Icon: Inventory2OutlinedIcon,     label: 'Inventario' },
+  { to: '/ventas',    Icon: PointOfSaleOutlinedIcon,    label: 'Ventas'     },
+  { to: '/reports',   Icon: BarChartOutlinedIcon,       label: 'Reportes'   },
+  { to: '/users',     Icon: GroupOutlinedIcon,           label: 'Usuarios'   },
 ]
 
 // ─── NavItem ──────────────────────────────────────────────────────

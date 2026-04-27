@@ -26,6 +26,7 @@ import CashInputModal from './components/CashInputModal'
 import SearchBar from './components/SearchBar'
 import SuccessModal from './components/SuccessModal'
 import type { Category, PosProduct } from '@/features/products/productsApi'
+import type { Sale } from '@/features/sales/salesApi'
 
 type ViewState = 'catalog' | 'products'
 
@@ -40,9 +41,7 @@ export default function PosPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCashModal, setShowCashModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [lastSaleTotal, setLastSaleTotal] = useState(0)
-  const [lastVuelto, setLastVuelto] = useState<number | null>(null)
-  const [lastMetodoPago, setLastMetodoPago] = useState<'EFECTIVO' | 'NEQUI_TRANSFERENCIA'>('EFECTIVO')
+  const [lastSale, setLastSale] = useState<Sale | null>(null)
   const [saleError, setSaleError] = useState<string | null>(null)
 
   const { data: products = [], isLoading: loadingProducts } = useGetPosProductsQuery()
@@ -209,12 +208,8 @@ export default function PosPage() {
     setSaleError(null)
     const montoEfectivo =
       metodoPago === 'EFECTIVO' ? (montoRecibido ?? totalVenta) : totalVenta
-    const vuelto =
-      metodoPago === 'EFECTIVO' && montoRecibido !== null
-        ? Math.max(0, montoRecibido - totalVenta)
-        : null
     try {
-      await createSale({
+      const sale = await createSale({
         metodo_pago: metodoPago,
         monto_recibido: montoEfectivo,
         items: items.map((i) => ({
@@ -223,9 +218,7 @@ export default function PosPage() {
           precio_unitario: i.precioUnitario,
         })),
       }).unwrap()
-      setLastSaleTotal(totalVenta)
-      setLastVuelto(vuelto)
-      setLastMetodoPago(metodoPago)
+      setLastSale(sale)
       dispatch(clearCart())
       setShowSuccessModal(true)
     } catch {
@@ -251,7 +244,15 @@ export default function PosPage() {
           {user?.tenantNombre && (
             <>
               <div className="pos-header__divider" />
-              <span className="pos-header__tenant">{user.tenantNombre}</span>
+              {user.tenantLogoUrl ? (
+                <img
+                  src={user.tenantLogoUrl}
+                  alt={user.tenantNombre}
+                  className="pos-header__tenant-logo"
+                />
+              ) : (
+                <span className="pos-header__tenant">{user.tenantNombre}</span>
+              )}
             </>
           )}
         </div>
@@ -362,11 +363,10 @@ export default function PosPage() {
           onClose={() => setShowCashModal(false)}
         />
       )}
-      {showSuccessModal && (
+      {showSuccessModal && lastSale && (
         <SuccessModal
-          total={lastSaleTotal}
-          vuelto={lastVuelto}
-          metodoPago={lastMetodoPago}
+          sale={lastSale}
+          tenantNombre={user?.tenantNombre ?? ''}
           onNewSale={() => { setShowSuccessModal(false); setView('catalog'); setSaleError(null) }}
           onClose={() => { setShowSuccessModal(false); setView('catalog') }}
         />

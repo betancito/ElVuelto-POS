@@ -10,6 +10,7 @@ export interface SaleItem {
 
 export interface Sale {
   id: string
+  codigo: string
   user: string
   user_nombre: string
   total: string
@@ -26,13 +27,24 @@ export interface CreateSaleArgs {
   items: { product: string; cantidad: number; precio_unitario: number }[]
 }
 
+export interface ListSalesParams {
+  search?: string
+  fecha_inicio?: string
+  fecha_fin?: string
+  metodo_pago?: string
+}
+
 export const salesApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
-    listSales: builder.query<Sale[], void>({
-      query: () => '/sales/',
+    listSales: builder.query<Sale[], ListSalesParams | void>({
+      query: (params) => ({
+        url: '/sales/',
+        params: params ?? undefined,
+      }),
       transformResponse: (response: Sale[] | { results: Sale[] }) =>
         Array.isArray(response) ? response : response.results,
       providesTags: ['Sale'],
+      keepUnusedDataFor: 60,
     }),
     getSale: builder.query<Sale, string>({
       query: (id) => `/sales/${id}/`,

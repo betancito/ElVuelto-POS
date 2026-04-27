@@ -1,5 +1,4 @@
 import React from 'react'
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import BakeryDiningOutlinedIcon from '@mui/icons-material/BakeryDiningOutlined'
 import Spinner from '@/components/ui/Spinner'
 import { formatCOP } from '@/utils/formatCOP'
@@ -51,12 +50,6 @@ const ProductGrid = React.memo(function ProductGrid({ products, isLoading, onAdd
           <div className="pos-product-card__body">
             <p className="pos-product-card__name">{product.nombre}</p>
             <p className="pos-product-card__price">{formatCOP(parseFloat(product.precio_venta))}</p>
-            <button
-              className="pos-product-card__add-btn"
-              onClick={(e) => { e.stopPropagation(); onAddProduct(product) }}
-            >
-              <AddOutlinedIcon style={{ fontSize: '1.25rem' }} />
-            </button>
           </div>
         </div>
       ))}

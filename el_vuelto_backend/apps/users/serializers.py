@@ -49,6 +49,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     "activo": user.activo,
                     "tenant_id": str(user.tenant_id) if user.tenant_id else None,
                     "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
+                    "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
                 },
             }
 
@@ -63,6 +64,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "activo": user.activo,
             "tenant_id": str(user.tenant_id) if user.tenant_id else None,
             "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
+            "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
         }
         return data
 
@@ -102,6 +104,7 @@ class CashierLoginSerializer(serializers.Serializer):
                 "activo": user.activo,
                 "tenant_id": str(user.tenant_id) if user.tenant_id else None,
                 "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
+                "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
             },
         }
 

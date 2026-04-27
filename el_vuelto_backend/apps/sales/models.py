@@ -1,3 +1,5 @@
+import random
+import string
 import uuid
 
 from django.db import models
@@ -12,6 +14,7 @@ class PaymentMethod(models.TextChoices):
 
 class Sale(TenantMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    codigo = models.CharField(max_length=10, unique=True, blank=True, editable=False)
     user = models.ForeignKey(
         "users.User",
         on_delete=models.PROTECT,
@@ -29,8 +32,17 @@ class Sale(TenantMixin):
         verbose_name_plural = "Ventas"
         ordering = ["-created_at"]
 
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            while True:
+                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
+                if not Sale.objects.filter(codigo=code).exists():
+                    self.codigo = code
+                    break
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Venta {self.id} | {self.total} | {self.metodo_pago}"
+        return f"Venta {self.codigo} | {self.total} | {self.metodo_pago}"
 
 
 class SaleItem(models.Model):

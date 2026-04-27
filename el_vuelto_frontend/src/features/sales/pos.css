@@ -53,6 +53,14 @@
   color: var(--on-surface-variant);
 }
 
+.pos-header__tenant-logo {
+  height: 2rem;
+  max-height: 2rem;
+  max-width: 10rem;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .pos-header__user-chip {
   display: flex;
   align-items: center;
@@ -215,6 +223,7 @@
   flex: 1;
   padding-right: 0.25rem;
   align-content: start;
+  align-items: start;
 }
 
 .pos-product-grid::-webkit-scrollbar { width: 6px; }
@@ -231,6 +240,8 @@
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   display: flex;
   flex-direction: column;
+  height: 15rem;
+  flex-shrink: 0;
 }
 
 .pos-product-card:hover {
@@ -269,7 +280,7 @@
   padding: 1rem 1.125rem 1.125rem;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  overflow: hidden;
 }
 
 .pos-product-card__name {
@@ -278,6 +289,10 @@
   font-weight: 700;
   color: var(--on-surface);
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .pos-product-card__price {
@@ -286,26 +301,6 @@
   font-weight: 700;
   color: var(--primary);
   margin-top: 0.25rem;
-}
-
-.pos-product-card__add-btn {
-  margin-top: 0.875rem;
-  width: 100%;
-  height: 2.75rem;
-  border-radius: 9999px;
-  border: none;
-  background: var(--surface-container-high);
-  color: var(--primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, color 0.2s;
-}
-
-.pos-product-card__add-btn:hover {
-  background: var(--primary);
-  color: white;
 }
 
 /* ── Catalog grid ── */

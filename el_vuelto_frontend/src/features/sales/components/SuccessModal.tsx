@@ -1,114 +1,189 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import AddShoppingCartOutlinedIcon from '@mui/icons-material/AddShoppingCartOutlined'
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
 import { formatCOP } from '@/utils/formatCOP'
+import { printReceipt } from '@/utils/printReceipt'
+import { ReceiptPreview } from './ReceiptPreview'
+import type { Sale } from '@/features/sales/salesApi'
 
 interface Props {
-  total: number
-  vuelto: number | null
-  metodoPago: 'EFECTIVO' | 'NEQUI_TRANSFERENCIA'
+  sale: Sale
+  tenantNombre: string
   onNewSale: () => void
   onClose: () => void
 }
 
-export default function SuccessModal({ total, vuelto, metodoPago, onNewSale, onClose }: Props) {
+export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }: Props) {
+  const cambio = sale.cambio ? parseFloat(sale.cambio) : 0
+  const showVuelto = sale.metodo_pago === 'EFECTIVO' && cambio > 0
+
+  function handleWhatsApp() {
+    const message = `Recibo #${sale.codigo}\n${tenantNombre}\nTotal: ${formatCOP(parseFloat(sale.total))}\nGracias por su compra!`
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        background: 'rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
-        style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-lg)' }}
+        style={{
+          background: 'var(--surface-container-low)',
+          borderRadius: '1.5rem',
+          boxShadow: '0 32px 64px rgba(30,27,21,0.12)',
+          padding: '2.5rem 2rem',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          maxWidth: '28rem',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
       >
-        {/* Success header */}
-        <div
-          className="flex flex-col items-center py-8 px-6 gap-3"
-          style={{ background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)' }}
-        >
+        {/* ── Section 1: Icon + Title ── */}
+        <div style={{ marginBottom: showVuelto ? '1.5rem' : '2.5rem' }}>
           <div
-            className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
+            style={{
+              width: '5rem',
+              height: '5rem',
+              borderRadius: '50%',
+              background: 'rgba(106,38,0,0.10)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+            }}
           >
-            <CheckCircleOutlineIcon style={{ fontSize: '2.5rem', color: 'white' }} />
+            <CheckCircleOutlinedIcon style={{ fontSize: '3rem', color: 'var(--primary)' }} />
           </div>
           <h3
-            className="text-xl font-bold text-white"
-            style={{ fontFamily: 'var(--font-headline)' }}
+            style={{
+              fontFamily: 'var(--font-display), serif',
+              fontSize: '2.5rem',
+              fontWeight: 700,
+              color: 'var(--on-surface)',
+              lineHeight: 1.1,
+            }}
           >
-            ¡Venta Completada!
+            ¡Venta Exitosa!
           </h3>
         </div>
 
-        {/* Details */}
-        <div className="p-6 flex flex-col gap-4">
-          {/* Total */}
-          <div
-            className="flex items-center justify-between px-4 py-3 rounded-xl"
-            style={{ background: 'var(--surface-container-low)' }}
-          >
-            <span className="text-sm font-semibold" style={{ color: 'var(--on-surface-variant)' }}>
-              Total cobrado
-            </span>
-            <span
-              className="text-xl font-bold"
-              style={{ color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}
-            >
-              {formatCOP(total)}
-            </span>
-          </div>
-
-          {/* Payment method badge */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>
-              Método de pago
-            </span>
-            <span
-              className="text-sm font-semibold px-3 py-1 rounded-full"
-              style={
-                metodoPago === 'EFECTIVO'
-                  ? { background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }
-                  : { background: 'var(--tertiary-fixed)', color: 'var(--on-tertiary-fixed)' }
-              }
-            >
-              {metodoPago === 'EFECTIVO' ? 'Efectivo' : 'Nequi / Transferencia'}
-            </span>
-          </div>
-
-          {/* Vuelto */}
-          {vuelto !== null && metodoPago === 'EFECTIVO' && (
-            <div
-              className="flex items-center justify-between px-4 py-3 rounded-xl"
-              style={{ background: 'var(--tertiary-fixed)', color: 'var(--on-tertiary-fixed)' }}
-            >
-              <span className="text-sm font-semibold">Vuelto a entregar</span>
-              <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-mono)' }}>
-                {formatCOP(vuelto)}
-              </span>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-col gap-2 pt-2">
-            <button
-              onClick={onNewSale}
-              className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 touch-manipulation"
+        {/* ── Section 2: Vuelto hero ── */}
+        {showVuelto && (
+          <div style={{ marginBottom: '2rem' }}>
+            <p
               style={{
-                background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)',
-                color: 'white',
-                boxShadow: '0 6px 20px rgba(106,38,0,0.28)',
+                fontSize: '0.6875rem',
+                letterSpacing: '0.12em',
+                color: 'var(--on-surface-variant)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                marginBottom: '0.375rem',
               }}
             >
-              <AddShoppingCartOutlinedIcon style={{ fontSize: '1.25rem' }} />
-              Nueva Venta
-            </button>
-            <button
-              onClick={onClose}
-              className="w-full py-3 rounded-xl font-semibold text-sm touch-manipulation"
-              style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
+              Vuelto
+            </p>
+            <p
+              style={{
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize: '3.5rem',
+                fontWeight: 700,
+                color: 'var(--tertiary)',
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
             >
-              Cerrar
-            </button>
+              {formatCOP(cambio)}
+            </p>
           </div>
+        )}
+
+        {/* ── Section 3: Receipt preview ── */}
+        <div style={{ marginBottom: '2rem' }}>
+          <ReceiptPreview sale={sale} tenantNombre={tenantNombre} />
+        </div>
+
+        {/* ── Section 4: Actions ── */}
+        <button
+          onClick={onNewSale}
+          style={{
+            width: '100%',
+            padding: '1.25rem',
+            borderRadius: '0.75rem',
+            background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '1.0625rem',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.625rem',
+            boxShadow: '0 4px 16px rgba(106,38,0,0.28)',
+            marginBottom: '0.875rem',
+          }}
+        >
+          <AddShoppingCartOutlinedIcon style={{ fontSize: '1.25rem' }} />
+          Nueva Venta
+        </button>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <button
+            onClick={() => printReceipt(sale, tenantNombre)}
+            style={{
+              padding: '0.875rem',
+              borderRadius: '0.75rem',
+              background: 'var(--surface-container-high)',
+              color: 'var(--primary)',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <PrintOutlinedIcon style={{ fontSize: '1.125rem' }} />
+            Imprimir Recibo
+          </button>
+
+          <button
+            onClick={handleWhatsApp}
+            style={{
+              padding: '0.875rem',
+              borderRadius: '0.75rem',
+              background: 'transparent',
+              color: 'var(--on-surface-variant)',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <ShareOutlinedIcon style={{ fontSize: '1.125rem' }} />
+            Enviar WhatsApp
+          </button>
         </div>
       </div>
     </div>

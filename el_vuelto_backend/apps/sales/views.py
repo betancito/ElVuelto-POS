@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
@@ -42,6 +43,12 @@ class SaleViewSet(
             qs = qs.filter(metodo_pago=metodo_pago)
         if user_id:
             qs = qs.filter(user_id=user_id)
+
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(codigo__icontains=search) | Q(user__nombre__icontains=search)
+            )
 
         return qs
 

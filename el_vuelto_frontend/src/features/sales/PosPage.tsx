@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import PersonIcon from '@mui/icons-material/Person'
 import LogoutIcon from '@mui/icons-material/Logout'
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
+import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined'
 import { useGetPosProductsQuery, useListCategoriesQuery } from '@/features/products/productsApi'
 import { useCreateSaleMutation } from '@/features/sales/salesApi'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
@@ -17,6 +19,7 @@ import {
   setMontoRecibido,
 } from './posSlice'
 import { logout } from '@/features/auth/authSlice'
+import { slugify } from '@/utils/slugify'
 import CatalogGrid from './components/CatalogGrid'
 import ProductGrid from './components/ProductGrid'
 import CategoryChips from './components/CategoryChips'
@@ -25,16 +28,22 @@ import PaymentSection from './components/PaymentSection'
 import CashInputModal from './components/CashInputModal'
 import SearchBar from './components/SearchBar'
 import SuccessModal from './components/SuccessModal'
+import InventoryEntryPanel from './components/InventoryEntryPanel'
 import type { Category, PosProduct } from '@/features/products/productsApi'
 import type { Sale } from '@/features/sales/salesApi'
 
 type ViewState = 'catalog' | 'products'
+type PosMode = 'sale' | 'inventory'
 
 export default function PosPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const user = useAppSelector((s) => s.auth.user)
   const { items, metodoPago, montoRecibido } = useAppSelector((s) => s.pos)
+
+  const [posMode, setPosMode] = useState<PosMode>('sale')
+  const posModeRef = useRef<PosMode>('sale')
+  const [inventoryProduct, setInventoryProduct] = useState<PosProduct | null>(null)
 
   const [view, setView] = useState<ViewState>('catalog')
   const [activeCategoryName, setActiveCategoryName] = useState<string | null>(null)
@@ -43,6 +52,15 @@ export default function PosPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastSale, setLastSale] = useState<Sale | null>(null)
   const [saleError, setSaleError] = useState<string | null>(null)
+
+  useEffect(() => { posModeRef.current = posMode }, [posMode])
+
+  function handleModeChange(mode: PosMode) {
+    setPosMode(mode)
+    setInventoryProduct(null)
+    setSearchQuery('')
+    setView('catalog')
+  }
 
   const { data: products = [], isLoading: loadingProducts } = useGetPosProductsQuery()
   const { data: categories = [] } = useListCategoriesQuery()
@@ -66,6 +84,9 @@ export default function PosPage() {
 
   const filteredProducts = useMemo<PosProduct[]>(() => {
     let result = products
+    if (posMode === 'inventory') {
+      result = result.filter((p) => p.tipo === 'CON_CODIGO')
+    }
     if (activeCategoryName) {
       result = result.filter((p) => p.category === activeCategoryName)
     }
@@ -78,7 +99,7 @@ export default function PosPage() {
       )
     }
     return result
-  }, [products, activeCategoryName, searchQuery])
+  }, [products, activeCategoryName, searchQuery, posMode])
 
   const handleAddProduct = useCallback(
     (p: PosProduct) => {
@@ -94,6 +115,10 @@ export default function PosPage() {
     },
     [dispatch],
   )
+
+  const handleSelectInventoryProduct = useCallback((p: PosProduct) => {
+    setInventoryProduct(p)
+  }, [])
 
   function handleSearchChange(v: string) {
     setSearchQuery(v)
@@ -126,14 +151,24 @@ export default function PosPage() {
   // Handles manual text search; also catches scans when the input happens to be focused.
   function handleScanEnter(domValue: string) {
     const code = domValue.trim()
-    console.log('[POS] handleScanEnter — value:', JSON.stringify(code))
     if (!code) return
+
+    if (posMode === 'inventory') {
+      const match = products.find(
+        (p) => p.tipo === 'CON_CODIGO' && p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
+      ) ?? filteredProducts.find((p) => p.tipo === 'CON_CODIGO' && p.nombre.toLowerCase() === code.toLowerCase())
+      if (match) {
+        handleSelectInventoryProduct(match)
+        setSearchQuery('')
+        toast.success(`${match.nombre} seleccionado`, { position: 'bottom-left' })
+      }
+      return
+    }
 
     const barcodeMatch = products.find(
       (p) => p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
     )
     if (barcodeMatch) {
-      console.log('[POS] barcode match via input:', barcodeMatch.nombre)
       handleAddProduct(barcodeMatch)
       setSearchQuery('')
       toast.success(`${barcodeMatch.nombre} agregado al carrito`, { position: 'bottom-left' })
@@ -142,7 +177,6 @@ export default function PosPage() {
 
     const nameMatch = filteredProducts.find((p) => p.nombre.toLowerCase() === code.toLowerCase())
     if (nameMatch) {
-      console.log('[POS] name match via input:', nameMatch.nombre)
       handleAddProduct(nameMatch)
       setSearchQuery('')
       toast.success(`${nameMatch.nombre} agregado al carrito`, { position: 'bottom-left' })
@@ -161,13 +195,25 @@ export default function PosPage() {
       buffer = ''
       if (timer) { clearTimeout(timer); timer = null }
 
-      console.log('[POS Barcode] flush — code:', JSON.stringify(code), '| products loaded:', productsRef.current.length)
       if (code.length < 3) return
+
+      if (posModeRef.current === 'inventory') {
+        const match = productsRef.current.find(
+          (p) => p.tipo === 'CON_CODIGO' && p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
+        )
+        if (match) {
+          handleSelectInventoryProduct(match)
+          setSearchQuery('')
+          toast.success(`${match.nombre} seleccionado`, { position: 'bottom-left' })
+        } else {
+          toast.error(`Código "${code}" no encontrado`, { position: 'bottom-left' })
+        }
+        return
+      }
 
       const match = productsRef.current.find(
         (p) => p.barcode != null && p.barcode.toLowerCase() === code.toLowerCase(),
       )
-      console.log('[POS Barcode] match result:', match ? match.nombre : 'NOT FOUND')
 
       if (match) {
         handleAddProduct(match)
@@ -201,7 +247,7 @@ export default function PosPage() {
       document.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [handleAddProduct])
+  }, [handleAddProduct, handleSelectInventoryProduct])
 
   async function handleCobrar() {
     if (items.length === 0) return
@@ -266,7 +312,11 @@ export default function PosPage() {
           )}
           <button
             className="pos-header__close-btn"
-            onClick={() => { dispatch(logout()); navigate('/login') }}
+            onClick={() => {
+              const slug = user?.tenantNombre ? slugify(user.tenantNombre) : null
+              dispatch(logout())
+              navigate(slug ? `/login/${slug}` : '/login')
+            }}
           >
             <LogoutIcon style={{ fontSize: '1rem' }} />
             Cerrar Turno
@@ -284,6 +334,26 @@ export default function PosPage() {
             onChange={handleSearchChange}
             onScanEnter={handleScanEnter}
           />
+
+          {/* Mode tab bar — only for lead cashiers */}
+          {user?.leadCashier && (
+            <div className="pos-tab-bar">
+              <button
+                className={`pos-tab-btn${posMode === 'sale' ? ' pos-tab-btn--active' : ''}`}
+                onClick={() => handleModeChange('sale')}
+              >
+                <ShoppingCartOutlinedIcon style={{ fontSize: '1rem' }} />
+                Venta
+              </button>
+              <button
+                className={`pos-tab-btn${posMode === 'inventory' ? ' pos-tab-btn--active' : ''}`}
+                onClick={() => handleModeChange('inventory')}
+              >
+                <InventoryOutlinedIcon style={{ fontSize: '1rem' }} />
+                Inventario
+              </button>
+            </div>
+          )}
 
           {view === 'catalog' ? (
             /* ── Catalog view ── */
@@ -326,32 +396,39 @@ export default function PosPage() {
               <ProductGrid
                 products={filteredProducts}
                 isLoading={loadingProducts}
-                onAddProduct={handleAddProduct}
+                onAddProduct={posMode === 'inventory' ? handleSelectInventoryProduct : handleAddProduct}
               />
             </>
           )}
         </section>
 
-        {/* Right panel — cart */}
-        <CartPanel
-          items={items}
-          onUpdateQuantity={(id, qty) =>
-            dispatch(updateQuantity({ productId: id, cantidad: qty }))
-          }
-          onRemove={(id) => dispatch(removeItem(id))}
-          onClear={() => dispatch(clearCart())}
-        >
-          <PaymentSection
-            totalVenta={totalVenta}
-            metodoPago={metodoPago}
-            montoRecibido={montoRecibido}
-            onMetodoPago={(m) => dispatch(setMetodoPago(m))}
-            onCobrar={handleCobrar}
-            onOpenCashModal={() => setShowCashModal(true)}
-            isLoading={creating}
-            disabled={cobrarDisabled}
+        {/* Right panel — cart or inventory entry */}
+        {posMode === 'inventory' ? (
+          <InventoryEntryPanel
+            product={inventoryProduct}
+            onClear={() => setInventoryProduct(null)}
           />
-        </CartPanel>
+        ) : (
+          <CartPanel
+            items={items}
+            onUpdateQuantity={(id, qty) =>
+              dispatch(updateQuantity({ productId: id, cantidad: qty }))
+            }
+            onRemove={(id) => dispatch(removeItem(id))}
+            onClear={() => dispatch(clearCart())}
+          >
+            <PaymentSection
+              totalVenta={totalVenta}
+              metodoPago={metodoPago}
+              montoRecibido={montoRecibido}
+              onMetodoPago={(m) => dispatch(setMetodoPago(m))}
+              onCobrar={handleCobrar}
+              onOpenCashModal={() => setShowCashModal(true)}
+              isLoading={creating}
+              disabled={cobrarDisabled}
+            />
+          </CartPanel>
+        )}
       </main>
 
       {/* ── Modals ── */}

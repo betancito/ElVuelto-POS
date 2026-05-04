@@ -8,6 +8,7 @@ const LOGO_SRC = '/icons/El%20Vuelto%20-%20El_Vuelto_favicon_NO_BG.png'
 
 export interface UserCredentialsData {
   tenantNombre: string
+  tenantLogoUrl?: string | null
   userName: string
   rol: 'ADMIN' | 'CAJERO'
   loginIdentifier: string
@@ -32,6 +33,7 @@ export default function UserCredentialsModal({ data, onClose }: Props) {
   async function handleDownload() {
     await downloadUserCredentialCard({
       tenantNombre: data!.tenantNombre,
+      tenantLogoUrl: data!.tenantLogoUrl,
       userName: data!.userName,
       rol: data!.rol,
       loginIdentifier: data!.loginIdentifier,

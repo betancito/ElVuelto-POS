@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import ProtectedRoute from '@/utils/ProtectedRoute'
+import GuestRoute from '@/utils/GuestRoute'
+import RootRedirect from '@/components/RootRedirect'
 
 // Layouts
 import AdminLayout from '@/layouts/AdminLayout'
@@ -38,7 +40,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'login',
-        element: <SuperAdminLoginPage />,
+        element: <GuestRoute><SuperAdminLoginPage /></GuestRoute>,
       },
       {
         element: (
@@ -61,13 +63,13 @@ export const router = createBrowserRouter([
   // Tenant admin login
   {
     path: '/login',
-    element: <TenantLoginPage />,
+    element: <GuestRoute><TenantLoginPage /></GuestRoute>,
   },
 
   // Staff login (via tenant-specific URL)
   {
     path: '/login/:tenantSlug',
-    element: <StaffLoginPage />,
+    element: <GuestRoute><StaffLoginPage /></GuestRoute>,
   },
 
   // Cajero routes — /staff redirects directly to POS
@@ -99,7 +101,7 @@ export const router = createBrowserRouter([
   },
 
   // Root redirect
-  { path: '/', element: <Navigate to="/login" replace /> },
+  { path: '/', element: <RootRedirect /> },
   { path: '/test/color-bends', element: <ColorBendsTestPage /> },
   { path: '*', element: <Navigate to="/login" replace /> },
 ])

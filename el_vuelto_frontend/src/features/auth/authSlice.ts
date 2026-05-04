@@ -10,6 +10,7 @@ export interface AuthUser {
   tenantId: string | null
   tenantNombre: string | null
   tenantLogoUrl: string | null
+  leadCashier: boolean
 }
 
 export interface AuthState {

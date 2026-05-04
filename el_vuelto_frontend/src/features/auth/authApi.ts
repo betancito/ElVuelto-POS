@@ -27,6 +27,7 @@ interface LoginResponse {
     tenant_id: string | null
     tenant_nombre: string | null
     tenant_logo_url: string | null
+    lead_cashier: boolean
   }
 }
 
@@ -51,6 +52,7 @@ export const authApi = apiBase.injectEndpoints({
                 tenantId: data.user.tenant_id,
                 tenantNombre: data.user.tenant_nombre,
                 tenantLogoUrl: data.user.tenant_logo_url,
+                leadCashier: data.user.lead_cashier,
               },
             }),
           )
@@ -76,6 +78,7 @@ export const authApi = apiBase.injectEndpoints({
                 tenantId: data.user.tenant_id,
                 tenantNombre: data.user.tenant_nombre,
                 tenantLogoUrl: data.user.tenant_logo_url,
+                leadCashier: data.user.lead_cashier,
               },
             }),
           )

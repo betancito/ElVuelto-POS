@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout } from '@/features/auth/authSlice'
+import { slugify } from '@/utils/slugify'
 import { APP_VERSION } from '@/constants/version'
 import { LayoutProvider, useLayout } from './LayoutContext'
 import type { SvgIconComponent } from '@mui/icons-material'
@@ -53,8 +54,9 @@ function Sidebar() {
   const user = useAppSelector((s) => s.auth.user)
 
   function handleLogout() {
+    const slug = user?.tenantNombre ? slugify(user.tenantNombre) : null
     dispatch(logout())
-    navigate('/login')
+    navigate(slug ? `/login/${slug}` : '/login')
     closeMobile()
   }
 

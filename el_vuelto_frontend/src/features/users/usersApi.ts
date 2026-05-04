@@ -7,6 +7,7 @@ export interface User {
   cedula: string | null
   rol: 'ADMIN' | 'CAJERO'
   activo: boolean
+  lead_cashier: boolean
   created_at: string
 }
 
@@ -16,6 +17,7 @@ export interface CreateUserArgs {
   cedula?: string
   rol: 'ADMIN' | 'CAJERO'
   password: string
+  lead_cashier?: boolean
 }
 
 export const usersApi = apiBase.injectEndpoints({

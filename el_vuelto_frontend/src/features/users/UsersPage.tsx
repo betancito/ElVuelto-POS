@@ -5,9 +5,11 @@ import { z } from 'zod'
 import {
   useListUsersQuery,
   useCreateUserMutation,
+  useUpdateUserMutation,
   useToggleUserActiveMutation,
   useResetPasswordMutation,
 } from './usersApi'
+import type { User } from './usersApi'
 import { generateAdminPassword, generatePin } from '@/utils/generatePassword'
 import { useAppSelector } from '@/app/hooks'
 import Spinner from '@/components/ui/Spinner'
@@ -16,6 +18,7 @@ import type { UserCredentialsData } from '@/components/ui/UserCredentialsModal'
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
@@ -29,22 +32,36 @@ function toSlug(s: string) {
 }
 
 const schema = z.object({
-  nombre:  z.string().min(2),
-  rol:     z.enum(['ADMIN', 'CAJERO']),
-  correo:  z.string().email().optional().or(z.literal('')),
-  cedula:  z.string().optional(),
+  nombre:       z.string().min(2),
+  rol:          z.enum(['ADMIN', 'CAJERO']),
+  correo:       z.string().email().optional().or(z.literal('')),
+  cedula:       z.string().optional(),
+  lead_cashier: z.boolean().optional(),
+})
+
+const editSchema = z.object({
+  nombre:       z.string().min(2),
+  rol:          z.enum(['ADMIN', 'CAJERO']),
+  correo:       z.string().email().optional().or(z.literal('')),
+  cedula:       z.string().optional(),
+  lead_cashier: z.boolean().optional(),
 })
 
 type FormData = z.infer<typeof schema>
+type EditFormData = z.infer<typeof editSchema>
 
 export default function UsersPage() {
   const { data: users, isLoading }                   = useListUsersQuery()
   const [createUser, { isLoading: creating }]        = useCreateUserMutation()
+  const [updateUser, { isLoading: updating }]        = useUpdateUserMutation()
   const [toggleActive]                               = useToggleUserActiveMutation()
   const [resetPassword]                              = useResetPasswordMutation()
 
-  const tenantNombre = useAppSelector((s) => s.auth.user?.tenantNombre)
-  const tenantId     = useAppSelector((s) => s.auth.user?.tenantId)
+  const [editUser, setEditUser] = useState<User | null>(null)
+
+  const tenantNombre   = useAppSelector((s) => s.auth.user?.tenantNombre)
+  const tenantId       = useAppSelector((s) => s.auth.user?.tenantId)
+  const tenantLogoUrl  = useAppSelector((s) => s.auth.user?.tenantLogoUrl)
   const staffLoginUrl = tenantNombre
     ? `${window.location.origin}/login/${toSlug(tenantNombre)}`
     : null
@@ -55,10 +72,19 @@ export default function UsersPage() {
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { rol: 'CAJERO' },
+    defaultValues: { rol: 'CAJERO', lead_cashier: false },
   })
 
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    watch: watchEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
+
   const rol = watch('rol')
+  const editRol = watchEdit('rol')
 
   function handleCopyUrl() {
     if (!staffLoginUrl) return
@@ -74,6 +100,7 @@ export default function UsersPage() {
       ...data,
       cedula: data.cedula?.trim() || undefined,
       correo: data.correo?.trim() || undefined,
+      lead_cashier: data.rol === 'CAJERO' ? (data.lead_cashier ?? false) : false,
       password,
     }
     try {
@@ -82,11 +109,38 @@ export default function UsersPage() {
       setShowModal(false)
       setUserCreds({
         tenantNombre: tenantNombre ?? '',
+        tenantLogoUrl,
         userName: payload.nombre,
         rol: payload.rol,
         loginIdentifier: payload.rol === 'CAJERO' ? (payload.cedula ?? '') : (payload.correo ?? ''),
         password,
       })
+    } catch {}
+  }
+
+  function handleOpenEdit(u: User) {
+    setEditUser(u)
+    resetEdit({
+      nombre: u.nombre,
+      rol: u.rol,
+      correo: u.correo ?? '',
+      cedula: u.cedula ?? '',
+      lead_cashier: u.lead_cashier,
+    })
+  }
+
+  async function onEditSubmit(data: EditFormData) {
+    if (!editUser) return
+    try {
+      await updateUser({
+        id: editUser.id,
+        nombre: data.nombre,
+        rol: data.rol,
+        correo: data.correo?.trim() || undefined,
+        cedula: data.cedula?.trim() || undefined,
+        lead_cashier: data.rol === 'CAJERO' ? (data.lead_cashier ?? false) : false,
+      }).unwrap()
+      setEditUser(null)
     } catch {}
   }
 
@@ -96,6 +150,7 @@ export default function UsersPage() {
     if (u) {
       setUserCreds({
         tenantNombre: tenantNombre ?? '',
+        tenantLogoUrl,
         userName: u.nombre,
         rol: u.rol,
         loginIdentifier: u.correo ?? u.cedula ?? '',
@@ -233,6 +288,13 @@ export default function UsersPage() {
                       </button>
                       <button
                         className="ta-btn-icon"
+                        onClick={() => handleOpenEdit(u)}
+                        title="Editar usuario"
+                      >
+                        <EditOutlinedIcon style={{ fontSize: '1.125rem' }} />
+                      </button>
+                      <button
+                        className="ta-btn-icon"
                         onClick={() => handleReset(u.id)}
                         title="Restablecer contraseña"
                       >
@@ -320,6 +382,23 @@ export default function UsersPage() {
                   </div>
                 )}
 
+                {/* Lead cashier checkbox — only for CAJERO */}
+                {rol === 'CAJERO' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'var(--surface-container-low)', border: '1.5px solid var(--outline-variant)' }}>
+                    <input
+                      type="checkbox"
+                      {...register('lead_cashier')}
+                      style={{ width: '1.125rem', height: '1.125rem', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Cajero líder</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--on-surface-variant)', marginTop: '0.125rem' }}>
+                        Puede registrar entradas de inventario desde el POS.
+                      </p>
+                    </div>
+                  </label>
+                )}
+
                 {/* Info note */}
                 <div className="ta-info-note">
                   <InfoOutlinedIcon style={{ color: 'var(--primary-container)', fontSize: '1.25rem', flexShrink: 0 }} />
@@ -337,6 +416,109 @@ export default function UsersPage() {
                 </button>
                 <button type="submit" className="ta-btn ta-btn-primary" disabled={creating}>
                   {creating ? 'Creando...' : 'Crear usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit user modal ── */}
+      {editUser && (
+        <div className="ta-modal-backdrop" onClick={(e) => e.target === e.currentTarget && setEditUser(null)}>
+          <div className="ta-modal">
+            <div className="ta-modal-header">
+              <div>
+                <h3 className="ta-modal-title">Editar usuario</h3>
+                <p className="ta-modal-sub">{editUser.nombre}</p>
+              </div>
+              <button className="ta-btn-icon" onClick={() => setEditUser(null)}>
+                <CloseIcon style={{ fontSize: '1.25rem' }} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSubmitEdit(onEditSubmit)}
+              noValidate
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+            >
+              <div className="ta-modal-body">
+                <div className="ta-field">
+                  <label className="ta-label">Nombre completo</label>
+                  <input className="ta-input" placeholder="Ej: Juan Pérez" {...registerEdit('nombre')} />
+                  {editErrors.nombre && <span className="ta-field-error">{editErrors.nombre.message}</span>}
+                </div>
+
+                <div className="ta-field">
+                  <label className="ta-label">Rol de usuario</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.25rem' }}>
+                    <label style={{ cursor: 'pointer' }}>
+                      <input type="radio" value="CAJERO" style={{ display: 'none' }} {...registerEdit('rol')} />
+                      <div className={`ta-role-card${editRol === 'CAJERO' ? ' ta-role-card--selected' : ''}`}>
+                        <PersonOutlinedIcon style={{ color: editRol === 'CAJERO' ? 'var(--primary)' : 'var(--outline)', fontSize: '1.5rem' }} />
+                        <div>
+                          <p className="ta-role-card-title">Cajero</p>
+                          <p className="ta-role-card-sub">Acceso a ventas y caja</p>
+                        </div>
+                      </div>
+                    </label>
+                    <label style={{ cursor: 'pointer' }}>
+                      <input type="radio" value="ADMIN" style={{ display: 'none' }} {...registerEdit('rol')} />
+                      <div className={`ta-role-card${editRol === 'ADMIN' ? ' ta-role-card--selected' : ''}`}>
+                        <AdminPanelSettingsOutlinedIcon style={{ color: editRol === 'ADMIN' ? 'var(--primary)' : 'var(--outline)', fontSize: '1.5rem' }} />
+                        <div>
+                          <p className="ta-role-card-title">Admin</p>
+                          <p className="ta-role-card-sub">Control total del sistema</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {editRol === 'ADMIN' ? (
+                  <div className="ta-field">
+                    <label className="ta-label">Correo electrónico (para login)</label>
+                    <input className="ta-input" type="email" placeholder="usuario@correo.com" {...registerEdit('correo')} />
+                    {editErrors.correo && <span className="ta-field-error">{editErrors.correo.message}</span>}
+                  </div>
+                ) : (
+                  <div className="ta-field">
+                    <label className="ta-label">Cédula (para login)</label>
+                    <input className="ta-input ta-mono" placeholder="Número de cédula" {...registerEdit('cedula')} />
+                    {editErrors.cedula && <span className="ta-field-error">{editErrors.cedula.message}</span>}
+                  </div>
+                )}
+
+                {editRol === 'CAJERO' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'var(--surface-container-low)', border: '1.5px solid var(--outline-variant)' }}>
+                    <input
+                      type="checkbox"
+                      {...registerEdit('lead_cashier')}
+                      style={{ width: '1.125rem', height: '1.125rem', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Cajero líder</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--on-surface-variant)', marginTop: '0.125rem' }}>
+                        Puede registrar entradas de inventario desde el POS.
+                      </p>
+                    </div>
+                  </label>
+                )}
+
+                <div className="ta-info-note">
+                  <InfoOutlinedIcon style={{ color: 'var(--primary-container)', fontSize: '1.25rem', flexShrink: 0 }} />
+                  <p className="ta-info-text">
+                    Para cambiar la contraseña usa el botón de restablecimiento en la tabla.
+                  </p>
+                </div>
+              </div>
+
+              <div className="ta-modal-footer">
+                <button type="button" className="ta-btn ta-btn-secondary" onClick={() => setEditUser(null)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="ta-btn ta-btn-primary" disabled={updating}>
+                  {updating ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
             </form>

@@ -6,7 +6,15 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.tenants.models import TenantDocument
 from .models import User, UserRole
+
+
+def _tenant_logo_url(user):
+    if not user.tenant_id:
+        return None
+    doc = user.tenant.documents.filter(document_type=TenantDocument.DocumentType.LOGO).first()
+    return doc.cloudinary_url if doc else None
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -49,7 +57,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     "activo": user.activo,
                     "tenant_id": str(user.tenant_id) if user.tenant_id else None,
                     "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
-                    "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
+                    "tenant_logo_url": _tenant_logo_url(user),
+                    "lead_cashier": user.lead_cashier,
                 },
             }
 
@@ -64,7 +73,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "activo": user.activo,
             "tenant_id": str(user.tenant_id) if user.tenant_id else None,
             "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
-            "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
+            "tenant_logo_url": _tenant_logo_url(user),
+            "lead_cashier": user.lead_cashier,
         }
         return data
 
@@ -104,7 +114,8 @@ class CashierLoginSerializer(serializers.Serializer):
                 "activo": user.activo,
                 "tenant_id": str(user.tenant_id) if user.tenant_id else None,
                 "tenant_nombre": user.tenant.nombre if user.tenant_id else None,
-                "tenant_logo_url": user.tenant.logo.url if user.tenant_id and user.tenant.logo else None,
+                "tenant_logo_url": _tenant_logo_url(user),
+                "lead_cashier": user.lead_cashier,
             },
         }
 
@@ -120,6 +131,7 @@ class UserSerializer(serializers.ModelSerializer):
             "cedula",
             "rol",
             "activo",
+            "lead_cashier",
             "created_at",
             "updated_at",
         ]
@@ -133,7 +145,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "nombre", "correo", "cedula", "password", "rol", "activo"]
+        fields = ["id", "nombre", "correo", "cedula", "password", "rol", "activo", "lead_cashier"]
         read_only_fields = ["id"]
 
     def validate_rol(self, value):

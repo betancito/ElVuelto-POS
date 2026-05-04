@@ -1,12 +1,14 @@
 from rest_framework import mixins, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.products.models import Product, ProductType
 from apps.tenants.viewsets import TenantModelViewSet
-from apps.users.permissions import IsAdmin
+from apps.users.permissions import IsAdmin, IsCajero
+from apps.users.models import UserRole
 
-from .models import InventoryMovement
+from .models import InventoryMovement, MovementType
 from .serializers import InventoryMovementSerializer, StockSerializer
 
 
@@ -16,12 +18,26 @@ class InventoryMovementViewSet(
     viewsets.GenericViewSet,
 ):
     """
-    POST  /api/inventory/movements/  — Admin only, creates ENTRADA or AJUSTE movements.
-    GET   /api/inventory/movements/  — Lists movements, filterable by product and date.
+    POST  /api/inventory/movements/  — Admin or lead-cashier (ENTRADA only).
+    GET   /api/inventory/movements/  — Admin only.
     """
 
     serializer_class = InventoryMovementSerializer
-    permission_classes = [IsAdmin]
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsCajero()]
+        return [IsAdmin()]
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.rol == UserRole.CAJERO:
+            if not getattr(user, "lead_cashier", False):
+                raise PermissionDenied("Solo los cajeros líderes pueden registrar entradas.")
+            tipo = request.data.get("tipo_movimiento")
+            if tipo != MovementType.ENTRADA:
+                raise PermissionDenied("Los cajeros solo pueden registrar movimientos de tipo ENTRADA.")
+        return super().create(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = InventoryMovement.objects.filter(

@@ -1,6 +1,13 @@
 import type { Sale } from '@/features/sales/salesApi'
 
-export function generateReceiptHTML(sale: Sale, tenantNombre: string): string {
+export interface ReceiptTenantInfo {
+  nombre: string
+  logoUrl?: string | null
+  email?: string | null
+  supportPhone?: string | null
+}
+
+export function generateReceiptHTML(sale: Sale, tenant: ReceiptTenantInfo): string {
   function fmt(n: number): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -15,11 +22,6 @@ export function generateReceiptHTML(sale: Sale, tenantNombre: string): string {
   function pad(left: string, right: string): string {
     const gap = COL - left.length - right.length
     return left + ' '.repeat(Math.max(1, gap)) + right
-  }
-
-  function center(text: string): string {
-    const padLen = Math.max(0, Math.floor((COL - text.length) / 2))
-    return ' '.repeat(padLen) + text
   }
 
   const d = new Date(sale.created_at)
@@ -64,21 +66,35 @@ export function generateReceiptHTML(sale: Sale, tenantNombre: string): string {
       : []),
   ].join('\n')
 
+  const headerHTML = tenant.logoUrl
+    ? `<div class="center" style="margin-bottom:4px"><img src="${esc(tenant.logoUrl)}" alt="logo" style="max-width:64mm;max-height:20mm;filter:grayscale(100%)" /></div>`
+    : `<div class="center bold" style="font-size:16px;letter-spacing:0.04em;margin-bottom:2px">${esc(tenant.nombre.toUpperCase())}</div>`
+
+  const hasFactura = tenant.email || tenant.supportPhone
+  const facturaHTML = hasFactura
+    ? `<pre class="sep">${SEP}</pre>
+<div style="font-size:10px;line-height:1.6">
+  <div class="bold" style="margin-bottom:2px">&#191;Requiere factura electr&#243;nica?</div>
+  ${tenant.email ? `<div>&#9993; ${esc(tenant.email)}</div>` : ''}
+  ${tenant.supportPhone ? `<div>&#9742; ${esc(tenant.supportPhone)}</div>` : ''}
+</div>`
+    : ''
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
 <title>Recibo #${esc(sale.codigo)}</title>
 <style>
-  @page { size: 80mm auto; margin: 2mm; }
+  @page { size: 80mm auto; margin: 5mm 4mm 3mm 4mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Courier New', Courier, monospace;
     font-size: 12px;
-    width: 76mm;
+    width: 72mm;
     color: #000;
     line-height: 1.5;
-    padding: 4px 2px;
+    padding: 0;
   }
   pre {
     font-family: inherit;
@@ -98,7 +114,7 @@ export function generateReceiptHTML(sale: Sale, tenantNombre: string): string {
 </head>
 <body>
 
-<div class="center bold" style="font-size:16px;letter-spacing:0.04em;margin-bottom:2px">${esc(tenantNombre.toUpperCase())}</div>
+${headerHTML}
 <div class="center small">${esc(dateStr)}</div>
 <div class="center small">Recibo #${esc(sale.codigo)}</div>
 <div class="center small">Cajero: ${esc(sale.user_nombre)}</div>
@@ -110,6 +126,8 @@ ${itemsHTML}
 <pre class="sep">${SEP}</pre>
 
 ${totalsHTML}
+
+${facturaHTML}
 
 <pre class="sep">${SEP}</pre>
 

@@ -34,6 +34,14 @@ function SaleReceiptModal({
   tenantNombre: string
   onClose: () => void
 }) {
+  const user = useAppSelector((s) => s.auth.user)
+  const tenant = {
+    nombre: tenantNombre,
+    logoUrl: user?.tenantLogoUrl,
+    email: user?.tenantEmail,
+    supportPhone: user?.tenantSupportPhone,
+  }
+
   return (
     <div
       className="ta-modal-backdrop"
@@ -58,7 +66,7 @@ function SaleReceiptModal({
         <div className="ta-modal-footer">
           <button
             className="ta-btn ta-btn-secondary"
-            onClick={() => printReceipt(sale, tenantNombre)}
+            onClick={() => printReceipt(sale, tenant)}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
             <PrintOutlinedIcon fontSize="small" />

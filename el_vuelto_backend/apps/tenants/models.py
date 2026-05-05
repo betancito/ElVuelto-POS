@@ -9,7 +9,7 @@ class Tenant(models.Model):
     nit = models.CharField(max_length=20, unique=True)
     ciudad = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
-    logo = models.ImageField(upload_to="tenants/logos/", null=True, blank=True)
+    support_number = models.CharField(max_length=20, blank=True, null=True)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

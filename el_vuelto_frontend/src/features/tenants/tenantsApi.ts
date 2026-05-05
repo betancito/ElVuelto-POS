@@ -13,6 +13,7 @@ export interface Tenant {
   nit: string
   ciudad: string
   correo: string
+  support_number?: string | null
   logo_url?: string | null
   activo: boolean
   created_at: string
@@ -23,6 +24,7 @@ export interface CreateTenantArgs {
   nit: string
   ciudad: string
   correo: string
+  support_number?: string
   admin_nombre: string
   admin_correo: string
 }
@@ -37,6 +39,7 @@ export interface UpdateTenantArgs {
   nit?: string
   ciudad?: string
   correo?: string
+  support_number?: string
   activo?: boolean
 }
 

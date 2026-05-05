@@ -4,6 +4,7 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
 import { formatCOP } from '@/utils/formatCOP'
 import { printReceipt } from '@/utils/printReceipt'
+import { useAppSelector } from '@/app/hooks'
 import { ReceiptPreview } from './ReceiptPreview'
 import type { Sale } from '@/features/sales/salesApi'
 
@@ -17,6 +18,15 @@ interface Props {
 export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }: Props) {
   const cambio = sale.cambio ? parseFloat(sale.cambio) : 0
   const showVuelto = sale.metodo_pago === 'EFECTIVO' && cambio > 0
+
+  const user = useAppSelector((state) => state.auth.user)
+
+  const tenant = {
+    nombre: tenantNombre,
+    logoUrl: user?.tenantLogoUrl,
+    email: user?.tenantEmail,
+    supportPhone: user?.tenantSupportPhone,
+  }
 
   function handleWhatsApp() {
     const message = `Recibo #${sale.codigo}\n${tenantNombre}\nTotal: ${formatCOP(parseFloat(sale.total))}\nGracias por su compra!`
@@ -144,7 +154,7 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <button
-            onClick={() => printReceipt(sale, tenantNombre)}
+            onClick={() => printReceipt(sale, tenant)}
             style={{
               padding: '0.875rem',
               borderRadius: '0.75rem',

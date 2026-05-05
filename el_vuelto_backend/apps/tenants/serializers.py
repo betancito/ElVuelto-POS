@@ -16,6 +16,7 @@ class TenantSerializer(serializers.ModelSerializer):
             "nit",
             "ciudad",
             "correo",
+            "support_number",
             "activo",
             "logo_url",
             "created_at",

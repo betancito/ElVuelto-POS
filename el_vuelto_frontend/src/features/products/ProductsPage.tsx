@@ -250,90 +250,122 @@ function ProductsTab() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* Card grid grouped by category */}
       {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>
+      ) : filtered.length === 0 ? (
+        <p className="ta-empty">
+          {search ? `No hay resultados para "${search}"` : 'Sin productos registrados'}
+        </p>
       ) : (
-        <div className="ta-table-wrap">
-          <table className="ta-table">
-            <thead className="ta-thead">
-              <tr>
-                <th className="ta-th">Imagen</th>
-                <th className="ta-th">Producto</th>
-                <th className="ta-th">Categoría</th>
-                <th className="ta-th">Tipo</th>
-                <th className="ta-th" style={{ textAlign: 'right' }}>Precio (c/IVA 19%)</th>
-                <th className="ta-th" style={{ textAlign: 'right' }}>Stock</th>
-                <th className="ta-th">Estado</th>
-                <th className="ta-th"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr key={p.id} className="ta-tr">
-                  <td className="ta-td">
-                    {p.imagen_url ? (
-                      <img
-                        src={p.imagen_url}
-                        alt={p.nombre}
-                        style={{ width: '2.75rem', height: '2.75rem', borderRadius: 'var(--radius-md)', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '2.75rem', height: '2.75rem', borderRadius: 'var(--radius-md)',
-                        background: 'var(--surface-variant)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <ShoppingBagIcon />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          {(() => {
+            const groups: Record<string, typeof filtered> = {}
+            filtered.forEach((p) => {
+              const key = p.category_nombre ?? 'Sin categoría'
+              if (!groups[key]) groups[key] = []
+              groups[key].push(p)
+            })
+            return Object.entries(groups).map(([catName, prods]) => (
+              <div key={catName}>
+                <h2
+                  className="ta-serif"
+                  style={{
+                    fontSize: '1.375rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)',
+                    marginBottom: '1rem',
+                    paddingBottom: '0.5rem',
+                    borderBottom: '1px solid var(--outline-variant)',
+                  }}
+                >
+                  {catName}
+                  <span
+                    className="ta-mono ta-mono--muted"
+                    style={{ fontSize: '0.875rem', fontWeight: 400, marginLeft: '0.75rem' }}
+                  >
+                    {prods.length} {prods.length === 1 ? 'producto' : 'productos'}
+                  </span>
+                </h2>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: '1rem',
+                  }}
+                >
+                  {prods.map((p) => (
+                    <div
+                      key={p.id}
+                      className="ta-card"
+                      style={{ padding: '1.25rem', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+                      onClick={() => openEdit(p)}
+                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(106,38,0,0.12)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '')}
+                    >
+                      <div
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1 / 1',
+                          borderRadius: 'var(--radius-md)',
+                          overflow: 'hidden',
+                          marginBottom: '0.875rem',
+                          background: 'var(--surface-container)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {p.imagen_url ? (
+                          <img
+                            src={p.imagen_url}
+                            alt={p.nombre}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <InventoryOutlinedIcon
+                            style={{ fontSize: '2.5rem', color: 'var(--on-surface-variant)', opacity: 0.4 }}
+                          />
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td className="ta-td">
-                    <p style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{p.nombre}</p>
-                    {p.barcode && (
-                      <p className="ta-mono ta-mono--muted" style={{ fontSize: '0.6875rem' }}>{p.barcode}</p>
-                    )}
-                  </td>
-                  <td className="ta-td" style={{ color: 'var(--on-surface-variant)', fontSize: '0.875rem' }}>
-                    {p.category_nombre ?? '—'}
-                  </td>
-                  <td className="ta-td">
-                    <span className={`ta-badge ta-badge--${p.tipo === 'CON_CODIGO' ? 'primary' : 'neutral'}`}>
-                      {p.tipo === 'CON_CODIGO' ? 'Con código' : 'Sin código'}
-                    </span>
-                  </td>
-                  <td className="ta-td ta-mono ta-mono--primary" style={{ textAlign: 'right', fontWeight: 700 }}>
-                    {formatCOP(parseFloat(p.precio_venta))}
-                  </td>
-                  <td className="ta-td ta-mono" style={{ textAlign: 'right', fontSize: '0.875rem' }}>
-                    {p.stock_actual} u.
-                  </td>
-                  <td className="ta-td">
-                    <div className={`ta-status ta-status--${p.activo ? 'active' : 'inactive'}`}>
-                      <span className="ta-status-dot" />
-                      {p.activo ? 'Activo' : 'Inactivo'}
+
+                      <p
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '0.9375rem',
+                          color: 'var(--on-surface)',
+                          marginBottom: '0.5rem',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {p.nombre}
+                      </p>
+
+                      <div style={{ marginBottom: '0.625rem' }}>
+                        <div className={`ta-status ta-status--${p.activo ? 'active' : 'inactive'}`}>
+                          <span className="ta-status-dot" />
+                          {p.activo ? 'Activo' : 'Inactivo'}
+                        </div>
+                      </div>
+
+                      <p className="ta-mono ta-mono--primary" style={{ fontSize: '1rem', fontWeight: 700 }}>
+                        {formatCOP(parseFloat(p.precio_venta))}
+                      </p>
+
+                      {p.tipo === 'CON_CODIGO' && (
+                        <p
+                          className="ta-mono ta-mono--muted"
+                          style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}
+                        >
+                          Stock: {p.stock_actual} u.
+                        </p>
+                      )}
                     </div>
-                  </td>
-                  <td className="ta-td">
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.25rem' }}>
-                      <button className="ta-btn-icon" onClick={() => openEdit(p)} title="Editar">
-                        <EditOutlinedIcon style={{ fontSize: '1.125rem' }} />
-                      </button>
-                      <button className="ta-btn-icon ta-btn-icon--danger" onClick={() => setDeletingId(p.id)} title="Eliminar">
-                        <DeleteOutlineIcon style={{ fontSize: '1.125rem' }} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="ta-empty">
-                    {search ? `No hay resultados para "${search}"` : 'Sin productos registrados'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  ))}
+                </div>
+              </div>
+            ))
+          })()}
         </div>
       )}
 
@@ -603,64 +635,71 @@ function CategoriesTab() {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Card grid */}
       {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>
+      ) : (categories ?? []).length === 0 ? (
+        <p className="ta-empty">Sin categorías registradas</p>
       ) : (
-        <div className="ta-table-wrap">
-          <table className="ta-table">
-            <thead className="ta-thead">
-              <tr>
-                <th className="ta-th">Imagen</th>
-                <th className="ta-th">Nombre</th>
-                <th className="ta-th" style={{ textAlign: 'right' }}>Productos</th>
-                <th className="ta-th"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(categories ?? []).map((c) => (
-                <tr key={c.id} className="ta-tr">
-                  <td className="ta-td">
-                    {c.imagen_url ? (
-                      <img
-                        src={c.imagen_url}
-                        alt={c.nombre}
-                        style={{ width: '2.75rem', height: '2.75rem', borderRadius: 'var(--radius-md)', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '2.75rem', height: '2.75rem', borderRadius: 'var(--radius-md)',
-                        background: 'var(--surface-variant)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <CategoryOutlinedIcon style={{ fontSize: '1.25rem', color: 'var(--on-surface-variant)' }} />
-                      </div>
-                    )}
-                  </td>
-                  <td className="ta-td">
-                    <p style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{c.nombre}</p>
-                  </td>
-                  <td className="ta-td ta-mono" style={{ textAlign: 'right', fontSize: '0.875rem' }}>
-                    {productCountByCategory[c.id] ?? 0}
-                  </td>
-                  <td className="ta-td">
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.25rem' }}>
-                      <button className="ta-btn-icon" onClick={() => openEdit(c)} title="Editar">
-                        <EditOutlinedIcon style={{ fontSize: '1.125rem' }} />
-                      </button>
-                      <button className="ta-btn-icon ta-btn-icon--danger" onClick={() => setDeletingId(c.id)} title="Eliminar">
-                        <DeleteOutlineIcon style={{ fontSize: '1.125rem' }} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {(categories ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="ta-empty">Sin categorías registradas</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '1rem',
+          }}
+        >
+          {(categories ?? []).map((c) => (
+            <div
+              key={c.id}
+              className="ta-card"
+              style={{ padding: '1.25rem', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+              onClick={() => openEdit(c)}
+              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(106,38,0,0.12)')}
+              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '')}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: '1 / 1',
+                  borderRadius: 'var(--radius-md)',
+                  overflow: 'hidden',
+                  marginBottom: '0.875rem',
+                  background: 'var(--surface-container)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {c.imagen_url ? (
+                  <img
+                    src={c.imagen_url}
+                    alt={c.nombre}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <CategoryOutlinedIcon
+                    style={{ fontSize: '2.5rem', color: 'var(--on-surface-variant)', opacity: 0.4 }}
+                  />
+                )}
+              </div>
+
+              <p
+                style={{
+                  fontWeight: 700,
+                  fontSize: '0.9375rem',
+                  color: 'var(--on-surface)',
+                  marginBottom: '0.375rem',
+                }}
+              >
+                {c.nombre}
+              </p>
+
+              <p className="ta-mono ta-mono--muted" style={{ fontSize: '0.8125rem' }}>
+                {productCountByCategory[c.id] ?? 0}{' '}
+                {(productCountByCategory[c.id] ?? 0) === 1 ? 'producto' : 'productos'}
+              </p>
+            </div>
+          ))}
         </div>
       )}
 

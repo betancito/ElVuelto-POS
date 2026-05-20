@@ -174,39 +174,6 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* ── Tenant banner ── */}
-      {tenantNombre && (
-        <div className="ta-card-low" style={{ position: 'relative', overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', top: 0, right: 0, width: '8rem', height: '100%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.05,
-          }}>
-            <BakeryDiningOutlinedIcon style={{ fontSize: '6rem' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-            <div>
-              <h2 className="ta-serif" style={{ fontSize: '1.75rem', color: 'var(--primary)', fontWeight: 700 }}>
-                {tenantNombre}
-              </h2>
-              <p className="ta-mono ta-mono--muted" style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                {tenantId ? `ID: ${tenantId}` : 'Administración del negocio'}
-              </p>
-            </div>
-            <div style={{
-              background: 'var(--surface-container-highest)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1rem 1.25rem',
-              textAlign: 'right',
-              borderLeft: '3px solid var(--primary)',
-            }}>
-              <p style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--on-surface-variant)', fontWeight: 700 }}>
-                Módulo activo
-              </p>
-              <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary-container)' }}>Usuarios</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Staff URL card ── */}
       {staffLoginUrl && (

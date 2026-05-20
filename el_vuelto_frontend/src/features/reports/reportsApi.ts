@@ -12,6 +12,7 @@ export interface VentasPorHoraItem {
   hora: number
   total: number
   transacciones: number
+  top_productos: { nombre: string; unidades: number }[]
 }
 
 export interface TopProducto {
@@ -19,6 +20,34 @@ export interface TopProducto {
   nombre: string
   unidades: number
   total: number
+}
+
+export interface SaleItemExport {
+  producto: string
+  precio_unitario: number
+  cantidad: number
+  subtotal: number
+}
+
+export interface SaleExport {
+  id: string
+  codigo: string
+  cajero: string
+  metodo_pago: string
+  total: number
+  monto_recibido: number | null
+  cambio: number | null
+  hora: string
+  items: SaleItemExport[]
+}
+
+export interface SalesDetailReport {
+  fecha: string
+  tenant_nombre: string
+  tenant_logo_url: string | null
+  total_ventas: number
+  num_transacciones: number
+  sales: SaleExport[]
 }
 
 export const reportsApi = apiBase.injectEndpoints({
@@ -35,7 +64,11 @@ export const reportsApi = apiBase.injectEndpoints({
       query: (params) => ({ url: '/reports/top-productos/', params }),
       providesTags: ['Report'],
     }),
+    getSalesDetail: builder.query<SalesDetailReport, { fecha: string }>({
+      query: (params) => ({ url: '/reports/sales-detail/', params }),
+      providesTags: ['Report'],
+    }),
   }),
 })
 
-export const { useGetSummaryQuery, useGetVentasPorHoraQuery, useGetTopProductosQuery } = reportsApi
+export const { useGetSummaryQuery, useGetVentasPorHoraQuery, useGetTopProductosQuery, useGetSalesDetailQuery } = reportsApi

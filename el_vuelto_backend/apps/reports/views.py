@@ -1,3 +1,5 @@
+from datetime import datetime
+from itertools import groupby as _groupby
 from zoneinfo import ZoneInfo
 
 from django.db.models import Count, Sum
@@ -59,7 +61,7 @@ class VentasPorHoraView(APIView):
     def get(self, request):
         fecha = request.query_params.get("fecha")
         if not fecha:
-            return Response({"detail": "El parámetro 'fecha' es requerido."}, status=400)
+            fecha = datetime.now(BOGOTA_TZ).date().isoformat()
 
         qs = (
             Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
@@ -70,16 +72,89 @@ class VentasPorHoraView(APIView):
         )
 
         by_hour = {row["hour"]: row for row in qs}
+
+        items_by_hour_qs = (
+            SaleItem.objects.filter(
+                sale__tenant=request.tenant,
+                sale__created_at__date=fecha,
+            )
+            .annotate(hour=ExtractHour("sale__created_at", tzinfo=BOGOTA_TZ))
+            .values("hour", "product_nombre")
+            .annotate(unidades=Sum("cantidad"))
+            .order_by("hour", "-unidades")
+        )
+
+        products_by_hour: dict[int, list[dict]] = {}
+        for hour, items in _groupby(items_by_hour_qs, key=lambda x: x["hour"]):
+            products_by_hour[int(hour)] = [
+                {"nombre": i["product_nombre"], "unidades": i["unidades"]}
+                for i in list(items)[:3]
+            ]
+
         result = [
             {
                 "hora": h,
                 "total": float(by_hour[h]["total"]) if h in by_hour else 0.0,
                 "transacciones": by_hour[h]["count"] if h in by_hour else 0,
+                "top_productos": products_by_hour.get(h, []),
             }
             for h in range(24)
         ]
 
         return Response(result)
+
+
+class SalesDetailExportView(APIView):
+    """GET /api/reports/sales-detail/?fecha=YYYY-MM-DD"""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        fecha = request.query_params.get("fecha")
+        if not fecha:
+            fecha = datetime.now(BOGOTA_TZ).date().isoformat()
+
+        sales_qs = (
+            Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+            .prefetch_related("items")
+            .select_related("user")
+            .order_by("created_at")
+        )
+
+        data = []
+        for sale in sales_qs:
+            data.append({
+                "id": str(sale.id),
+                "codigo": sale.codigo,
+                "cajero": sale.user.nombre,
+                "metodo_pago": sale.get_metodo_pago_display(),
+                "total": float(sale.total),
+                "monto_recibido": float(sale.monto_recibido) if sale.monto_recibido is not None else None,
+                "cambio": float(sale.cambio) if sale.cambio is not None else None,
+                "hora": sale.created_at.astimezone(BOGOTA_TZ).strftime("%H:%M:%S"),
+                "items": [
+                    {
+                        "producto": item.product_nombre,
+                        "precio_unitario": float(item.precio_unitario),
+                        "cantidad": item.cantidad,
+                        "subtotal": float(item.subtotal),
+                    }
+                    for item in sale.items.all()
+                ],
+            })
+
+        return Response({
+            "fecha": fecha,
+            "tenant_nombre": request.tenant.nombre,
+            "tenant_logo_url": (
+                request.tenant.documents.filter(document_type="logo")
+                .values_list("cloudinary_url", flat=True)
+                .first()
+            ),
+            "total_ventas": sum(s["total"] for s in data),
+            "num_transacciones": len(data),
+            "sales": data,
+        })
 
 
 class TopProductosView(APIView):

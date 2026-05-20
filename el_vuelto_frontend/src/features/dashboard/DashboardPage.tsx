@@ -1,4 +1,5 @@
 import { useGetSummaryQuery, useGetVentasPorHoraQuery, useGetTopProductosQuery } from '@/features/reports/reportsApi'
+import type { VentasPorHoraItem } from '@/features/reports/reportsApi'
 import { useListSalesQuery } from '@/features/sales/salesApi'
 import { useAppSelector } from '@/app/hooks'
 import { formatCOP } from '@/utils/formatCOP'
@@ -10,6 +11,15 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts'
 
 function todayLabel() {
   return new Date().toLocaleDateString('es-CO', {
@@ -20,14 +30,61 @@ function todayLabel() {
   })
 }
 
+function todayBogota() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
+}
+
+function HourTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: VentasPorHoraItem }> }) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload as VentasPorHoraItem
+  if (d.total === 0) return null
+  return (
+    <div style={{
+      background: 'var(--surface)',
+      border: '1px solid var(--outline-variant)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '0.875rem 1rem',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      minWidth: '180px',
+    }}>
+      <p style={{
+        fontSize: '0.6875rem', fontWeight: 700, color: 'var(--primary)',
+        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem',
+      }}>
+        {d.hora}:00 — {d.hora + 1}:00
+      </p>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '0.25rem' }}>
+        {formatCOP(d.total)}
+      </p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginBottom: d.top_productos.length > 0 ? '0.625rem' : 0 }}>
+        {d.transacciones} {d.transacciones === 1 ? 'transacción' : 'transacciones'}
+      </p>
+      {d.top_productos.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {d.top_productos.map((p) => (
+            <div key={p.nombre} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--on-surface)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                {p.nombre}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--on-surface-variant)', flexShrink: 0 }}>
+                {p.unidades} u.
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user)
   const { data: summary }       = useGetSummaryQuery({})
-  const { data: ventasPorHora } = useGetVentasPorHoraQuery({})
+  const { data: ventasPorHora } = useGetVentasPorHoraQuery({ fecha: todayBogota() })
   const { data: topProductos }  = useGetTopProductosQuery({ limit: 5 })
   const { data: recentSales }   = useListSalesQuery()
 
-  const maxHora = Math.max(...(ventasPorHora?.map((v) => v.total) ?? [1]), 1)
+  const hasSales = ventasPorHora?.some(v => v.total > 0) ?? false
 
   const metodoLabel =
     (summary?.porcentaje_efectivo ?? 0) >= (summary?.porcentaje_nequi ?? 0)
@@ -152,24 +209,59 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <div className="ta-bar-chart">
-            {(ventasPorHora ?? []).map((v) => {
-              const heightPct = maxHora > 0 ? Math.max((v.total / maxHora) * 100, 2) : 2
-              const isPeak = ventasPorHora && v.total === maxHora && v.total > 0
-              return (
-                <div key={v.hora} className="ta-bar-col">
-                  <div
-                    className={`ta-bar-fill${isPeak ? ' ta-bar-fill--peak' : ''}`}
-                    style={{ height: `${heightPct}%` }}
-                    title={formatCOP(v.total)}
+          {hasSales ? (
+            <div style={{ width: '100%', height: '14rem' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={ventasPorHora} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--outline-variant)" strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="hora"
+                    tickFormatter={(h: number) => `${h}h`}
+                    tick={{ fontSize: 10, fill: 'var(--on-surface-variant)', fontFamily: 'var(--font-mono)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={1}
                   />
-                  <span className={`ta-bar-label${isPeak ? ' ta-bar-label--peak' : ''}`}>
-                    {v.hora}h
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+                  <YAxis
+                    tickFormatter={(v: number) => v === 0 ? '' : `$${(v / 1000).toFixed(0)}k`}
+                    tick={{ fontSize: 10, fill: 'var(--on-surface-variant)', fontFamily: 'var(--font-mono)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={40}
+                  />
+                  <Tooltip content={<HourTooltip />} cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="var(--primary)"
+                    strokeWidth={2.5}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props as { cx: number; cy: number; payload: VentasPorHoraItem }
+                      if (payload.total === 0) return <g key={`dot-${payload.hora}`} />
+                      return (
+                        <circle
+                          key={`dot-${payload.hora}`}
+                          cx={cx}
+                          cy={cy}
+                          r={4}
+                          fill="var(--primary)"
+                          stroke="var(--surface)"
+                          strokeWidth={2}
+                        />
+                      )
+                    }}
+                    activeDot={{ r: 6, fill: 'var(--primary)', stroke: 'var(--surface)', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '14rem' }}>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--on-surface-variant)', fontFamily: 'var(--font-sans)' }}>
+                Aún no hay ventas registradas hoy
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Top productos */}

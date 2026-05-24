@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -25,9 +25,13 @@ import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined'
 const schema = z.object({
   product: z.string().min(1, 'Selecciona un producto'),
   tipo_movimiento: z.enum(['ENTRADA', 'AJUSTE']),
-  cantidad: z.coerce.number().min(1, 'Mínimo 1'),
+  cantidad: z.coerce.number().refine((v) => v !== 0, { message: 'La cantidad no puede ser cero' }),
   precio_costo: z.string().min(1, 'Requerido'),
   nota: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.tipo_movimiento === 'ENTRADA' && data.cantidad < 1) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['cantidad'], message: 'Mínimo 1 unidad para entrada' })
+  }
 })
 type FormData = z.infer<typeof schema>
 
@@ -351,12 +355,17 @@ function MovementModal({ onClose, initialProductId, stock }: MovementModalProps)
                 <input
                   className="ta-input ta-mono"
                   type="number"
-                  min={1}
+                  min={tipoMovimiento === 'ENTRADA' ? 1 : undefined}
                   placeholder="1"
                   value={watch('cantidad')}
                   onChange={(e) => setValue('cantidad', Number(e.target.value), { shouldValidate: true })}
                 />
                 {errors.cantidad && <span className="ta-field-error">{errors.cantidad.message}</span>}
+                {tipoMovimiento === 'AJUSTE' && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.25rem' }}>
+                    Positivo para agregar unidades · Negativo para retirar
+                  </p>
+                )}
               </div>
               <div className="ta-field">
                 <label className="ta-label">Costo unitario</label>
@@ -457,6 +466,66 @@ function MovementsTable({ movements }: { movements: InventoryMovement[] }) {
   )
 }
 
+// ─── StockCard ────────────────────────────────────────────────────────────────
+function StockCard({ item, onClick }: { item: StockItem; onClick: () => void }) {
+  const stockColor = item.stock_actual <= 0
+    ? 'var(--error)'
+    : item.bajo_minimo
+      ? 'var(--secondary)'
+      : 'var(--tertiary)'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+        background: '#fff', borderRadius: '16px', padding: '1.25rem',
+        border: '1.5px solid var(--outline-variant)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        gap: '0.75rem', transition: 'box-shadow 0.15s, border-color 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'
+        ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--outline-variant)'
+      }}
+    >
+      <div style={{ width: '100%', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {item.imagen_url
+          ? <img src={item.imagen_url} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <Inventory2OutlinedIcon style={{ fontSize: '2.5rem', color: 'var(--outline)' }} />
+        }
+      </div>
+
+      <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '0.9375rem', color: 'var(--on-surface)', margin: 0, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {item.nombre}
+      </p>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: stockColor }}>
+            {item.stock_actual}
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>uds</span>
+        </div>
+        {item.bajo_minimo && (
+          <WarningAmberOutlinedIcon style={{ fontSize: '1.125rem', color: 'var(--error)', flexShrink: 0 }} />
+        )}
+      </div>
+
+      {item.category_nombre && (
+        <span style={{ alignSelf: 'flex-start', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0.2rem 0.5rem', borderRadius: '9999px', background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }}>
+          {item.category_nombre}
+        </span>
+      )}
+    </button>
+  )
+}
+
 // ─── InventoryPage ────────────────────────────────────────────────────────────
 export default function InventoryPage() {
   const { data: movements, isLoading } = useListMovementsQuery()
@@ -466,6 +535,27 @@ export default function InventoryPage() {
   const [barcodeProductId, setBarcodeProductId] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [notFoundCode, setNotFoundCode] = useState('')
+  const [activeTab, setActiveTab] = useState<'stock' | 'historial'>('stock')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [stockSearch, setStockSearch] = useState('')
+
+  const categories = useMemo(() => {
+    const seen = new Map<string, string>()
+    stock?.forEach((s) => {
+      if (s.category_id && s.category_nombre) seen.set(s.category_id, s.category_nombre)
+    })
+    return Array.from(seen.entries()).map(([id, nombre]) => ({ id, nombre }))
+  }, [stock])
+
+  const filteredStock = useMemo(() => {
+    let items = stock ?? []
+    if (categoryFilter !== 'all') items = items.filter((s) => s.category_id === categoryFilter)
+    if (stockSearch.trim()) {
+      const q = stockSearch.toLowerCase()
+      items = items.filter((s) => s.nombre.toLowerCase().includes(q))
+    }
+    return items
+  }, [stock, categoryFilter, stockSearch])
 
   const stockRef = useRef<StockItem[]>([])
   useEffect(() => { stockRef.current = stock ?? [] }, [stock])
@@ -604,17 +694,91 @@ export default function InventoryPage() {
         <span>Pasa el escáner sobre cualquier producto para registrar un movimiento rápidamente.</span>
       </div>
 
-      {/* ── Movements table (always visible) ── */}
-      <div className="ta-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--surface-container-low)' }}>
-          <h3 className="ta-card-title" style={{ margin: 0 }}>Movimientos recientes</h3>
-        </div>
-        {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>
-        ) : (
-          <MovementsTable movements={movements ?? []} />
-        )}
+      {/* ── Tabs ── */}
+      <div style={{ display: 'flex', gap: '0', borderBottom: '2px solid var(--outline-variant)' }}>
+        {(['stock', 'historial'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '0.75rem 1.5rem', border: 'none', background: 'transparent',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '0.9375rem',
+              color: activeTab === tab ? 'var(--primary)' : 'var(--on-surface-variant)',
+              borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
+              marginBottom: '-2px', transition: 'color 0.15s',
+            }}
+          >
+            {tab === 'stock' ? 'Stock' : 'Historial'}
+          </button>
+        ))}
       </div>
+
+      {/* ── Tab: Stock ── */}
+      {activeTab === 'stock' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '180px', maxWidth: '320px' }}>
+              <SearchOutlinedIcon style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', color: 'var(--outline)', pointerEvents: 'none' }} />
+              <input
+                className="ta-input"
+                type="text"
+                placeholder="Buscar producto..."
+                value={stockSearch}
+                onChange={(e) => setStockSearch(e.target.value)}
+                style={{ paddingLeft: '2.25rem' }}
+              />
+            </div>
+            <div className="ta-chips">
+              <button
+                type="button"
+                className={`ta-chip ${categoryFilter === 'all' ? 'ta-chip-active' : ''}`}
+                onClick={() => setCategoryFilter('all')}
+              >
+                Todas
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`ta-chip ${categoryFilter === c.id ? 'ta-chip-active' : ''}`}
+                  onClick={() => setCategoryFilter(c.id)}
+                >
+                  {c.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredStock.length === 0 ? (
+            <p className="ta-empty">Sin productos con stock para mostrar</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+              {filteredStock.map((item) => (
+                <StockCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => { setBarcodeProductId(item.id); setShowModal(true) }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Historial ── */}
+      {activeTab === 'historial' && (
+        <div className="ta-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--surface-container-low)' }}>
+            <h3 className="ta-card-title" style={{ margin: 0 }}>Movimientos registrados</h3>
+          </div>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>
+          ) : (
+            <MovementsTable movements={movements ?? []} />
+          )}
+        </div>
+      )}
 
       {/* ── Modal ── */}
       {showModal && (

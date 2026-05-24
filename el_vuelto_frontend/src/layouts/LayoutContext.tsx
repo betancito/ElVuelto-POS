@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
 const COLLAPSE_AT = 1450
+const MOBILE_AT = 768
 
 interface LayoutContextValue {
   collapsed: boolean
   isCollapsed: boolean
   mobileOpen: boolean
+  isMobile: boolean
   toggleCollapsed: () => void
   toggleMobile: () => void
   closeMobile: () => void
@@ -16,10 +18,18 @@ const LayoutContext = createContext<LayoutContextValue | null>(null)
 export function LayoutProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < COLLAPSE_AT)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_AT)
 
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${COLLAPSE_AT - 1}px)`)
     const handler = (e: MediaQueryListEvent) => setCollapsed(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_AT}px)`)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [])
@@ -30,6 +40,7 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
         collapsed,
         isCollapsed: mobileOpen ? false : collapsed,
         mobileOpen,
+        isMobile,
         toggleCollapsed: () => setCollapsed((c) => !c),
         toggleMobile: () => setMobileOpen((o) => !o),
         closeMobile: () => setMobileOpen(false),

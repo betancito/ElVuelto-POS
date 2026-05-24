@@ -79,10 +79,10 @@ function HourTooltip({ active, payload }: { active?: boolean; payload?: Array<{ 
 
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user)
-  const { data: summary }       = useGetSummaryQuery({})
+  const { data: summary }       = useGetSummaryQuery({ fecha: todayBogota() })
   const { data: ventasPorHora } = useGetVentasPorHoraQuery({ fecha: todayBogota() })
-  const { data: topProductos }  = useGetTopProductosQuery({ limit: 5 })
-  const { data: recentSales }   = useListSalesQuery()
+  const { data: topProductos }  = useGetTopProductosQuery({ fecha: todayBogota(), limit: 5 })
+  const { data: recentSales }   = useListSalesQuery({ fecha_inicio: todayBogota(), fecha_fin: todayBogota() })
 
   const hasSales = ventasPorHora?.some(v => v.total > 0) ?? false
 
@@ -126,10 +126,16 @@ export default function DashboardPage() {
             <PaymentsOutlinedIcon style={{ color: 'var(--primary-container)', fontSize: '1.25rem' }} />
           </div>
           <p className="ta-kpi-value">{formatCOP(summary?.total_ventas ?? 0)}</p>
-          <div className="ta-kpi-meta ta-kpi-meta--up">
-            <TrendingUpIcon style={{ fontSize: '1rem' }} />
-            <span>Actualizado hoy</span>
-          </div>
+          {(summary?.total_ventas ?? 0) === 0 ? (
+            <div className="ta-kpi-meta ta-kpi-meta--flat">
+              <span>Sin ventas registradas</span>
+            </div>
+          ) : (
+            <div className="ta-kpi-meta ta-kpi-meta--up">
+              <TrendingUpIcon style={{ fontSize: '1rem' }} />
+              <span>Actualizado hoy</span>
+            </div>
+          )}
         </div>
 
         {/* Transacciones */}
@@ -168,29 +174,37 @@ export default function DashboardPage() {
             <p className="ta-kpi-label" style={{ color: 'var(--on-secondary-container)' }}>Método más usado</p>
             <AccountBalanceWalletOutlinedIcon style={{ color: 'var(--on-secondary-container)', fontSize: '1.25rem' }} />
           </div>
-          <p className="ta-kpi-value--serif" style={{ color: 'var(--on-secondary-fixed)' }}>
-            {(summary?.porcentaje_efectivo ?? 0) >= (summary?.porcentaje_nequi ?? 0) ? 'Efectivo' : 'Nequi'}
-          </p>
-          <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ height: '0.25rem', background: 'rgba(45,22,0,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${Math.max(summary?.porcentaje_efectivo ?? 0, summary?.porcentaje_nequi ?? 0)}%`,
-                  background: 'var(--on-secondary-container)',
-                  borderRadius: '9999px',
-                }}
-              />
-            </div>
-            <span style={{ fontSize: '0.6875rem', color: 'var(--on-secondary-fixed-variant)', marginTop: '0.25rem', display: 'block' }}>
-              {metodoLabel}
-            </span>
-          </div>
+          {(summary?.num_transacciones ?? 0) === 0 ? (
+            <p className="ta-mono ta-mono--muted" style={{ fontSize: '0.9375rem' }}>
+              Sin ventas hoy
+            </p>
+          ) : (
+            <>
+              <p className="ta-kpi-value--serif" style={{ color: 'var(--on-secondary-fixed)' }}>
+                {(summary?.porcentaje_efectivo ?? 0) >= (summary?.porcentaje_nequi ?? 0) ? 'Efectivo' : 'Nequi'}
+              </p>
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ height: '0.25rem', background: 'rgba(45,22,0,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${Math.max(summary?.porcentaje_efectivo ?? 0, summary?.porcentaje_nequi ?? 0)}%`,
+                      background: 'var(--on-secondary-container)',
+                      borderRadius: '9999px',
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--on-secondary-fixed-variant)', marginTop: '0.25rem', display: 'block' }}>
+                  {metodoLabel}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* ── Charts row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
         {/* Bar chart */}
         <div className="ta-card">
           <div className="ta-card-header">

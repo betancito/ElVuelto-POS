@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from itertools import groupby as _groupby
 from zoneinfo import ZoneInfo
 
 from django.db.models import Count, Sum
-from django.db.models.functions import ExtractHour
+from django.db.models.functions import ExtractHour, TruncDate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,6 +20,8 @@ class SummaryReportView(APIView):
 
     def get(self, request):
         fecha = request.query_params.get("fecha")
+        fecha_inicio = request.query_params.get("fecha_inicio")
+        fecha_fin = request.query_params.get("fecha_fin")
 
         sales_qs = Sale.objects.filter(tenant=request.tenant)
         items_qs = SaleItem.objects.filter(sale__tenant=request.tenant)
@@ -27,6 +29,9 @@ class SummaryReportView(APIView):
         if fecha:
             sales_qs = sales_qs.filter(created_at__date=fecha)
             items_qs = items_qs.filter(sale__created_at__date=fecha)
+        elif fecha_inicio and fecha_fin:
+            sales_qs = sales_qs.filter(created_at__date__gte=fecha_inicio, created_at__date__lte=fecha_fin)
+            items_qs = items_qs.filter(sale__created_at__date__gte=fecha_inicio, sale__created_at__date__lte=fecha_fin)
 
         agg = sales_qs.aggregate(
             total_ventas=Sum("total"),
@@ -111,11 +116,26 @@ class SalesDetailExportView(APIView):
 
     def get(self, request):
         fecha = request.query_params.get("fecha")
-        if not fecha:
+        fecha_inicio = request.query_params.get("fecha_inicio")
+        fecha_fin = request.query_params.get("fecha_fin")
+
+        if fecha:
+            label = fecha
+            sales_qs = Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+        elif fecha_inicio and fecha_fin:
+            label = f"{fecha_inicio} al {fecha_fin}"
+            sales_qs = Sale.objects.filter(
+                tenant=request.tenant,
+                created_at__date__gte=fecha_inicio,
+                created_at__date__lte=fecha_fin,
+            )
+        else:
             fecha = datetime.now(BOGOTA_TZ).date().isoformat()
+            label = fecha
+            sales_qs = Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
 
         sales_qs = (
-            Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+            sales_qs
             .prefetch_related("items")
             .select_related("user")
             .order_by("created_at")
@@ -144,7 +164,8 @@ class SalesDetailExportView(APIView):
             })
 
         return Response({
-            "fecha": fecha,
+            "fecha": fecha or fecha_inicio,
+            "label": label,
             "tenant_nombre": request.tenant.nombre,
             "tenant_logo_url": (
                 request.tenant.documents.filter(document_type="logo")
@@ -164,12 +185,16 @@ class TopProductosView(APIView):
 
     def get(self, request):
         fecha = request.query_params.get("fecha")
+        fecha_inicio = request.query_params.get("fecha_inicio")
+        fecha_fin = request.query_params.get("fecha_fin")
         limit = min(int(request.query_params.get("limit", 10)), 100)
 
         qs = SaleItem.objects.filter(sale__tenant=request.tenant)
 
         if fecha:
             qs = qs.filter(sale__created_at__date=fecha)
+        elif fecha_inicio and fecha_fin:
+            qs = qs.filter(sale__created_at__date__gte=fecha_inicio, sale__created_at__date__lte=fecha_fin)
 
         top = (
             qs.values("product_id", "product_nombre")
@@ -191,3 +216,44 @@ class TopProductosView(APIView):
         ]
 
         return Response(data)
+
+
+class VentasPorDiaView(APIView):
+    """GET /api/reports/ventas-por-dia/?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD"""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        fecha_inicio = request.query_params.get("fecha_inicio")
+        fecha_fin = request.query_params.get("fecha_fin")
+        if not fecha_inicio or not fecha_fin:
+            today = datetime.now(BOGOTA_TZ).date()
+            fecha_fin = today.isoformat()
+            fecha_inicio = (today - timedelta(days=6)).isoformat()
+
+        qs = (
+            Sale.objects.filter(
+                tenant=request.tenant,
+                created_at__date__gte=fecha_inicio,
+                created_at__date__lte=fecha_fin,
+            )
+            .annotate(day=TruncDate("created_at", tzinfo=BOGOTA_TZ))
+            .values("day")
+            .annotate(total=Sum("total"), count=Count("id"))
+            .order_by("day")
+        )
+        by_day = {row["day"].isoformat(): row for row in qs}
+
+        start = date.fromisoformat(fecha_inicio)
+        end = date.fromisoformat(fecha_fin)
+        result = []
+        current = start
+        while current <= end:
+            key = current.isoformat()
+            result.append({
+                "fecha": key,
+                "total": float(by_day[key]["total"]) if key in by_day else 0.0,
+                "transacciones": by_day[key]["count"] if key in by_day else 0,
+            })
+            current += timedelta(days=1)
+        return Response(result)

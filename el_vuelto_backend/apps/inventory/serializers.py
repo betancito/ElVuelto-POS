@@ -67,6 +67,8 @@ class InventoryMovementSerializer(serializers.ModelSerializer):
 
 class StockSerializer(serializers.ModelSerializer):
     bajo_minimo = serializers.SerializerMethodField()
+    category_id = serializers.UUIDField(source="category.id", allow_null=True, read_only=True)
+    category_nombre = serializers.CharField(source="category.nombre", allow_null=True, read_only=True)
 
     class Meta:
         model = Product
@@ -80,6 +82,8 @@ class StockSerializer(serializers.ModelSerializer):
             "precio_costo",
             "proveedor",
             "imagen_url",
+            "category_id",
+            "category_nombre",
         ]
 
     def get_bajo_minimo(self, obj):

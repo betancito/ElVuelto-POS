@@ -71,6 +71,6 @@ class StockView(APIView):
             tenant=request.tenant,
             tipo=ProductType.CON_CODIGO,
             activo=True,
-        ).order_by("nombre")
+        ).select_related("category").order_by("nombre")
         serializer = StockSerializer(products, many=True)
         return Response(serializer.data)

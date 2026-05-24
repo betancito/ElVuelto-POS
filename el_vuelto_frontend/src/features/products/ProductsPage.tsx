@@ -921,6 +921,145 @@ function ChevronIcon({ open }: { open: boolean }) {
   )
 }
 
+// ─── Camera-based barcode scanner ─────────────────────────────────────
+declare class BarcodeDetector {
+  static getSupportedFormats(): Promise<string[]>
+  constructor(options?: { formats: string[] })
+  detect(image: HTMLVideoElement): Promise<Array<{ rawValue: string; format: string }>>
+}
+
+interface CameraScannerProps {
+  onDetect: (code: string) => void
+  onClose: () => void
+}
+
+function CameraScanner({ onDetect, onClose }: CameraScannerProps) {
+  const [status, setStatus] = useState<'requesting' | 'scanning' | 'error'>('requesting')
+  const [errorMsg, setErrorMsg] = useState('')
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const detectedRef = useRef(false)
+
+  function stopAll() {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+  }
+
+  function handleClose() {
+    stopAll()
+    onClose()
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function start() {
+      if (!('BarcodeDetector' in window)) {
+        setStatus('error')
+        setErrorMsg('Tu navegador no soporta la cámara. Usa el lector físico o ingresa el código manualmente.')
+        return
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+        })
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play()
+        }
+        setStatus('scanning')
+
+        const detector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'qr_code'],
+        })
+
+        intervalRef.current = setInterval(async () => {
+          if (detectedRef.current || !videoRef.current) return
+          try {
+            const codes = await detector.detect(videoRef.current)
+            if (codes.length > 0) {
+              detectedRef.current = true
+              navigator.vibrate?.(120)
+              stopAll()
+              onDetect(codes[0].rawValue)
+            }
+          } catch {
+            /* transient detect errors are non-fatal */
+          }
+        }, 400)
+      } catch {
+        if (cancelled) return
+        setStatus('error')
+        setErrorMsg('No se pudo acceder a la cámara. Verifica los permisos.')
+      }
+    }
+
+    start()
+    return () => { cancelled = true; stopAll() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.92)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: '1rem',
+    }}>
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label="Cerrar"
+        style={{
+          position: 'absolute', top: '1rem', right: '1rem',
+          background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%',
+          width: '2.5rem', height: '2.5rem', cursor: 'pointer', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <CloseIcon />
+      </button>
+
+      {status === 'error' ? (
+        <div style={{ textAlign: 'center', padding: '2rem', maxWidth: '280px' }}>
+          <QrCodeScannerOutlinedIcon style={{ color: 'var(--error)', fontSize: '3rem', marginBottom: '1rem' }} />
+          <p style={{ color: '#fff', fontSize: '0.9375rem' }}>{errorMsg}</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ position: 'relative', width: 'min(90vw, 360px)', aspectRatio: '1' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+            />
+            <svg
+              viewBox="0 0 240 240"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            >
+              <path d="M20,60 L20,20 L60,20" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" />
+              <path d="M180,20 L220,20 L220,60" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" />
+              <path d="M220,180 L220,220 L180,220" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" />
+              <path d="M60,220 L20,220 L20,180" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.875rem', textAlign: 'center' }}>
+            {status === 'requesting' ? 'Accediendo a la cámara…' : 'Apunta hacia el código de barras'}
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Barcode field with scanner state machine ─────────────────────────
 type ScanState = 'idle' | 'scanning' | 'scanned'
 
@@ -930,6 +1069,7 @@ function BarcodeField({ value, onChange }: {
 }) {
   const [scanState, setScanState] = useState<ScanState>(value ? 'scanned' : 'idle')
   const [buffer, setBuffer] = useState('')
+  const [cameraOpen, setCameraOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bufferRef = useRef('')
@@ -1053,40 +1193,58 @@ function BarcodeField({ value, onChange }: {
   /* ── Idle / Scanned state ── */
   const isScanned = scanState === 'scanned'
   return (
-    <div style={{ display: 'flex', gap: '0.5rem' }}>
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem',
-        background: isScanned ? 'rgba(5,150,105,0.06)' : 'var(--surface-container)',
-        border: 'none',
-        borderBottom: `1.5px solid ${isScanned ? '#059669' : 'var(--outline-variant)'}`,
-        borderRadius: '8px 8px 0 0',
-        padding: '0.5rem 0.875rem', minHeight: '2.75rem',
-        transition: 'border-color 0.2s, background 0.2s',
-      }}>
-        {isScanned ? (
-          <>
-            <CheckCircleOutlinedIcon style={{ fontSize: '1.125rem', color: '#059669', flexShrink: 0 }} />
-            <span className="ta-mono" style={{ fontSize: '0.9375rem', color: '#059669', letterSpacing: '0.05em' }}>
-              {value}
+    <>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{
+          flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: '0.5rem',
+          background: isScanned ? 'rgba(5,150,105,0.06)' : 'var(--surface-container)',
+          border: 'none',
+          borderBottom: `1.5px solid ${isScanned ? '#059669' : 'var(--outline-variant)'}`,
+          borderRadius: '8px 8px 0 0',
+          padding: '0.5rem 0.875rem', minHeight: '2.75rem',
+          transition: 'border-color 0.2s, background 0.2s',
+        }}>
+          {isScanned ? (
+            <>
+              <CheckCircleOutlinedIcon style={{ fontSize: '1.125rem', color: '#059669', flexShrink: 0 }} />
+              <span className="ta-mono" style={{ fontSize: '0.9375rem', color: '#059669', letterSpacing: '0.05em' }}>
+                {value}
+              </span>
+            </>
+          ) : (
+            <span style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', fontStyle: 'italic' }}>
+              Sin código asignado
             </span>
-          </>
-        ) : (
-          <span style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', fontStyle: 'italic' }}>
-            Sin código asignado
-          </span>
-        )}
+          )}
+        </div>
+        <button
+          type="button"
+          className="ta-btn ta-btn-secondary"
+          style={{ flexShrink: 0, gap: '0.375rem' }}
+          onClick={startScan}
+          title={isScanned ? 'Volver a escanear' : 'Escanear código'}
+        >
+          <QrCodeScannerOutlinedIcon style={{ fontSize: '1.125rem' }} />
+          {isScanned ? 'Re-escanear' : 'Escanear'}
+        </button>
+        <button
+          type="button"
+          className="ta-btn ta-btn-secondary"
+          style={{ flexShrink: 0, gap: '0.375rem' }}
+          onClick={() => setCameraOpen(true)}
+          title="Escanear con la cámara"
+        >
+          <QrCodeScannerOutlinedIcon style={{ fontSize: '1.125rem' }} />
+          Cámara
+        </button>
       </div>
-      <button
-        type="button"
-        className="ta-btn ta-btn-secondary"
-        style={{ flexShrink: 0, gap: '0.375rem' }}
-        onClick={startScan}
-        title={isScanned ? 'Volver a escanear' : 'Escanear código'}
-      >
-        <QrCodeScannerOutlinedIcon style={{ fontSize: '1.125rem' }} />
-        {isScanned ? 'Re-escanear' : 'Escanear'}
-      </button>
-    </div>
+      {cameraOpen && (
+        <CameraScanner
+          onDetect={(code) => { acceptCode(code); setCameraOpen(false) }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+    </>
   )
 }
 

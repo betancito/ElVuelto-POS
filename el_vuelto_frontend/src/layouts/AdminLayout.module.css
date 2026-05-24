@@ -28,8 +28,14 @@
 }
 
 @media (max-width: 768px) {
+  .root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   .pageWrapper {
     margin-left: 0 !important;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
@@ -43,6 +49,7 @@
 @media (max-width: 768px) {
   .main {
     padding: 1rem;
+    padding-bottom: calc(64px + 1rem);
   }
 }
 
@@ -326,4 +333,129 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+/* ─── Hamburger visibility ────────────────────────────────────── */
+.hamburgerHiddenOnMobile {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .hamburgerHiddenOnMobile {
+    display: none;
+  }
+}
+
+/* ─── Mobile bottom nav ───────────────────────────────────────── */
+.bottomNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--surface-container);
+    border-top: 1px solid var(--outline-variant);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 60;
+    padding: 0 0.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.bottomNavItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: unset;
+  flex: 1;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.bottomNavItemActive {
+  color: var(--primary);
+  background: var(--primary-container);
+}
+
+.bottomNavCenter {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(106, 38, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.bottomNavCenter.bottomNavItemActive {
+  background: var(--primary-container);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+.bottomNavOverflowWrap {
+  position: relative;
+}
+
+.bottomNavPopover {
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  overflow: hidden;
+  z-index: 70;
+}
+
+.bottomNavPopoverItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--on-surface);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.bottomNavPopoverItem:hover {
+  background: var(--surface-container);
+}
+
+.bottomNavPopoverItem.danger {
+  color: var(--error);
 }

@@ -275,3 +275,9 @@ h1, h2, h3, h4 {
 .custom-scrollbar::-webkit-scrollbar-track { background: #faf3e8; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #dcc1b7; border-radius: 10px; }
 .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #dcc1b7 #faf3e8; }
+
+@media (max-width: 768px) {
+  html {
+    overflow-x: clip;
+  }
+}

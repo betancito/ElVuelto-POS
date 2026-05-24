@@ -779,3 +779,90 @@
   background: var(--surface-container-low);
   border-top: 1px solid rgba(220, 193, 183, 0.3);
 }
+
+/* ─── Mobile (≤768px) overrides ─────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Layout */
+  .ta-page {
+    gap: 1rem;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .ta-page-title { font-size: 1.5rem; }
+  .ta-page-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  /* Action group on right of hero should wrap full-width on mobile */
+  .ta-page-hero > *:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Cards */
+  .ta-card     { padding: 1rem; max-width: 100%; box-sizing: border-box; }
+  .ta-card-low { padding: 1rem; max-width: 100%; box-sizing: border-box; }
+
+  /* KPI grid: 1 columna en mobile */
+  .ta-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Tables: scroll horizontal */
+  .ta-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ta-table {
+    min-width: 560px;
+  }
+
+  /* Form grid: una columna en mobile */
+  .ta-form-grid { grid-template-columns: 1fr; }
+
+  /* Two-pane layout: apila verticalmente */
+  .ta-pane-layout { flex-direction: column; }
+  .ta-pane-side {
+    width: 100% !important;
+    min-height: auto;
+  }
+
+  /* Modales: bottom-sheet style en mobile */
+  .ta-modal {
+    max-width: 100% !important;
+    margin: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 95dvh;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .ta-modal--lg {
+    max-width: 100% !important;
+    max-height: 95dvh;
+  }
+  .ta-modal-backdrop {
+    align-items: flex-end;
+  }
+
+  /* Botones: tamaño táctil mínimo */
+  .ta-btn { min-height: 2.5rem; }
+  .ta-btn-primary { font-size: 0.875rem; }
+  .ta-btn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  /* Chips: scroll horizontal */
+  .ta-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.25rem;
+  }
+}

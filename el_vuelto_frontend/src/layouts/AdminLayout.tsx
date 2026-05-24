@@ -1,7 +1,7 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout } from '@/features/auth/authSlice'
-import { slugify } from '@/utils/slugify'
 import { APP_VERSION } from '@/constants/version'
 import { LayoutProvider, useLayout } from './LayoutContext'
 import type { SvgIconComponent } from '@mui/icons-material'
@@ -13,6 +13,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined'
 import styles from './AdminLayout.module.css'
 
@@ -54,9 +55,8 @@ function Sidebar() {
   const user = useAppSelector((s) => s.auth.user)
 
   function handleLogout() {
-    const slug = user?.tenantNombre ? slugify(user.tenantNombre) : null
     dispatch(logout())
-    navigate(slug ? `/login/${slug}` : '/login')
+    navigate('/login')
     closeMobile()
   }
 
@@ -133,7 +133,7 @@ function Header() {
       <div className={styles.headerLeft}>
         <button
           type="button"
-          className={styles.iconBtn}
+          className={`${styles.iconBtn} ${styles.hamburgerHiddenOnMobile}`}
           aria-label="Alternar menú"
           onClick={handleToggle}
         >
@@ -150,6 +150,112 @@ function Header() {
         </div>
       </div>
     </header>
+  )
+}
+
+// ─── MobileBottomNav ──────────────────────────────────────────────
+type BottomItem = { to: string; Icon: SvgIconComponent; label: string; center?: boolean }
+
+const BOTTOM_PRIMARY: BottomItem[] = [
+  { to: '/inventory', Icon: Inventory2OutlinedIcon, label: 'Inventario' },
+  { to: '/products',  Icon: CategoryOutlinedIcon,   label: 'Productos'  },
+  { to: '/dashboard', Icon: HomeOutlinedIcon,       label: 'Inicio', center: true },
+  { to: '/reports',   Icon: BarChartOutlinedIcon,   label: 'Reportes'   },
+]
+
+const BOTTOM_OVERFLOW: BottomItem[] = [
+  { to: '/ventas', Icon: PointOfSaleOutlinedIcon, label: 'Ventas'   },
+  { to: '/users',  Icon: GroupOutlinedIcon,        label: 'Usuarios' },
+]
+
+function MobileBottomNav() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const dispatch = useAppDispatch()
+  const { closeMobile } = useLayout()
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const overflowRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!overflowOpen) return
+    function onDown(e: MouseEvent) {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [overflowOpen])
+
+  function go(to: string) {
+    setOverflowOpen(false)
+    closeMobile()
+    navigate(to)
+  }
+
+  function handleLogout() {
+    setOverflowOpen(false)
+    dispatch(logout())
+    navigate('/login')
+  }
+
+  const overflowActive = BOTTOM_OVERFLOW.some((i) => location.pathname.startsWith(i.to))
+
+  return (
+    <nav className={styles.bottomNav} aria-label="Navegación inferior">
+      {BOTTOM_PRIMARY.map((item) => {
+        const isActive = location.pathname.startsWith(item.to)
+        const classes = [
+          item.center ? styles.bottomNavCenter : styles.bottomNavItem,
+          isActive ? styles.bottomNavItemActive : '',
+        ].filter(Boolean).join(' ')
+        return (
+          <button
+            key={item.to}
+            type="button"
+            onClick={() => go(item.to)}
+            className={classes}
+            aria-label={item.label}
+          >
+            <item.Icon fontSize={item.center ? 'medium' : 'small'} />
+          </button>
+        )
+      })}
+      <div ref={overflowRef} className={styles.bottomNavOverflowWrap}>
+        <button
+          type="button"
+          onClick={() => setOverflowOpen((o) => !o)}
+          className={`${styles.bottomNavItem} ${overflowActive ? styles.bottomNavItemActive : ''}`}
+          aria-label="Más opciones"
+        >
+          <MoreHorizIcon fontSize="small" />
+          <span>Más</span>
+        </button>
+        {overflowOpen && (
+          <div className={styles.bottomNavPopover}>
+            {BOTTOM_OVERFLOW.map((item) => (
+              <button
+                key={item.to}
+                type="button"
+                onClick={() => go(item.to)}
+                className={styles.bottomNavPopoverItem}
+              >
+                <item.Icon fontSize="small" />
+                {item.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={`${styles.bottomNavPopoverItem} ${styles.danger}`}
+            >
+              <LogoutIcon fontSize="small" />
+              Salir
+            </button>
+          </div>
+        )}
+      </div>
+    </nav>
   )
 }
 
@@ -172,6 +278,7 @@ function LayoutShell() {
           <Outlet />
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   )
 }

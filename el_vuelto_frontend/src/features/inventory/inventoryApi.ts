@@ -23,6 +23,8 @@ export interface StockItem {
   precio_costo: string | null
   proveedor: string | null
   imagen_url: string | null
+  category_id: string | null
+  category_nombre: string | null
 }
 
 export const inventoryApi = apiBase.injectEndpoints({

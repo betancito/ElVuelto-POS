@@ -11,4 +11,16 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  server: {
+    // Forward /api requests to the local Django backend so the frontend can
+    // use same-origin URLs. This makes the app work both at localhost:5173
+    // (Vite directly) and at 192.168.1.9:5173 (via the nginx reverse proxy)
+    // without CORS configuration or hardcoded host/IP in the bundle.
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

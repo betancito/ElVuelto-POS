@@ -36,6 +36,7 @@
     margin-left: 0 !important;
     max-width: 100%;
     overflow-x: hidden;
+    padding-top: 0;
   }
 }
 
@@ -341,6 +342,12 @@
 }
 
 @media (max-width: 768px) {
+  /* Hide the whole top bar on mobile — the bottom nav replaces it.
+     Must come after the base .header rule above so it wins on source order
+     (media queries don't add specificity). */
+  .header {
+    display: none;
+  }
   .hamburgerHiddenOnMobile {
     display: none;
   }
@@ -364,7 +371,8 @@
     border-top: 1px solid var(--outline-variant);
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: stretch;
+    gap: 0;
     z-index: 60;
     padding: 0 0.5rem;
     padding-bottom: env(safe-area-inset-bottom, 0);
@@ -388,7 +396,9 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   min-width: unset;
-  flex: 1;
+  flex: 1 1 0;
+  max-width: none;
+  justify-content: center;
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
 }
@@ -401,6 +411,9 @@
 .bottomNavCenter {
   width: 2.75rem;
   height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--primary);
   color: var(--on-primary);
@@ -410,7 +423,8 @@
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(106, 38, 0, 0.35);
-  flex-shrink: 0;
+  flex: 0 0 2.75rem;
+  align-self: center;
 }
 
 .bottomNavCenter.bottomNavItemActive {
@@ -421,6 +435,9 @@
 
 .bottomNavOverflowWrap {
   position: relative;
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
 }
 
 .bottomNavPopover {

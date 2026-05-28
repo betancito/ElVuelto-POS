@@ -20,6 +20,13 @@ export interface CreateUserArgs {
   lead_cashier?: boolean
 }
 
+export interface UpdateMeArgs {
+  nombre?: string
+  correo?: string
+  current_password?: string
+  new_password?: string
+}
+
 export const usersApi = apiBase.injectEndpoints({
   endpoints: (builder) => ({
     listUsers: builder.query<User[], void>({
@@ -43,6 +50,10 @@ export const usersApi = apiBase.injectEndpoints({
     resetPassword: builder.mutation<{ new_password: string }, string>({
       query: (id) => ({ url: `/users/${id}/reset_password/`, method: 'POST' }),
     }),
+    updateMe: builder.mutation<User, UpdateMeArgs>({
+      query: (body) => ({ url: '/auth/me/update/', method: 'PATCH', body }),
+      invalidatesTags: ['User'],
+    }),
   }),
 })
 
@@ -52,4 +63,5 @@ export const {
   useUpdateUserMutation,
   useToggleUserActiveMutation,
   useResetPasswordMutation,
+  useUpdateMeMutation,
 } = usersApi

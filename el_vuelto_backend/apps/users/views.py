@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -33,6 +33,48 @@ class CashierLoginView(APIView):
 class MeView(APIView):
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class UpdateMeView(APIView):
+    """PATCH /api/auth/me/update/ — update own nombre, correo, or password."""
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+
+        if "nombre" in data:
+            nombre = (data["nombre"] or "").strip()
+            if len(nombre) < 2:
+                return Response(
+                    {"nombre": "Mínimo 2 caracteres."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            user.nombre = nombre
+
+        if "correo" in data:
+            correo = data["correo"].strip() if data["correo"] else None
+            if correo and User.objects.filter(correo=correo).exclude(pk=user.pk).exists():
+                return Response(
+                    {"correo": "Ya existe un usuario con este correo."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.correo = correo
+
+        if "new_password" in data:
+            current_password = data.get("current_password", "")
+            if not user.check_password(current_password):
+                return Response(
+                    {"current_password": "Contraseña actual incorrecta."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            new_password = data["new_password"]
+            if len(new_password) < 6:
+                return Response(
+                    {"new_password": "Mínimo 6 caracteres."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            user.set_password(new_password)
+
+        user.save()
+        return Response(UserSerializer(user).data)
 
 
 class UserViewSet(viewsets.ModelViewSet):

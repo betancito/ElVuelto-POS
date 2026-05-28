@@ -648,7 +648,7 @@ export default function InventoryPage() {
       </div>
 
       {/* ── KPIs ── */}
-      <div className="ta-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="ta-kpi-grid">
         <div className="ta-kpi-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
             <p className="ta-kpi-label">Productos activos</p>
@@ -775,7 +775,9 @@ export default function InventoryPage() {
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>
           ) : (
-            <MovementsTable movements={movements ?? []} />
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <MovementsTable movements={movements ?? []} />
+            </div>
           )}
         </div>
       )}

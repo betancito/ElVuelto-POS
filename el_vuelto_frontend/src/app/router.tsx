@@ -27,6 +27,7 @@ import ProductsPage from '@/features/products/ProductsPage'
 import InventoryPage from '@/features/inventory/InventoryPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import UsersPage from '@/features/users/UsersPage'
+import ProfilePage from '@/features/users/ProfilePage'
 import SalesHistoryPage from '@/features/sales/SalesHistoryPage'
 
 export const router = createBrowserRouter([
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
       { path: '/ventas', element: <SalesHistoryPage /> },
       { path: '/reports', element: <ReportsPage /> },
       { path: '/users', element: <UsersPage /> },
+      { path: '/profile', element: <ProfilePage /> },
     ],
   },
 

@@ -15,6 +15,7 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined'
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import styles from './AdminLayout.module.css'
 
 // ─── Navigation items ─────────────────────────────────────────────
@@ -121,12 +122,26 @@ const MOBILE_BP = 768
 function Header() {
   const user = useAppSelector((s) => s.auth.user)
   const { toggleCollapsed, toggleMobile } = useLayout()
+  const navigate = useNavigate()
   const initial = (user?.nombre ?? 'A').charAt(0).toUpperCase()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   function handleToggle() {
     if (window.innerWidth <= MOBILE_BP) toggleMobile()
     else toggleCollapsed()
   }
+
+  useEffect(() => {
+    if (!profileOpen) return
+    function onDown(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [profileOpen])
 
   return (
     <header className={styles.header}>
@@ -145,8 +160,73 @@ function Header() {
         <button type="button" className={styles.iconBtn} aria-label="Notificaciones">
           <NotificationsOutlinedIcon fontSize="small" />
         </button>
-        <div className={styles.avatar} title={user?.nombre ?? 'Admin'}>
-          {initial}
+        <div ref={profileRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className={styles.avatar}
+            onClick={() => setProfileOpen((o) => !o)}
+            title={user?.nombre ?? 'Mi perfil'}
+            style={{ cursor: 'pointer', border: 'none', padding: 0 }}
+          >
+            {initial}
+          </button>
+          {profileOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 0.5rem)',
+                right: 0,
+                background: 'var(--surface)',
+                border: '1px solid var(--outline-variant)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                minWidth: '200px',
+                zIndex: 50,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  padding: '0.875rem 1.25rem',
+                  borderBottom: '1px solid var(--outline-variant)',
+                  background: 'var(--surface-container-low)',
+                }}
+              >
+                <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--on-surface)' }}>
+                  {user?.nombre}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.125rem' }}>
+                  {user?.correo ?? user?.cedula ?? ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(false)
+                  navigate('/profile')
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  width: '100%',
+                  padding: '0.875rem 1.25rem',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: 'var(--on-surface)',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-container)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <SettingsOutlinedIcon fontSize="small" />
+                Mi perfil
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -164,8 +244,9 @@ const BOTTOM_PRIMARY: BottomItem[] = [
 ]
 
 const BOTTOM_OVERFLOW: BottomItem[] = [
-  { to: '/ventas', Icon: PointOfSaleOutlinedIcon, label: 'Ventas'   },
-  { to: '/users',  Icon: GroupOutlinedIcon,        label: 'Usuarios' },
+  { to: '/ventas',  Icon: PointOfSaleOutlinedIcon, label: 'Ventas'    },
+  { to: '/users',   Icon: GroupOutlinedIcon,        label: 'Usuarios'  },
+  { to: '/profile', Icon: SettingsOutlinedIcon,     label: 'Mi perfil' },
 ]
 
 function MobileBottomNav() {

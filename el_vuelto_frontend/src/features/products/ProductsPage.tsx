@@ -29,6 +29,7 @@ import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 
 // ─── Schemas ────────────────────────────────────────────────────────
 const productSchema = z.object({
@@ -939,10 +940,12 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const zxingControlsRef = useRef<IScannerControls | null>(null)
   const detectedRef = useRef(false)
 
   function stopAll() {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+    if (zxingControlsRef.current) { zxingControlsRef.current.stop(); zxingControlsRef.current = null }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop())
       streamRef.current = null
@@ -958,45 +961,75 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps) {
     let cancelled = false
 
     async function start() {
-      if (!('BarcodeDetector' in window)) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         setStatus('error')
-        setErrorMsg('Tu navegador no soporta la cámara. Usa el lector físico o ingresa el código manualmente.')
+        setErrorMsg('Tu navegador no expone acceso a la cámara. Asegúrate de estar en HTTPS o localhost.')
         return
       }
+
+      let stream: MediaStream
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
         })
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
-        streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play()
+      } catch (err) {
+        if (cancelled) return
+        const name = (err as { name?: string })?.name ?? ''
+        setStatus('error')
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+          setErrorMsg('Permiso de cámara denegado. Habilítalo en los ajustes del navegador y vuelve a intentar.')
+        } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+          setErrorMsg('No se encontró una cámara disponible en este dispositivo.')
+        } else {
+          setErrorMsg('No se pudo acceder a la cámara. Inténtalo de nuevo.')
         }
-        setStatus('scanning')
+        return
+      }
 
+      if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play().catch(() => { /* play interruptions are non-fatal */ })
+      }
+
+      setStatus('scanning')
+
+      function handleHit(rawValue: string) {
+        if (detectedRef.current) return
+        detectedRef.current = true
+        navigator.vibrate?.(120)
+        stopAll()
+        onDetect(rawValue)
+      }
+
+      if ('BarcodeDetector' in window) {
         const detector = new BarcodeDetector({
           formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'qr_code'],
         })
-
         intervalRef.current = setInterval(async () => {
           if (detectedRef.current || !videoRef.current) return
           try {
             const codes = await detector.detect(videoRef.current)
-            if (codes.length > 0) {
-              detectedRef.current = true
-              navigator.vibrate?.(120)
-              stopAll()
-              onDetect(codes[0].rawValue)
-            }
+            if (codes.length > 0) handleHit(codes[0].rawValue)
           } catch {
             /* transient detect errors are non-fatal */
           }
         }, 400)
+        return
+      }
+
+      try {
+        const reader = new BrowserMultiFormatReader()
+        const controls = await reader.decodeFromVideoElement(videoRef.current!, (result) => {
+          if (result) handleHit(result.getText())
+        })
+        if (cancelled) { controls.stop(); return }
+        zxingControlsRef.current = controls
       } catch {
         if (cancelled) return
         setStatus('error')
-        setErrorMsg('No se pudo acceder a la cámara. Verifica los permisos.')
+        setErrorMsg('No se pudo iniciar el decodificador de códigos. Intenta de nuevo o usa el lector físico.')
       }
     }
 

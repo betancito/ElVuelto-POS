@@ -34,10 +34,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if cedula:
             cedula = cedula.strip()
             tenant_id = self.initial_data.get("tenant_id")
-            qs = User.objects.filter(cedula=cedula)
-            if tenant_id:
-                qs = qs.filter(tenant_id=tenant_id)
-            user = qs.first()
+            # Cédula is unique only *per tenant*; require tenant_id so a cédula
+            # repeated across businesses can never authenticate the wrong account.
+            if not tenant_id:
+                raise serializers.ValidationError(
+                    {"tenant_id": "Este campo es obligatorio para el ingreso por cédula."}
+                )
+            user = User.objects.filter(cedula=cedula, tenant_id=tenant_id).first()
             if user is None:
                 raise AuthenticationFailed("Credenciales incorrectas.")
             if not user.check_password(self.initial_data.get("password", "")):
@@ -86,17 +89,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class CashierLoginSerializer(serializers.Serializer):
     cedula = serializers.CharField(min_length=1)
     password = serializers.CharField(min_length=4, style={"input_type": "password"})
-    tenant_id = serializers.UUIDField(required=False, allow_null=True)
+    # Required: cédula is unique only *per tenant*, so tenant_id disambiguates
+    # which business the cashier belongs to (prevents cross-tenant auth).
+    tenant_id = serializers.UUIDField(required=True)
 
     def validate(self, data):
         cedula = data["cedula"].strip()
         password = data["password"]
-        tenant_id = data.get("tenant_id")
+        tenant_id = data["tenant_id"]
 
-        qs = User.objects.filter(cedula=cedula)
-        if tenant_id:
-            qs = qs.filter(tenant_id=tenant_id)
-        user = qs.first()
+        user = User.objects.filter(cedula=cedula, tenant_id=tenant_id).first()
 
         if user is None:
             raise AuthenticationFailed("Credenciales incorrectas.")

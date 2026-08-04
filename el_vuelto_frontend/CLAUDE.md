@@ -237,6 +237,7 @@ generatePin()             // 4-digit numeric PIN
 `printReceipt.ts` — 80mm thermal receipt layout.
 `generateReceipt.ts` — jsPDF receipt for download.
 `downloadCredentials.ts` — exports credentials as `.txt`.
+`applyServerErrors.ts` — `applyServerErrors(err, setError, fallback?)` maps a DRF 400 onto a react-hook-form (see the form-errors pattern below).
 
 ---
 
@@ -250,6 +251,8 @@ generatePin()             // 4-digit numeric PIN
 5. Add nav item to `AdminLayout.tsx`
 
 **RTK Query tag invalidation:** When a mutation affects multiple resources (e.g., creating a sale affects stock), list all affected tags in `invalidatesTags`.
+
+**Server-side form errors:** Uniqueness (correo global, cédula per-tenant, nit, barcode) and role-specific rules are validated only on the backend, which returns a DRF 400 `{ campo: ["msg"] }`. In a form's submit `catch`, route the error through `applyServerErrors(err, setError, fallback?)` (`src/utils/applyServerErrors.ts`) — it calls `setError(campo, { type: 'server', message })` per field (field `name` must match the backend's Spanish snake_case key: `correo`, `cedula`, `nit`, `admin_correo`, …), toasts `non_field_errors`/`detail`, and toasts `fallback` for non-400 errors. Never leave an empty `catch {}` on a form submit. Applied in `UsersPage.tsx` and `super-admin/tenants/index.tsx`; `ProductsPage.tsx` and `InventoryPage.tsx` still pending the same treatment.
 
 **Barcode scanning pattern** (used in POS and Inventory):
 ```ts

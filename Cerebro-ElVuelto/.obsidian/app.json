@@ -1,0 +1,9 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "_adjuntos",
+  "showFrontmatter": true,
+  "defaultViewMode": "source",
+  "livePreview": true
+}

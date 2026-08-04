@@ -1,0 +1,6 @@
+# Estado de UI de Obsidian: envenena todos los merges. No se versiona.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+_adjuntos/.DS_Store

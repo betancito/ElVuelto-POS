@@ -1,5 +1,7 @@
 import secrets
 
+from django.contrib.auth.models import BaseUserManager
+from django.db import transaction
 from rest_framework import serializers
 
 from .models import Tenant, TenantDocument
@@ -46,13 +48,30 @@ class TenantCreateSerializer(TenantSerializer):
     def get_initial_admin_password(self, obj):
         return self.context.get("initial_admin_password")
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        # Admin correo is globally unique (User.correo). Pre-check here so a
+        # duplicate returns a clean 400 by-field instead of a 500 + orphan tenant.
+        from apps.users.models import User
+
+        admin_correo = BaseUserManager.normalize_email(attrs["admin_correo"])
+        if User.objects.filter(correo=admin_correo).exists():
+            raise serializers.ValidationError(
+                {"admin_correo": "Ya existe un usuario con este correo."}
+            )
+        attrs["admin_correo"] = admin_correo
+        return attrs
+
     def create(self, validated_data):
         admin_nombre = validated_data.pop("admin_nombre")
         admin_correo = validated_data.pop("admin_correo")
-        tenant = super().create(validated_data)
-        initial_password = secrets.token_urlsafe(12)
-        self.context["initial_admin_password"] = initial_password
-        self._create_initial_admin(tenant, admin_nombre, admin_correo, initial_password)
+        # Tenant + initial admin must commit together: if the admin insert fails
+        # (e.g. a correo race), roll the tenant back so no orphan tenant remains.
+        with transaction.atomic():
+            tenant = super().create(validated_data)
+            initial_password = secrets.token_urlsafe(12)
+            self.context["initial_admin_password"] = initial_password
+            self._create_initial_admin(tenant, admin_nombre, admin_correo, initial_password)
         return tenant
 
     @staticmethod

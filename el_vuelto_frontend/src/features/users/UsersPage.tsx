@@ -11,6 +11,7 @@ import {
 } from './usersApi'
 import type { User } from './usersApi'
 import { generateAdminPassword, generatePin } from '@/utils/generatePassword'
+import { applyServerErrors } from '@/utils/applyServerErrors'
 import { useAppSelector } from '@/app/hooks'
 import Spinner from '@/components/ui/Spinner'
 import UserCredentialsModal from '@/components/ui/UserCredentialsModal'
@@ -70,7 +71,7 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false)
   const [userCreds, setUserCreds] = useState<UserCredentialsData | null>(null)
 
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, reset, setError, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { rol: 'CAJERO', lead_cashier: false },
   })
@@ -80,6 +81,7 @@ export default function UsersPage() {
     handleSubmit: handleSubmitEdit,
     watch: watchEdit,
     reset: resetEdit,
+    setError: setEditError,
     formState: { errors: editErrors },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
 
@@ -115,7 +117,9 @@ export default function UsersPage() {
         loginIdentifier: payload.rol === 'CAJERO' ? (payload.cedula ?? '') : (payload.correo ?? ''),
         password,
       })
-    } catch {}
+    } catch (err) {
+      applyServerErrors(err, setError, 'No se pudo crear el usuario. Revisa los datos e intenta de nuevo.')
+    }
   }
 
   function handleOpenEdit(u: User) {
@@ -141,7 +145,9 @@ export default function UsersPage() {
         lead_cashier: data.rol === 'CAJERO' ? (data.lead_cashier ?? false) : false,
       }).unwrap()
       setEditUser(null)
-    } catch {}
+    } catch (err) {
+      applyServerErrors(err, setEditError, 'No se pudo actualizar el usuario. Revisa los datos e intenta de nuevo.')
+    }
   }
 
   async function handleReset(id: string) {

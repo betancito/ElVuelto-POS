@@ -1,0 +1,21 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    { "query": "path:modules/", "color": { "a": 1, "rgb": 15238740 } },
+    { "query": "path:_global/", "color": { "a": 1, "rgb": 5431378 } },
+    { "query": "path:_conexiones/", "color": { "a": 1, "rgb": 16744192 } },
+    { "query": "path:planeacion/", "color": { "a": 1, "rgb": 11780346 } },
+    { "query": "path:_sesiones/", "color": { "a": 1, "rgb": 5478570 } }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.1,
+  "lineSizeMultiplier": 1
+}

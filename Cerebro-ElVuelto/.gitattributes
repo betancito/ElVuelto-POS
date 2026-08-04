@@ -1,0 +1,12 @@
+# ── Cerebro-ElVuelto · reglas de merge (anti-conflicto) ──
+# Índices "delgados" y append-only: unir ambos lados, nunca reordenar.
+00-INDEX.md            merge=union
+00-global.md           merge=union
+00-conexiones.md       merge=union
+00-modulos.md          merge=union
+00-planeacion.md       merge=union
+# Handoffs de sesión: archivo nuevo por sesión, pero por si dos ramas tocan el índice.
+_sesiones/**           merge=union
+# Estado de UI de Obsidian: cambia con cada clic, quédate con lo tuyo.
+.obsidian/workspace.json         merge=ours
+.obsidian/workspace-mobile.json  merge=ours

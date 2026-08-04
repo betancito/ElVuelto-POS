@@ -74,9 +74,11 @@ Superadmin users have `tenant=None` and bypass tenant filtering via `IsSuperAdmi
 | Flow | Endpoint | Who uses it |
 |---|---|---|
 | Email + password | `POST /api/auth/login/` | Tenant admins, superadmin |
-| Cedula + password | `POST /api/auth/login/cashier/` | Cashiers (POS) |
+| Cedula + tenant_id + password | `POST /api/auth/login/cashier/` | Cashiers (POS) |
 | Token refresh | `POST /api/auth/refresh/` | All |
 | Current user | `GET /api/auth/me/` | All authenticated |
+
+**Cédula login requires `tenant_id`.** Cédula is unique only *per tenant* (DB constraint `unique(tenant, cedula)`), so `CashierLoginSerializer` makes `tenant_id` **required** and always filters `User.objects.filter(cedula=..., tenant_id=...)` — a missing `tenant_id` returns **400**. This prevents a cédula repeated across businesses from authenticating the wrong account. The cédula branch of `CustomTokenObtainPairSerializer` (`/api/auth/login/`) enforces the same guard defensively, though the frontend only sends `cedula` to `/api/auth/login/cashier/` (it sends only `correo` to `/api/auth/login/`).
 
 ### JWT payload extras
 
@@ -253,14 +255,14 @@ DELETE /api/tenants/{id}/                   destroy               IsSuperAdmin
 POST   /api/tenants/{id}/upload_logo/       upload_logo           IsSuperAdmin  → Cloudinary upload
 ```
 
-Creating a tenant (`POST /api/tenants/`) also requires `admin_nombre` + `admin_correo` fields and auto-creates the initial ADMIN user. Returns `initial_admin_password` in the response.
+Creating a tenant (`POST /api/tenants/`) also requires `admin_nombre` + `admin_correo` fields and auto-creates the initial ADMIN user. Returns `initial_admin_password` in the response. The tenant + admin are created inside a single `transaction.atomic()` block, so a failure creating the admin rolls the tenant back (no orphan). Because `User.correo` is globally unique, a duplicate `admin_correo` is pre-validated and returns **400** `{"admin_correo": ...}` (never a 500).
 
 ### Products — `/api/products/`
 
 ```
-GET    /api/products/categories/                    list             IsAuthenticated (scoped to tenant)
+GET    /api/products/categories/                    list             IsCajero  (cashier reads catalog for POS)
 POST   /api/products/categories/                    create           IsAdmin
-GET    /api/products/categories/{id}/               retrieve         IsAuthenticated
+GET    /api/products/categories/{id}/               retrieve         IsCajero
 PATCH  /api/products/categories/{id}/               partial_update   IsAdmin
 DELETE /api/products/categories/{id}/               destroy          IsAdmin
 POST   /api/products/categories/{id}/upload_image/  upload_image     IsAdmin  → Cloudinary

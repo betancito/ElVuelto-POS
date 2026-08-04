@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.tenants.viewsets import TenantModelViewSet
-from apps.users.permissions import IsCajero
+from apps.users.permissions import IsAdmin, IsCajero
 
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductPOSSerializer, ProductSerializer
@@ -13,6 +13,13 @@ from .serializers import CategorySerializer, ProductPOSSerializer, ProductSerial
 class CategoryViewSet(TenantModelViewSet):
     queryset = Category.objects.all().order_by("nombre")
     serializer_class = CategorySerializer
+
+    def get_permissions(self):
+        # Cashier is read-only on the catalog: may list/retrieve categories,
+        # but create/update/partial_update/destroy/upload_image stay admin-only.
+        if self.action in ("list", "retrieve"):
+            return [IsCajero()]
+        return [IsAdmin()]
 
     @action(detail=True, methods=["post"], url_path="upload_image")
     def upload_image(self, request, pk=None):
@@ -37,6 +44,7 @@ class CategoryViewSet(TenantModelViewSet):
 
 
 class ProductViewSet(TenantModelViewSet):
+    permission_classes = [IsAdmin]
     serializer_class = ProductSerializer
 
     def get_queryset(self):

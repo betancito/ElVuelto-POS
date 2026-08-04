@@ -16,6 +16,7 @@ import PageLoader from '@/components/ui/PageLoader'
 import CredentialsModal from '@/components/ui/CredentialsModal'
 import type { CredentialsData } from '@/components/ui/CredentialsModal'
 import TenantsTable from './components/TenantsTable'
+import { applyServerErrors } from '@/utils/applyServerErrors'
 import styles from './TenantsPage.module.css'
 
 const createSchema = z.object({
@@ -64,8 +65,8 @@ export default function TenantsPage() {
         adminCorreo: data.admin_correo,
         password: result.initial_admin_password,
       })
-    } catch {
-      toast.error('No se pudo crear el negocio. Verifica los datos e intenta de nuevo.')
+    } catch (err) {
+      applyServerErrors(err, createForm.setError, 'No se pudo crear el negocio. Verifica los datos e intenta de nuevo.')
     }
   }
 
@@ -88,8 +89,8 @@ export default function TenantsPage() {
       setEditingTenant(null)
       await refetch()
       toast.success(`"${data.nombre}" actualizado correctamente.`)
-    } catch {
-      toast.error('No se pudo actualizar el negocio. Intenta de nuevo.')
+    } catch (err) {
+      applyServerErrors(err, editForm.setError, 'No se pudo actualizar el negocio. Intenta de nuevo.')
     }
   }
 

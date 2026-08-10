@@ -99,6 +99,49 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    # NOTE: no DEFAULT_THROTTLE_CLASSES on purpose. Throttling is opt-in, applied
+    # only by the authentication views (apps/users/throttles.py). A global limit
+    # would hit the POS, which is by far the busiest screen.
+    "DEFAULT_THROTTLE_RATES": {
+        # Login attempts, keyed by the identity being tried (cédula+tenant or
+        # correo). Shared by /auth/login/ and /auth/login/cashier/ so switching
+        # endpoints does not double the budget.
+        "login_identity_burst": "10/min",
+        "login_identity_daily": "50/day",
+        # Ceiling per client IP for those same endpoints: stops one source from
+        # fanning out over many identities. Far above a real store, far below the
+        # ~540/min a scripted attack reaches.
+        "login_ip": "60/min",
+        # Access tokens live 8 hours, so refreshes are rare even with several tills.
+        "token_refresh_ip": "30/min",
+        # Public slug lookup: one call per staff-login page load.
+        "tenant_slug_ip": "30/min",
+    },
+}
+
+# DRF counts throttling in the cache, so this must be explicit — leaving it to
+# the default was the silent failure mode: Django falls back to LocMemCache,
+# which is **per process**, so with N gunicorn workers every limit above is
+# effectively multiplied by N (each worker keeps its own count).
+#
+# dev: LocMemCache is fine — one process, counts are exact.
+# production: set REDIS_URL so every worker shares one counter. The Redis backend
+# is built into Django but needs the `redis` package installed; it is deliberately
+# NOT in requirements.txt, so the app runs without it and only the operator who
+# sets REDIS_URL has to add it.
+REDIS_URL = config("REDIS_URL", default="")
+CACHES = {
+    "default": (
+        {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+        if REDIS_URL
+        else {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "elvuelto-local",
+        }
+    )
 }
 
 SIMPLE_JWT = {
@@ -108,6 +151,20 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    # Changing a password revokes every token issued before the change.
+    # `Token.for_user()` stamps a `hash_password` claim (MD5 of the password
+    # hash at issue time) and `JWTAuthentication.get_user()` compares it against
+    # the current one on every authenticated request → 401 `password_changed`.
+    # Without this, `reset_password` only blocked NEW logins: a token stolen
+    # before the reset kept creating sales, so the one remediation available
+    # against a leaked PIN did not actually end the live session.
+    # Cost: no extra query. `get_user()` already loads the User on every request
+    # (that is how `is_active` is checked); this adds an in-memory MD5 over an
+    # object already in hand. It also propagates through refresh: a refresh
+    # token issued before the change carries the old claim forever, and
+    # `RefreshToken.access_token` copies every claim (`hash_password` is not in
+    # `no_copy_claims`), so the access tokens it mints are rejected too.
+    "CHECK_REVOKE_TOKEN": True,
 }
 
 CORS_ALLOWED_ORIGINS = [

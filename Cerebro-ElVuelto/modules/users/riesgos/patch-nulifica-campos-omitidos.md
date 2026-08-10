@@ -3,8 +3,15 @@ tags: [riesgo, users]
 status: abierto
 module: users
 severidad: media
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!info] Re-verificado el 2026-08-04 (PASO 0) — sigue ABIERTO, con dos correcciones a esta ficha
+> 1. **Drift de líneas:** las anclas de abajo se corrieron 2 líneas. Hoy son `serializers.py:192-193` (no 190-191) y `update()` en `:205-214` (no 203-212). El contenido es idéntico.
+> 2. **El "escenario de fallo concreto" de abajo está mal descrito.** Un `PATCH {"nombre": "Nuevo"}` sobre un ADMIN **no borra el correo**: muere antes con un **400 espurio**, porque `validate` asume `rol=CAJERO` cuando el PATCH no manda `rol` (`serializers.py:167`, `rol = data.get("rol", UserRole.CAJERO)`) y entonces `:171-172` exige cédula. La nulificación real ocurre en los PATCH que **sí** mandan `rol` pero omiten el otro campo.
+> 3. Precisión: `update()` **no** usa `.get(campo, None)` como sugiere el texto original — solo itera `validated_data`. El defecto vive **entero** en `validate()`.
+>
+> Ambos defectos (nulificación + rol por defecto) se entregan juntos en [[PROMPT-FIX-USERS-20260804-invariante-correo-admin]], con el otro camino de escritura: [[perfil-nulifica-correo-admin]].
 
 # Riesgo — PATCH parcial nulifica `correo`/`cedula` omitidos
 

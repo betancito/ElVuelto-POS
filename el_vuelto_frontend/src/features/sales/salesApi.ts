@@ -51,7 +51,10 @@ export const salesApi = apiBase.injectEndpoints({
     }),
     createSale: builder.mutation<Sale, CreateSaleArgs>({
       query: (body) => ({ url: '/sales/', method: 'POST', body }),
-      invalidatesTags: ['Sale', 'InventoryMovement', 'Product'],
+      // A sale moves every sales-based report figure (summary, hourly/daily,
+      // top products, sales-detail) — all provide 'Report' — so invalidate it
+      // too, else dashboard/reports stay stale until a manual refetch.
+      invalidatesTags: ['Sale', 'InventoryMovement', 'Product', 'Report'],
     }),
   }),
 })

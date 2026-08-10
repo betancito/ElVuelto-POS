@@ -1,13 +1,13 @@
 ---
 tags: [riesgo, global, backend, deps]
-status: vivo
+status: resuelto
 severidad: baja
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # Riesgo — Dependencias: `cloudinary` duplicado y `python-escpos` muerto
 
-**Severidad:** 🟡 baja (higiene) · **Fix prioritario:** sí (decisión D-4)
+**Severidad:** 🟡 baja (higiene) · **Estado:** 🟢 RESUELTO 2026-08-03 — `requirements.txt` deduplicado y sin `python-escpos`; docs corregidas. Ver [[BACKEND-20260802-limpiar-deps]].
 
 ## Qué
 - `cloudinary==1.44.2` aparece **dos veces** en `requirements.txt:9-10`.

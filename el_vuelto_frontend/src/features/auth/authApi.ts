@@ -26,6 +26,7 @@ interface LoginResponse {
     activo: boolean
     tenant_id: string | null
     tenant_nombre: string | null
+    tenant_slug: string | null
     tenant_logo_url: string | null
     tenant_email: string | null
     tenant_support_phone: string | null
@@ -53,6 +54,7 @@ export const authApi = apiBase.injectEndpoints({
                 activo: data.user.activo,
                 tenantId: data.user.tenant_id,
                 tenantNombre: data.user.tenant_nombre,
+                tenantSlug: data.user.tenant_slug,
                 tenantLogoUrl: data.user.tenant_logo_url,
                 tenantEmail: data.user.tenant_email,
                 tenantSupportPhone: data.user.tenant_support_phone,
@@ -81,6 +83,7 @@ export const authApi = apiBase.injectEndpoints({
                 activo: data.user.activo,
                 tenantId: data.user.tenant_id,
                 tenantNombre: data.user.tenant_nombre,
+                tenantSlug: data.user.tenant_slug,
                 tenantLogoUrl: data.user.tenant_logo_url,
                 tenantEmail: data.user.tenant_email,
                 tenantSupportPhone: data.user.tenant_support_phone,

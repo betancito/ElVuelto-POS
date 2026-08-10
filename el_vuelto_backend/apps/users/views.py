@@ -1,13 +1,26 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import User
+from apps.tenants.utils import require_tenant
+from apps.tenants.viewsets import METHODS_WITHOUT_PUT
+
+from .models import User, UserRole
+from .password_policy import length_error_for, min_length_for
 from .permissions import IsAdmin
+from .throttles import (
+    LoginIdentityBurstThrottle,
+    LoginIdentityDailyThrottle,
+    LoginIPThrottle,
+    TokenRefreshIPThrottle,
+)
 from .serializers import (
+    ActiveUserTokenRefreshSerializer,
     CashierLoginSerializer,
     CustomTokenObtainPairSerializer,
     UserCreateSerializer,
@@ -16,13 +29,35 @@ from .serializers import (
 )
 
 
+LOGIN_THROTTLES = [
+    LoginIdentityBurstThrottle,
+    LoginIdentityDailyThrottle,
+    LoginIPThrottle,
+]
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = LOGIN_THROTTLES
+
+
+class ThrottledTokenRefreshView(TokenRefreshView):
+    """`TokenRefreshView` with a rate limit and an active-user check.
+
+    The base class has neither: it would hand a fresh access token to a
+    deactivated user (see `ActiveUserTokenRefreshSerializer`).
+    """
+
+    serializer_class = ActiveUserTokenRefreshSerializer
+    throttle_classes = [TokenRefreshIPThrottle]
 
 
 class CashierLoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    # The POS login is the brute-force target: public tenant UUID + non-secret
+    # cédula + 4-digit PIN. See apps/users/throttles.py.
+    throttle_classes = LOGIN_THROTTLES
 
     def post(self, request):
         serializer = CashierLoginSerializer(data=request.data, context={"request": request})
@@ -51,12 +86,42 @@ class UpdateMeView(APIView):
             user.nombre = nombre
 
         if "correo" in data:
-            correo = data["correo"].strip() if data["correo"] else None
-            if correo and User.objects.filter(correo=correo).exclude(pk=user.pk).exists():
-                return Response(
-                    {"correo": "Ya existe un usuario con este correo."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            # Normalise BEFORE deciding anything: `"   "` is truthy, so the old
+            # `data["correo"].strip() if data["correo"] else None` stored an empty
+            # string instead of NULL — and `correo` is unique, so the *second*
+            # user doing it hit `IntegrityError` (a 500 DRF does not map). Same
+            # normalisation as `UserCreateSerializer.validate`.
+            correo = (data["correo"] or "").strip() or None
+            if not correo:
+                # Two independent reasons to refuse, both about lockout:
+                # (a) the per-role invariant — an administrator always has a
+                #     correo (same rule as UserCreateSerializer / User.clean);
+                # (b) whatever the rol, `correo` is USERNAME_FIELD and the only
+                #     login that does not use it is the cashier flow, which needs
+                #     `cedula` AND `tenant_id` (CashierLoginSerializer). Someone
+                #     without both has no way back in — a SUPERADMIN has neither.
+                if user.rol in (UserRole.ADMIN, UserRole.SUPERADMIN):
+                    return Response(
+                        {"correo": "El correo es obligatorio para administradores."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if not (user.cedula and user.tenant_id):
+                    return Response(
+                        {"correo": "No puedes quedarte sin correo: es tu única forma de iniciar sesión."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            if correo:
+                try:
+                    validate_email(correo)
+                except DjangoValidationError:
+                    return Response(
+                        {"correo": "Correo inválido."}, status=status.HTTP_400_BAD_REQUEST
+                    )
+                if User.objects.filter(correo=correo).exclude(pk=user.pk).exists():
+                    return Response(
+                        {"correo": "Ya existe un usuario con este correo."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             user.correo = correo
 
         if "new_password" in data:
@@ -67,9 +132,10 @@ class UpdateMeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             new_password = data["new_password"]
-            if len(new_password) < 6:
+            if len(new_password) < min_length_for(user.rol):
                 return Response(
-                    {"new_password": "Mínimo 6 caracteres."}, status=status.HTTP_400_BAD_REQUEST
+                    {"new_password": length_error_for(user.rol)},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             user.set_password(new_password)
 
@@ -81,9 +147,15 @@ class UserViewSet(viewsets.ModelViewSet):
     """CRUD for users scoped to the authenticated user's tenant."""
 
     permission_classes = [IsAdmin]
+    # No PUT: a multipart PUT omitting `activo`/`lead_cashier` would silently
+    # switch them off (see METHODS_WITHOUT_PUT).
+    http_method_names = METHODS_WITHOUT_PUT
 
     def get_queryset(self):
-        return User.objects.filter(tenant=self.request.tenant).order_by("nombre")
+        # User.tenant is a NULLABLE FK, so letting the tenant resolve to a literal
+        # None would turn this into `tenant IS NULL` — i.e. every SUPERADMIN of the
+        # platform, listable and editable. No tenant ⇒ 403, never a queryset.
+        return User.objects.filter(tenant=require_tenant(self.request)).order_by("nombre")
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):

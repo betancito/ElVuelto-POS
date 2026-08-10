@@ -1,9 +1,11 @@
 ---
 tags: [tarea, frontend, forms, ux]
-status: 🟡
+status: 🟢
 prioridad: alta
 updated: 2026-08-03
 ---
+
+> [!decision] 🟢 CERRADO 2026-08-03 — todas las superficies cubiertas: forms (users, tenants, products, inventory vía `applyServerErrors`) + POS (banner vía `getServerErrorMessage`, [[RUN-20260803-errores-400-pos]]).
 
 # FRONT-20260802-errores-400-silenciados — Mapear errores 400 por campo (transversal)
 
@@ -28,4 +30,5 @@ Un helper único `applyServerErrors(err, setError)` mapea el 400 por campo a los
 
 ## Progreso
 - 🟢 Helper `src/utils/applyServerErrors.ts` + aplicado en `UsersPage` y `tenants` ([[RUN-20260803-errores-400-helper]], typecheck OK).
-- 🔴 Falta aplicarlo en `ProductsPage` e `InventoryPage` → [[PROMPT-FIX-FRONT-20260803-errores-400-products-inventory]].
+- 🟢 Aplicado en `ProductsPage` (producto + categoría) e `InventoryPage` (MovementModal); el Dev agregó los `ta-field-error` faltantes de `barcode`/`precio_costo`/`proveedor` ([[RUN-20260803-errores-400-products-inventory]], typecheck OK).
+- 🔴 **Falta POS** (`features/sales/PosPage.tsx:270-272`, banner genérico) — el criterio de aceptación lo incluye. El ítem sigue 🟡 hasta cubrir POS (se atará al 400 `monto_recibido` del guard de ventas [[SALES-20260802-guard-monto-recibido]]).

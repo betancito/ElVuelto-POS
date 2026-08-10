@@ -1,15 +1,23 @@
 ---
 tags: [modulo, riesgo, sales, dinero]
-status: abierto
+status: parcial
 module: sales
 severidad: alta
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!info] Actualización 2026-08-04 — apareció (y se cerró) un segundo caso de la misma familia
+> El chequeo de stock se hacía **línea por línea**, así que repetir el mismo producto en varios ítems lo evadía y dejaba `stock_actual` negativo (sobreventa). Cerrado en [[RUN-20260804-items-duplicados-sobreventa]]: `_resolve_products` agrega por `product_id` antes de comparar.
+> **La regla que dejan los dos juntos:** el servidor no confía ni en el **monto** ni en la **forma** del payload. Al revisar cualquier validación nueva de ventas, preguntate *"¿qué pasa si el cliente manda esto dos veces?"*.
 
 # Riesgo — Dinero (number↔Decimal) y falta de guard `monto_recibido >= total`
 
 **ID:** `SALES-20260802-dinero-guard-monto`
 **Severidad:** 🔴 alta (integridad monetaria en el corazón del POS)
+
+> [!decision] Parte A 🟢 RESUELTA 2026-08-03 · Parte B 🔴 abierta
+> **A) Guard `monto_recibido >= total`:** cerrado por [[PROMPT-FIX-SALES-20260803-guard-monto-recibido]] ([[RUN-20260803-guard-monto-recibido]]). El guard vive en `SaleCreateSerializer.create()` (tras el `total`, antes de `cambio`); EFECTIVO con `monto_recibido < total` → **400** por campo; NEQUI intacto. Verificado en shell (insuficiente/exacto/sobra/NEQUI). El snippet de abajo describe el bug **previo**.
+> **B) Dinero como float en el front:** sigue 🔴 (ver más abajo) — se atará a un prompt de front (POS) junto con el surface del 400.
 
 ## Resumen
 Dos problemas relacionados con el manejo de dinero en la venta:

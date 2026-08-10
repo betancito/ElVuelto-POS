@@ -1,9 +1,9 @@
 ---
 tags: [modulo, riesgo]
-status: vivo
+status: resuelto
 module: tenancy
 severity: media
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # Riesgo — Slug del tenant: divergencia front/back, sin tildes, O(n)
@@ -28,3 +28,6 @@ Login de staff roto o cruzado para nombres con espacios múltiples, tildes o nom
 
 ## Recomendación (no aplicar aquí)
 Unificar una única función de slug (idealmente transliterando tildes, p.ej. `unidecode`/`slugify`), y considerar persistir un `slug` único indexado en `Tenant` en vez de recalcular y escanear. Ver [[preguntas-tenancy]] P-4. Toca también módulo [[users]] (front) — conexión `[[tenancy--users]]`.
+
+> [!info] Resuelto 2026-08-09
+> Implementado y verificado — ver [[ADR-TENANCY-20260809-slug-persistido]] y [[RUN-20260809-slug-persistido]]. `slug` ahora es una columna persistida, única, generada una vez; las tres implementaciones divergentes fueron reemplazadas por una sola fuente de verdad que todo el sistema lee.

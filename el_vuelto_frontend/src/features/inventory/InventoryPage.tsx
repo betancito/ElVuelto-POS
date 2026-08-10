@@ -10,6 +10,7 @@ import {
   type StockItem,
 } from './inventoryApi'
 import { formatCOP } from '@/utils/formatCOP'
+import { applyServerErrors } from '@/utils/applyServerErrors'
 import Spinner from '@/components/ui/Spinner'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -225,7 +226,7 @@ function MovementModal({ onClose, initialProductId, stock }: MovementModalProps)
   const [createMovement, { isLoading: creating }] = useCreateMovementMutation()
   const [success, setSuccess] = useState(false)
 
-  const { handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { handleSubmit, watch, setValue, reset, setError, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       product: initialProductId ?? '',
@@ -251,7 +252,9 @@ function MovementModal({ onClose, initialProductId, stock }: MovementModalProps)
       await createMovement(data).unwrap()
       setSuccess(true)
       setTimeout(() => { reset(); onClose() }, 1200)
-    } catch {}
+    } catch (err) {
+      applyServerErrors(err, setError, 'No se pudo registrar el movimiento. Revisa los datos e intenta de nuevo.')
+    }
   }
 
   return (

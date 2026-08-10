@@ -15,6 +15,7 @@ import {
   useUploadCategoryImageMutation,
 } from './productsApi'
 import { formatCOP } from '@/utils/formatCOP'
+import { applyServerErrors } from '@/utils/applyServerErrors'
 import Spinner from '@/components/ui/Spinner'
 import type { Product, Category, ProductPayload } from './productsApi'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlined'
@@ -121,7 +122,7 @@ function ProductsTab() {
   const [activeFilter, setActiveFilter] = useState('Todos')
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ProductFormData>({
+  const { register, handleSubmit, watch, reset, setValue, setError, formState: { errors } } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { tipo: 'SIN_CODIGO' },
   })
@@ -202,7 +203,7 @@ function ProductsTab() {
       setShowModal(false)
       reset()
     } catch (err) {
-      console.error(err)
+      applyServerErrors(err, setError, 'No se pudo guardar el producto. Revisa los datos e intenta de nuevo.')
     } finally {
       setSubmitting(false)
     }
@@ -503,6 +504,7 @@ function ProductsTab() {
                       value={watch('precio_costo') ?? ''}
                       onChange={(val) => setValue('precio_costo', val)}
                     />
+                    {errors.precio_costo && <span className="ta-field-error">{errors.precio_costo.message}</span>}
                   </div>
                   {tipo === 'CON_CODIGO' && (
                     <>
@@ -512,10 +514,12 @@ function ProductsTab() {
                           value={watch('barcode') ?? ''}
                           onChange={(code) => setValue('barcode', code)}
                         />
+                        {errors.barcode && <span className="ta-field-error">{errors.barcode.message}</span>}
                       </div>
                       <div className="ta-field">
                         <label className="ta-label">Proveedor</label>
                         <input className="ta-input" placeholder="Nombre del proveedor" {...register('proveedor')} />
+                        {errors.proveedor && <span className="ta-field-error">{errors.proveedor.message}</span>}
                       </div>
                     </>
                   )}
@@ -556,7 +560,7 @@ function CategoriesTab() {
   const [submitting, setSubmitting] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CategoryFormData>({
+  const { register, handleSubmit, reset, setError, formState: { errors } } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
   })
 
@@ -620,7 +624,7 @@ function CategoriesTab() {
       setShowModal(false)
       reset()
     } catch (err) {
-      console.error(err)
+      applyServerErrors(err, setError, 'No se pudo guardar la categoría. Revisa los datos e intenta de nuevo.')
     } finally {
       setSubmitting(false)
     }

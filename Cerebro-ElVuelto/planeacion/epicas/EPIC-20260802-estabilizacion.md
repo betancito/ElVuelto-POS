@@ -1,8 +1,11 @@
 ---
 tags: [epica, estabilizacion]
-status: activo
-updated: 2026-08-02
+status: 🟢 cerrada
+updated: 2026-08-09
 ---
+
+> [!decision] Cerrada 2026-08-09
+> Las 4 condiciones de [[CRITERIO-CIERRE-ESTABILIZACION]] se cumplieron. Handoff: [[2026-08-09-planner-cierre-estabilizacion]]. El owner puede pasar a features nuevas.
 
 # EPIC-20260802 — Estabilización + documentación en paralelo
 

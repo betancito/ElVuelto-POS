@@ -1,9 +1,11 @@
 ---
 tags: [tarea, backend, limpieza]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — `requirements.txt` con 1 sola `cloudinary` y sin `python-escpos` (0 usos). Docs corregidas (root + backend CLAUDE.md: recibos en el front, sin dependencia de impresión). ([[PROMPT-FIX-CLEANUP-20260803-d4-codigo-muerto-deps-ruta-test]])
 
 # BACKEND-20260802-limpiar-deps — Deduplicar cloudinary y quitar python-escpos
 

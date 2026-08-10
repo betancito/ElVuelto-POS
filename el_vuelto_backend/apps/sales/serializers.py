@@ -1,3 +1,4 @@
+from collections import defaultdict
 from decimal import Decimal
 
 from django.db import transaction
@@ -6,6 +7,7 @@ from rest_framework import serializers
 
 from apps.inventory.models import InventoryMovement, MovementType
 from apps.products.models import Product, ProductType
+from apps.tenants.utils import require_tenant
 
 from .models import PaymentMethod, Sale, SaleItem
 
@@ -76,27 +78,36 @@ class SaleCreateSerializer(serializers.Serializer):
         return data
 
     def _resolve_products(self, items_data, tenant):
-        """Fetch and validate all products in one query."""
-        product_ids = [str(item["product"]) for item in items_data]
+        """Fetch and validate all products in one query.
+
+        The client may send the same product on more than one line, so stock is
+        checked against the **sum** per product, never line by line: with a stock
+        of 5, two lines of 3 each pass `3 <= 5` on their own and the sale then
+        decrements twice, leaving stock at -1. The server does not trust the
+        shape of the payload.
+        """
+        requested = defaultdict(int)
+        for item in items_data:
+            requested[str(item["product"])] += item["cantidad"]
+
         products = {
             str(p.id): p
             for p in Product.objects.filter(
-                id__in=product_ids, tenant=tenant, activo=True
+                id__in=list(requested), tenant=tenant, activo=True
             ).select_for_update()
         }
 
         errors = []
-        for item in items_data:
-            pid = str(item["product"])
+        for pid, cantidad_total in requested.items():
             if pid not in products:
                 errors.append(f"Producto {pid} no encontrado o inactivo.")
                 continue
             product = products[pid]
             if product.tipo == ProductType.CON_CODIGO:
-                if product.stock_actual < item["cantidad"]:
+                if product.stock_actual < cantidad_total:
                     errors.append(
                         f"Stock insuficiente para '{product.nombre}': "
-                        f"disponible {product.stock_actual}, solicitado {item['cantidad']}."
+                        f"disponible {product.stock_actual}, solicitado {cantidad_total}."
                     )
         if errors:
             raise serializers.ValidationError({"items": errors})
@@ -106,7 +117,9 @@ class SaleCreateSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         request = self.context["request"]
-        tenant = request.tenant
+        # No tenant ⇒ 403 before any lock or write: _resolve_products() filters
+        # products by this tenant, so a None here would blow up mid-transaction.
+        tenant = require_tenant(request)
         user = request.user
         items_data = validated_data["items"]
         metodo_pago = validated_data["metodo_pago"]
@@ -119,6 +132,18 @@ class SaleCreateSerializer(serializers.Serializer):
         for item in items_data:
             product = products[str(item["product"])]
             total += product.precio_venta * item["cantidad"]
+
+        # Guard: cash payment must cover the server-recalculated total.
+        # Runs before any write, so raising here reverts the select_for_update
+        # locks with no persisted rows. NEQUI_TRANSFERENCIA is unaffected.
+        if (
+            metodo_pago == PaymentMethod.EFECTIVO
+            and monto_recibido is not None
+            and monto_recibido < total
+        ):
+            raise serializers.ValidationError(
+                {"monto_recibido": f"El monto recibido ({monto_recibido}) es menor que el total ({total})."}
+            )
 
         cambio = None
         if metodo_pago == PaymentMethod.EFECTIVO and monto_recibido is not None:

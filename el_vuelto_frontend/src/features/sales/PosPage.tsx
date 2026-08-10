@@ -19,7 +19,7 @@ import {
   setMontoRecibido,
 } from './posSlice'
 import { logout } from '@/features/auth/authSlice'
-import { slugify } from '@/utils/slugify'
+import { getServerErrorMessage } from '@/utils/applyServerErrors'
 import CatalogGrid from './components/CatalogGrid'
 import ProductGrid from './components/ProductGrid'
 import CategoryChips from './components/CategoryChips'
@@ -267,8 +267,10 @@ export default function PosPage() {
       setLastSale(sale)
       dispatch(clearCart())
       setShowSuccessModal(true)
-    } catch {
-      setSaleError('Hubo un error al registrar la venta. Inténtalo de nuevo.')
+    } catch (err) {
+      setSaleError(
+        getServerErrorMessage(err, 'Hubo un error al registrar la venta. Inténtalo de nuevo.'),
+      )
     }
   }
 
@@ -313,7 +315,10 @@ export default function PosPage() {
           <button
             className="pos-header__close-btn"
             onClick={() => {
-              const slug = user?.tenantNombre ? slugify(user.tenantNombre) : null
+              // The slug is whatever the backend persisted for this tenant
+              // (login response). Recomputing it here from `tenantNombre` sent
+              // every business with a tilde to a URL that 'no existe'.
+              const slug = user?.tenantSlug ?? null
               dispatch(logout())
               navigate(slug ? `/login/${slug}` : '/login')
             }}

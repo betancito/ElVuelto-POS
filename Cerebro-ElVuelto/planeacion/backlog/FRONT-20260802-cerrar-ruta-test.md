@@ -1,9 +1,11 @@
 ---
 tags: [tarea, frontend, seguridad]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — ruta `/test/color-bends` + import fuera de `router.tsx`; page `ColorBendsTestPage.tsx` borrada. Componente `components/ui/ColorBends.tsx` conservado (vivo en `SuperAdminLoginPage`). build OK. ([[PROMPT-FIX-CLEANUP-20260803-d4-codigo-muerto-deps-ruta-test]])
 
 # FRONT-20260802-cerrar-ruta-test — Quitar/proteger /test/color-bends
 

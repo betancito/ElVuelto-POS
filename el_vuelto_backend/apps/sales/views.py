@@ -2,6 +2,8 @@ from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
+from apps.tenants.date_params import parse_date_range
+from apps.tenants.utils import require_tenant
 from apps.users.permissions import IsCajero, IsAdmin
 
 from .models import Sale
@@ -26,12 +28,16 @@ class SaleViewSet(
         return [IsAdmin()]
 
     def get_queryset(self):
+        # No tenant ⇒ 403 (never an unfiltered/ambiguous queryset). Resolving the
+        # lazy tenant first also avoids the TypeError a None proxy raises in filter().
         qs = Sale.objects.filter(
-            tenant=self.request.tenant
+            tenant=require_tenant(self.request)
         ).prefetch_related("items").select_related("user")
 
-        fecha_inicio = self.request.query_params.get("fecha_inicio")
-        fecha_fin = self.request.query_params.get("fecha_fin")
+        # Raw strings in a date lookup raise Django's ValidationError, which DRF
+        # does NOT map → 500. Parsed here so a bad date is a 400 on its field.
+        # Half a range is intentional: each bound filters open-ended.
+        fecha_inicio, fecha_fin = parse_date_range(self.request.query_params)
         metodo_pago = self.request.query_params.get("metodo_pago")
         user_id = self.request.query_params.get("user")
 

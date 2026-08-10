@@ -46,14 +46,14 @@ Commits must follow Conventional Commits format — `npm run commit` is the safe
 - **Apps** (`apps/`): `users`, `tenants`, `products`, `inventory`, `sales`, `reports`.
 - **Auth**: JWT via `rest_framework_simplejwt`. Access tokens live 8 hours, refresh tokens 7 days. Login at `POST /api/auth/login/` returns tokens + user profile via `CustomTokenObtainPairSerializer`.
 - **Roles**: `SUPERADMIN` (SaaS platform admin), `ADMIN` (tenant admin), `CAJERO` (cashier).
-- **Multi-tenancy**: Database-level — all models use `TenantMixin` which auto-filters QuerySets by `tenant_id`. A `TenantMiddleware` extracts the tenant from the request.
+- **Multi-tenancy**: isolation is **NOT automatic**. `TenantMixin` only adds a `tenant` FK to a model — it does **not** filter QuerySets. Every view MUST filter by hand (`Model.objects.filter(tenant=request.tenant)`); new tenant-scoped `ModelViewSet`s should extend `TenantModelViewSet` (which filters in `get_queryset()`) — today only `CategoryViewSet`/`ProductViewSet` do; the rest filter manually. `TenantMiddleware` sets `request.tenant` (a `SimpleLazyObject`, `None` for superadmin / inactive tenant). Forget to filter → cross-tenant leak. Guard tenant-scoped endpoints with `require_tenant(request)` (`apps/tenants/utils.py`).
 - **Media**: Cloudinary for tenant logos and document uploads.
-- **Printing**: `python-escpos` for thermal receipt printing.
+- **Receipts**: generated on the **frontend** (`printReceipt.ts` — 80mm thermal layout; `generateReceipt.ts` — jsPDF download). The backend has no printing dependency (`python-escpos` was removed).
 
 ### Frontend
 
 - **State**: Redux Toolkit (`app/store.ts`). Auth state persisted to `sessionStorage` via `redux-persist`.
-- **Data fetching**: RTK Query. `baseQueryWithReauth` in `app/api/baseApi.ts` handles 401s by auto-refreshing the JWT.
+- **Data fetching**: RTK Query. `baseQueryWithReauth` in `app/apiBase.ts` (the single `apiBase` `createApi` instance) handles 401s by auto-refreshing the JWT.
 - **Features** (`src/features/`): Feature-sliced — each feature owns its slice, API endpoints, and pages.
 - **Routing**: React Router v6. `ProtectedRoute` (`utils/ProtectedRoute.tsx`) guards routes by role.
 - **Layouts**: `AdminLayout` (sidebar + header) and `AuthLayout` (centered card) in `src/layouts/`.
@@ -90,7 +90,7 @@ VITE_API_URL=http://localhost:8000/api
 ## Key Conventions
 
 - **Super admin** routes/login are separate from tenant admin/cashier flows — `loginSuperAdmin` vs `loginWorker` mutations in the auth feature.
-- **Tenant scoping** is automatic via `TenantMixin`; never manually filter by tenant in views — rely on the mixin.
+- **Tenant scoping** is **manual**, not automatic: every view MUST filter by `request.tenant` — `TenantMixin` only adds the FK, it does not filter. New `ModelViewSet`s extend `TenantModelViewSet`; plain `APIView`s filter by hand and guard with `require_tenant(request)`. Never `Model.objects.all()` without a tenant filter.
 - **Database**: PostgreSQL with `psycopg2-binary`. Colombian locale: timezone `America/Bogota`, language `es-co`.
 - No test framework is currently configured in either backend or frontend.
 

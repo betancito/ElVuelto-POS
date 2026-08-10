@@ -1,9 +1,14 @@
 ---
 tags: [tarea, users, mejora]
-status: 🔴
+status: 🟢
 prioridad: media
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!done] Cerrado 2026-08-04 — ✅ [[RUN-20260804-politica-password-por-rol]]
+> La política vive ahora en `apps/users/password_policy.py` (fuente única): CAJERO = PIN de 4 dígitos, ADMIN/SUPERADMIN = 12 chars con `!@#$%&*`. Consumen de ahí `UserCreateSerializer.validate`, `UpdateMeView`, `generate_new_password` y `CashierLoginSerializer`; el front deriva sus mínimos de `generatePassword.ts` y `ProfilePage` arma el Zod según el rol. Se resolvió la incoherencia crear(4)↔perfil(6) y la de 12↔10 chars. Generación migrada de `random` a `secrets`.
+> **`AUTH_PASSWORD_VALIDATORS` sigue deliberadamente sin cablear** (rompería el PIN) — documentado en el `CLAUDE.md`; la P-3 con el owner queda abierta.
+> Residual: el admin inicial de un tenant sigue fuera de la política → [[TENANCY-20260804-password-admin-inicial-fuera-de-politica]].
 
 # USERS-20260802-unificar-reglas-password — Unificar reglas de contraseña
 

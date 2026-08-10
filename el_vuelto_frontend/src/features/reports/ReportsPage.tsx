@@ -14,6 +14,7 @@ import {
 import type { VentasPorHoraItem, VentasPorDiaItem } from './reportsApi'
 import { useAppSelector } from '@/app/hooks'
 import { formatCOP } from '@/utils/formatCOP'
+import { getServerErrorMessage } from '@/utils/applyServerErrors'
 import Spinner from '@/components/ui/Spinner'
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
@@ -448,6 +449,29 @@ function DateRangeCalendar({ startDate, endDate, onChange, onClose }: DateRangeC
 
 type Periodo = 'diario' | 'semanal' | 'mensual' | 'personalizado'
 
+/**
+ * The reports endpoints key their 400 by the query param that failed
+ * (`fecha_inicio`, `fecha_fin`, `fecha`, `limit`), and `getServerErrorMessage`
+ * only knows the sales-endpoint keys (`items`, `monto_recibido`,
+ * `non_field_errors`, `detail`), so on its own it would fall through to the
+ * generic fallback and hide the real explanation. Read the param keys first,
+ * then delegate to the shared helper for everything else.
+ */
+const PARAM_ERROR_FIELDS = ['fecha_inicio', 'fecha_fin', 'fecha', 'limit'] as const
+
+function reportErrorMessage(error: unknown, fallback: string): string {
+  const status = (error as { status?: unknown } | null)?.status
+  const data = (error as { data?: unknown } | null)?.data
+  if (status === 400 && data && typeof data === 'object') {
+    for (const key of PARAM_ERROR_FIELDS) {
+      const value = (data as Record<string, unknown>)[key]
+      if (typeof value === 'string' && value) return value
+      if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+    }
+  }
+  return getServerErrorMessage(error, fallback)
+}
+
 export default function ReportsPage() {
   const [periodo, setPeriodo] = useState<Periodo>('diario')
   const [selectedDate, setDate] = useState(todayBogota())
@@ -484,11 +508,24 @@ export default function ReportsPage() {
     return () => document.removeEventListener('mousedown', onDown)
   }, [calOpen])
 
-  const { data: summary,       isFetching: s1 } = useGetSummaryQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin })
-  const { data: topProductos,  isFetching: s3 } = useGetTopProductosQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, limit: 10 })
-  const { data: ventasPorHora, isFetching: s2 } = useGetVentasPorHoraQuery({ fecha: fechaInicio }, { skip: periodo !== 'diario' })
-  const { data: ventasPorDia }                  = useGetVentasPorDiaQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin }, { skip: periodo === 'diario' })
-  const { data: salesDetail }                   = useGetSalesDetailQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin }, { skip: !exportMenuOpen && !exporting })
+  const { data: summary,       isFetching: s1, error: e1 } = useGetSummaryQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin })
+  const { data: topProductos,  isFetching: s3, error: e3 } = useGetTopProductosQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, limit: 10 })
+  const { data: ventasPorHora, isFetching: s2, error: e2 } = useGetVentasPorHoraQuery({ fecha: fechaInicio }, { skip: periodo !== 'diario' })
+  const { data: ventasPorDia,                  error: e4 } = useGetVentasPorDiaQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin }, { skip: periodo === 'diario' })
+  const { data: salesDetail,                   error: e5 } = useGetSalesDetailQuery({ fecha_inicio: fechaInicio, fecha_fin: fechaFin }, { skip: !exportMenuOpen && !exporting })
+
+  // A 400 from the date-param hardening (range > 366 days, inverted range) is
+  // reachable with the "personalizado" picker. Without this the user just sees
+  // empty charts and no explanation. The backend's message is already in
+  // Spanish and specific — show it verbatim, don't replace it with a generic.
+  const queryError = useMemo(() => {
+    const first = [e1, e2, e3, e4, e5].find(Boolean)
+    if (!first) return null
+    return reportErrorMessage(
+      first,
+      'No se pudo cargar el reporte. Revisa el rango de fechas e intenta de nuevo.',
+    )
+  }, [e1, e2, e3, e4, e5])
 
   const loading = s1 || s2 || s3
   const maxUnits = Math.max(...(topProductos?.map((p) => p.unidades) ?? [1]), 1)
@@ -1026,6 +1063,22 @@ function sortTable(col) {
       <p className="ta-page-sub" style={{ marginTop: '-0.5rem' }}>
         {periodoLabel(periodo, fechaInicio, fechaFin)}
       </p>
+
+      {queryError && (
+        <div
+          role="alert"
+          style={{
+            padding: '0.75rem 1.25rem',
+            borderRadius: '0.75rem',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            background: 'var(--error-container)',
+            color: 'var(--on-error-container)',
+          }}
+        >
+          {queryError}
+        </div>
+      )}
 
       {loading && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>

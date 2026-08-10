@@ -1,9 +1,11 @@
 ---
 tags: [tarea, reports, rtk-query]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — `createSale.invalidatesTags` ahora incluye `'Report'` (`salesApi.ts:54`); typecheck OK. `createMovement` NO lo invalida (los reports son agregaciones de ventas; un movimiento manual no cambia cifras). ([[PROMPT-FIX-REPORTS-20260803-invalidar-tag-report]])
 
 # REPORTS-20260802-invalidar-tag-report — Invalidar el tag Report al vender
 

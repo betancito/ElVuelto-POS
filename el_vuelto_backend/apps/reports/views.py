@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from itertools import groupby as _groupby
 from zoneinfo import ZoneInfo
 
@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.sales.models import PaymentMethod, Sale, SaleItem
+from apps.tenants.date_params import parse_date_param, parse_date_range, parse_positive_int
+from apps.tenants.utils import require_tenant
 from apps.users.permissions import IsAdmin
 
 BOGOTA_TZ = ZoneInfo("America/Bogota")
@@ -19,12 +21,13 @@ class SummaryReportView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha = request.query_params.get("fecha")
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        # Tenant first: no tenant is a 403, before any param parsing.
+        tenant = require_tenant(request)
+        fecha = parse_date_param(request.query_params.get("fecha"), "fecha")
+        fecha_inicio, fecha_fin = parse_date_range(request.query_params)
 
-        sales_qs = Sale.objects.filter(tenant=request.tenant)
-        items_qs = SaleItem.objects.filter(sale__tenant=request.tenant)
+        sales_qs = Sale.objects.filter(tenant=tenant)
+        items_qs = SaleItem.objects.filter(sale__tenant=tenant)
 
         if fecha:
             sales_qs = sales_qs.filter(created_at__date=fecha)
@@ -64,12 +67,14 @@ class VentasPorHoraView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha = request.query_params.get("fecha")
+        tenant = require_tenant(request)
+        # Documented default: no `fecha` ⇒ today in America/Bogota.
+        fecha = parse_date_param(request.query_params.get("fecha"), "fecha")
         if not fecha:
-            fecha = datetime.now(BOGOTA_TZ).date().isoformat()
+            fecha = datetime.now(BOGOTA_TZ).date()
 
         qs = (
-            Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+            Sale.objects.filter(tenant=tenant, created_at__date=fecha)
             .annotate(hour=ExtractHour("created_at", tzinfo=BOGOTA_TZ))
             .values("hour")
             .annotate(total=Sum("total"), count=Count("id"))
@@ -80,7 +85,7 @@ class VentasPorHoraView(APIView):
 
         items_by_hour_qs = (
             SaleItem.objects.filter(
-                sale__tenant=request.tenant,
+                sale__tenant=tenant,
                 sale__created_at__date=fecha,
             )
             .annotate(hour=ExtractHour("sale__created_at", tzinfo=BOGOTA_TZ))
@@ -115,24 +120,26 @@ class SalesDetailExportView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha = request.query_params.get("fecha")
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        tenant = require_tenant(request)
+        fecha = parse_date_param(request.query_params.get("fecha"), "fecha")
+        fecha_inicio, fecha_fin = parse_date_range(request.query_params)
 
         if fecha:
-            label = fecha
-            sales_qs = Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+            label = fecha.isoformat()
+            sales_qs = Sale.objects.filter(tenant=tenant, created_at__date=fecha)
         elif fecha_inicio and fecha_fin:
-            label = f"{fecha_inicio} al {fecha_fin}"
+            label = f"{fecha_inicio.isoformat()} al {fecha_fin.isoformat()}"
             sales_qs = Sale.objects.filter(
-                tenant=request.tenant,
+                tenant=tenant,
                 created_at__date__gte=fecha_inicio,
                 created_at__date__lte=fecha_fin,
             )
         else:
-            fecha = datetime.now(BOGOTA_TZ).date().isoformat()
-            label = fecha
-            sales_qs = Sale.objects.filter(tenant=request.tenant, created_at__date=fecha)
+            # Documented default (unchanged): neither a single date nor a full
+            # range ⇒ today. Half a range falls here too.
+            fecha = datetime.now(BOGOTA_TZ).date()
+            label = fecha.isoformat()
+            sales_qs = Sale.objects.filter(tenant=tenant, created_at__date=fecha)
 
         sales_qs = (
             sales_qs
@@ -164,11 +171,12 @@ class SalesDetailExportView(APIView):
             })
 
         return Response({
-            "fecha": fecha or fecha_inicio,
+            # Same JSON as before: an explicit isoformat string, not a date object.
+            "fecha": (fecha or fecha_inicio).isoformat(),
             "label": label,
-            "tenant_nombre": request.tenant.nombre,
+            "tenant_nombre": tenant.nombre,
             "tenant_logo_url": (
-                request.tenant.documents.filter(document_type="logo")
+                tenant.documents.filter(document_type="logo")
                 .values_list("cloudinary_url", flat=True)
                 .first()
             ),
@@ -184,12 +192,14 @@ class TopProductosView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha = request.query_params.get("fecha")
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
-        limit = min(int(request.query_params.get("limit", 10)), 100)
+        tenant = require_tenant(request)
+        fecha = parse_date_param(request.query_params.get("fecha"), "fecha")
+        fecha_inicio, fecha_fin = parse_date_range(request.query_params)
+        limit = parse_positive_int(
+            request.query_params.get("limit"), "limit", default=10, maximum=100
+        )
 
-        qs = SaleItem.objects.filter(sale__tenant=request.tenant)
+        qs = SaleItem.objects.filter(sale__tenant=tenant)
 
         if fecha:
             qs = qs.filter(sale__created_at__date=fecha)
@@ -224,16 +234,19 @@ class VentasPorDiaView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        tenant = require_tenant(request)
+        # This view builds one dict per day, so it needs a CLOSED range: the
+        # width cap in parse_date_range is what keeps that loop bounded.
+        # Documented default (unchanged): missing either bound ⇒ the last 7 days.
+        fecha_inicio, fecha_fin = parse_date_range(request.query_params)
         if not fecha_inicio or not fecha_fin:
             today = datetime.now(BOGOTA_TZ).date()
-            fecha_fin = today.isoformat()
-            fecha_inicio = (today - timedelta(days=6)).isoformat()
+            fecha_fin = today
+            fecha_inicio = today - timedelta(days=6)
 
         qs = (
             Sale.objects.filter(
-                tenant=request.tenant,
+                tenant=tenant,
                 created_at__date__gte=fecha_inicio,
                 created_at__date__lte=fecha_fin,
             )
@@ -244,10 +257,9 @@ class VentasPorDiaView(APIView):
         )
         by_day = {row["day"].isoformat(): row for row in qs}
 
-        start = date.fromisoformat(fecha_inicio)
-        end = date.fromisoformat(fecha_fin)
         result = []
-        current = start
+        current = fecha_inicio
+        end = fecha_fin
         while current <= end:
             key = current.isoformat()
             result.append({

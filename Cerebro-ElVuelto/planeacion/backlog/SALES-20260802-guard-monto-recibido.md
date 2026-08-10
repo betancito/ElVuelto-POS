@@ -1,9 +1,11 @@
 ---
 tags: [tarea, sales, seguridad]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — guard en `create()` ([[PROMPT-FIX-SALES-20260803-guard-monto-recibido]], [[RUN-20260803-guard-monto-recibido]]). Una venta EFECTIVO con `monto_recibido < total` responde 400 por campo; NEQUI intacto; verificado en shell (insuficiente/exacto/sobra/NEQUI). Queda abierta la parte B (float en el front) de [[dinero-y-guard-monto]].
 
 # SALES-20260802-guard-monto-recibido — Validar monto recibido ≥ total
 

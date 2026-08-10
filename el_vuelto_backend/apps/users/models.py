@@ -1,6 +1,7 @@
 import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -67,6 +68,32 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.nombre} ({self.correo})"
+
+    def clean(self):
+        """Per-role credential rule, enforced on every `ModelForm` write.
+
+        `UserCreateSerializer` already enforces this for the API, but the Django
+        admin does not go through DRF: it could create a CAJERO with no `cedula`
+        (who can then never log into the POS, since that flow authenticates by
+        cédula) or blank an ADMIN's `correo` (a lockout — it is `USERNAME_FIELD`).
+        Putting the rule on the model means any current or future `ModelForm`
+        picks it up for free, because `ModelForm._post_clean()` calls
+        `full_clean()`.
+
+        SUPERADMIN is exempt on purpose: it has neither tenant nor cédula.
+
+        Note this does **not** run on plain `.save()` (Django never calls
+        `full_clean()` there), so management commands and DRF are unaffected —
+        DRF enforces the same rule in its own layer, with the same messages.
+        """
+        super().clean()
+        errors = {}
+        if self.rol == UserRole.ADMIN and not (self.correo or "").strip():
+            errors["correo"] = "El correo es obligatorio para administradores."
+        if self.rol == UserRole.CAJERO and not (self.cedula or "").strip():
+            errors["cedula"] = "La cédula es obligatoria para cajeros."
+        if errors:
+            raise ValidationError(errors)
 
     @property
     def is_active(self):

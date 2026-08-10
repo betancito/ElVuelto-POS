@@ -1,14 +1,22 @@
 ---
 tags: [riesgo, auth, seguridad]
-status: abierto
+status: resuelto
 module: auth
 severity: alto
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # R-2 — Login por cédula sin `tenant_id` cruza tenants
 
-**Severidad:** 🔴 alto (aislamiento multi-tenant) · **Estado:** abierto, por confirmar intención (ver [[preguntas-auth]] P-1)
+**Severidad:** 🔴 alto (aislamiento multi-tenant) · **Estado:** 🟢 RESUELTO 2026-08-03
+
+> [!decision] Resuelto — `tenant_id` ahora es obligatorio (verificado contra código 2026-08-03)
+> El fix [[PROMPT-FIX-AUTH-20260802-exigir-tenant-id]] ([[RUN-20260802-exigir-tenant-id]]) cerró esta fuga. El snippet "opcional" citado abajo **ya no existe**; se conserva como historia.
+> - `CashierLoginSerializer.tenant_id = serializers.UUIDField(required=True)` → `apps/users/serializers.py:94`. Sin `tenant_id`, `is_valid(raise_exception=True)` devuelve **400** antes de tocar `validate()` (`views.py:29`).
+> - `validate()` siempre filtra `User.objects.filter(cedula=..., tenant_id=...)` → `serializers.py:96-101`.
+> - La rama cédula de `CustomTokenObtainPairSerializer` también lo exige defensivamente (`ValidationError({"tenant_id": ...})`) → `serializers.py:32-43`.
+>
+> Deuda residual (NO cubierta por este fix, sigue abierta): rate-limit en `CashierLoginView` (PIN de 4 dígitos + `AllowAny` → fuerza bruta viable). Ver [[divergencia-min-password-cajero]].
 
 ## Qué pasa
 La cédula es única **solo por tenant** (`apps/users/models.py:60-66`, `UniqueConstraint(["tenant","cedula"])` condicional). Ambos serializers de login por cédula aplican `tenant_id` **solo si viene en el request**:

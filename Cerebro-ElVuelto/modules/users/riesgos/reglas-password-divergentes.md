@@ -1,10 +1,24 @@
 ---
 tags: [riesgo, users]
-status: abierto
+status: mitigado
 module: users
 severidad: media
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!done] Mitigado el 2026-08-04 — ✅ [[RUN-20260804-politica-password-por-rol]]
+> La política vive ahora en **`apps/users/password_policy.py`** (fuente única): `PIN_LENGTH=4` para CAJERO, `ADMIN_PASSWORD_LENGTH=12` + `ADMIN_SYMBOLS="!@#$%&*"` para ADMIN/SUPERADMIN, con `min_length_for`, `length_error_for` y `generate_password`. Consumen de ahí `UserCreateSerializer.validate`, `UpdateMeView`, `generate_new_password` y `CashierLoginSerializer`; el front deriva sus mínimos de `generatePassword.ts` y `ProfilePage` arma el Zod por rol. Resueltas las divergencias crear(4)↔perfil(6) y 12↔10 chars, y unificado el set de símbolos. Generación migrada de `random` a `secrets`.
+>
+> **Queda abierto (por eso "mitigado" y no "cerrado"):**
+> - `apps/tenants/serializers.py:72` — el admin inicial de un tenant sigue con `secrets.token_urlsafe(12)`. → [[TENANCY-20260804-password-admin-inicial-fuera-de-politica]]
+> - `create_superadmin.py` no aplica ninguna política.
+> - **`AUTH_PASSWORD_VALIDATORS` sigue declarado y sin ejecutarse** — decisión pendiente del owner (P-3). Documentado como tal en el `CLAUDE.md`.
+
+> [!info] Re-verificado el 2026-08-04 (PASO 0) — sigue ABIERTO, con 3 datos que faltaban
+> - **Drift de líneas:** hoy son `serializers.py:150` (no :148) y `:217-230` (no :215-228). Contenido idéntico.
+> - **Hay un 4º y un 5º generador**, no 4 reglas: el admin inicial de un tenant se genera con ~16 chars en `apps/tenants/serializers.py:72-74`, y `apps/users/management/commands/create_superadmin.py:58-95` (archivo nuevo, sin commitear) **no aplica ninguna política**: acepta la password tal cual venga de `--password`/`SUPERADMIN_PASSWORD`/`getpass`.
+> - 🔑 **`AUTH_PASSWORD_VALIDATORS` está declarado (`settings/base.py:73-78`) pero NUNCA se ejecuta**: `validate_password` no aparece en ningún `.py` del backend. Hoy no valida nada — y si alguien lo cablea sin más, **rompe el PIN de 4 dígitos del cajero**, que el owner decidió mantener. Quien tome esta tarea tiene que decidir esto explícitamente.
+> - El único par coherente front↔back es `ProfilePage.tsx:22` ↔ `views.py:70` (ambos 6).
 
 # Riesgo R-5 — Reglas de contraseña divergentes
 

@@ -1,14 +1,14 @@
 ---
 tags: [riesgo, reports, rtk-query]
-status: vivo
+status: resuelto
 module: reports
 severidad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # Riesgo — El tag `Report` nunca se invalida (dashboards stale)
 
-**Severidad:** 🔴 alta
+**Severidad:** 🔴 alta · **Estado:** 🟢 RESUELTO 2026-08-03 — `createSale` ya invalida `'Report'` (`salesApi.ts:54`). Ver [[REPORTS-20260802-invalidar-tag-report]].
 
 ## Qué
 Ninguna mutación invalida el tag `Report` de RTK Query. `createSale` invalida `Sale`, `InventoryMovement` y `Product` (`el_vuelto_frontend/src/features/sales/salesApi.ts:54`) pero **no** `Report`. Los endpoints de reports lo proveen (`reportsApi.ts:63-80`). Resultado: tras una venta, el dashboard y los reportes quedan **stale** hasta un refetch manual.

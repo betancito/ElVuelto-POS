@@ -1,9 +1,12 @@
 ---
 tags: [tarea, users, bug]
-status: 🔴
+status: 🟢
 prioridad: media
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!done] Cerrado 2026-08-04 — ✅ [[RUN-20260804-invariante-correo-admin]]
+> `validate()` ahora solo escribe `correo`/`cedula` si la clave vino en el request; si no vino, cae al valor de la instancia y se hace `pop` para que `update()` no la vea (`serializers.py:166-214`). Se arregló además el `rol` por defecto (`data.get("rol", getattr(instance, "rol", …))`), que provocaba un 400 espurio al renombrar un ADMIN. Verificado con 5 casos del criterio + 9 adversariales: **14/14**.
 
 # USERS-20260802-patch-nulifica-campos — PATCH parcial nulifica correo/cedula omitidos
 

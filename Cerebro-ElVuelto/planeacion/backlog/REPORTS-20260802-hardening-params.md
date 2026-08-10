@@ -1,9 +1,14 @@
 ---
 tags: [tarea, reports, robustez]
-status: 🔴
+status: 🟢
 prioridad: media
-updated: 2026-08-02
+updated: 2026-08-05
 ---
+
+> [!done] Parte "params" cerrada 2026-08-04 — ✅ [[RUN-20260804-hardening-params-fecha]]
+> Las 5 vistas parsean con `apps/tenants/date_params.py`: `?limit=abc`/`?limit=-5` → **400**, fechas inválidas → **400** por campo, rango invertido → **400**, y hay tope de **366 días** que acota el `while` por día de `VentasPorDiaView`. `require_tenant` sigue corriendo **antes** del parseo (superadmin → 403, no 400). Verificado 20/20.
+>
+> **Sigue abierto de este ítem: el dinero como `float`.** Los reports convierten `Decimal` → `float()` en la salida (`apps/reports/views.py`, varias líneas) y una suma se hace sobre floats. No entró en el prompt de params. → [[dinero-como-float]]
 
 # REPORTS-20260802-hardening-params — Validar params y dinero en reports
 

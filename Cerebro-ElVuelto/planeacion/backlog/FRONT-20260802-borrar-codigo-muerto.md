@@ -1,9 +1,11 @@
 ---
 tags: [tarea, frontend, limpieza]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — shims `layouts/SuperAdminLayout.tsx` y `features/tenants/TenantsPage.tsx` borrados (0 importadores); `tenantsApi.ts` conservado. typecheck+build OK. ([[PROMPT-FIX-CLEANUP-20260803-d4-codigo-muerto-deps-ruta-test]])
 
 # FRONT-20260802-borrar-codigo-muerto — Eliminar shims muertos
 

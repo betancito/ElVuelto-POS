@@ -1,5 +1,3 @@
-import re
-
 import cloudinary.uploader
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -8,13 +6,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.permissions import IsSuperAdmin
+from apps.users.throttles import TenantSlugIPThrottle
 
 from .models import Tenant, TenantDocument
+from .viewsets import METHODS_WITHOUT_PUT
 from .serializers import TenantCreateSerializer, TenantSerializer
-
-
-def _nombre_to_slug(nombre: str) -> str:
-    return re.sub(r"[^a-z0-9-]", "", nombre.lower().replace(" ", "-"))
 
 
 class TenantBySlugView(APIView):
@@ -26,28 +22,44 @@ class TenantBySlugView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+    # Public and unauthenticated: it hands out the tenant UUID that the cashier
+    # login requires, so it is the first step of a brute force and it also lets
+    # someone enumerate which businesses exist.
+    throttle_classes = [TenantSlugIPThrottle]
 
     def get(self, request, slug: str):
-        for tenant in Tenant.objects.prefetch_related("documents").filter(activo=True):
-            if _nombre_to_slug(tenant.nombre) == slug:
-                doc = tenant.documents.filter(
-                    document_type=TenantDocument.DocumentType.LOGO
-                ).first()
-                return Response(
-                    {
-                        "exists": True,
-                        "id": str(tenant.id),
-                        "nombre": tenant.nombre,
-                        "logo_url": doc.cloudinary_url if doc else None,
-                    }
-                )
-        return Response({"exists": False, "nombre": None, "logo_url": None})
+        # Indexed lookup on the persisted column. This used to scan every active
+        # tenant in Python and recompute the slug on each request, keeping the
+        # first match — with no `unique` on `nombre`, the "winner" between two
+        # colliding businesses was not even stable across requests.
+        tenant = (
+            Tenant.objects.prefetch_related("documents")
+            .filter(slug=slug, activo=True)
+            .first()
+        )
+        if tenant is None:
+            return Response({"exists": False, "nombre": None, "logo_url": None})
+
+        doc = tenant.documents.filter(
+            document_type=TenantDocument.DocumentType.LOGO
+        ).first()
+        return Response(
+            {
+                "exists": True,
+                "id": str(tenant.id),
+                "nombre": tenant.nombre,
+                "logo_url": doc.cloudinary_url if doc else None,
+            }
+        )
 
 
 class TenantViewSet(viewsets.ModelViewSet):
     """CRUD for Tenants — all actions require superadmin."""
 
     queryset = Tenant.objects.prefetch_related("documents").all().order_by("nombre")
+    # No PUT: a multipart PUT omitting `activo` would silently deactivate the
+    # tenant — 403 on every endpoint and `exists:false` on its login page.
+    http_method_names = METHODS_WITHOUT_PUT
 
     def get_permissions(self):
         return [IsSuperAdmin()]

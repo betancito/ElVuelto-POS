@@ -2,7 +2,7 @@
 tags: [modulo, estado]
 status: vivo
 module: auth
-updated: 2026-08-02
+updated: 2026-08-09
 ---
 
 # Auth — Estado
@@ -20,9 +20,8 @@ updated: 2026-08-02
 Autenticación JWT (`rest_framework_simplejwt`) con 3 flujos de login: **admin/superadmin por correo** (`POST /auth/login/`, `CustomTokenObtainPairView`), **cajero por cédula+PIN** (`POST /auth/login/cashier/`, `CashierLoginView` `AllowAny`), y **refresh** (`POST /auth/refresh/`). El token lleva `tenant_id/rol/nombre/cedula` en el payload (`serializers.py:26-29`); el `TenantMiddleware` de [[tenancy]] lo lee para inyectar `request.tenant`. En el front, `authSlice` guarda tokens+user en `sessionStorage` (redux-persist) y `baseQueryWithReauth` (`apiBase.ts:15-43`) refresca solo ante un 401.
 
 ## Pendientes / drift doc↔código
-- 🔴 **R-2 cross-tenant:** ambos serializers de login por cédula aplican `tenant_id` solo si viene; sin él, `qs.first()` cruza tenants. Ver [[login-cajero-sin-tenant-id]]. (`serializers.py:37-40` y `:96-98`)
-- 🟡 **Divergencia password mínima:** login cajero acepta `min_length=4` (`serializers.py:88`) pero el auto-cambio (`UpdateMeView`) exige `min 6` (`views.py:70`). Ver [[divergencia-min-password-cajero]].
-- 🟡 **Logout solo-cliente:** `logoutUser` (`authApi.ts:97-103`) no llama al server ni hay blacklist (`ROTATE_REFRESH_TOKENS=False`, sin app de blacklist). Ver [[logout-solo-cliente-sin-blacklist]].
-- 🟡 **Nombre mentiroso:** `useLoginSuperAdminMutation` la usan tanto `SuperAdminLoginPage` como `TenantLoginPage` (mismo endpoint `/auth/login/`); el nombre sugiere que es solo de superadmin. Ver P-1 en [[preguntas-auth]].
-- 🟡 **Código muerto:** `useMeQuery` y `useLogoutUserMutation` (`authApi.ts:94-103`) están exportados pero **nadie los consume**. Ver P-2.
-- ❓ `SuperAdminLoginPage` no valida rol tras login (cualquier rol → `/super-admin/home`); `TenantLoginPage` sí filtra. Ver P-3.
+_(nota desactualizada en general — actualizado 2026-08-09 solo en lo tocado hoy; varios ítems de abajo (R-2 cross-tenant, throttling) fueron cerrados en sesiones intermedias — ver [[00-planeacion]] antes de confiar en el resto)_
+
+- 🟢 ~~**Sin revocación de sesiones**~~ — **cerrado 2026-08-09**: `SIMPLE_JWT["CHECK_REVOKE_TOKEN"] = True` + `ActiveUserTokenRefreshSerializer` extendido. Cambiar la contraseña (`reset_password`, promoción de rol, `UpdateMeView`) invalida todo token ya emitido — access en su próximo request, refresh de inmediato. Verificado con requests HTTP reales; costo medido = cero queries extra. **No es blacklist**: solo revoca ante cambio de password, no da un "logout" explícito. Ver [[ADR-G-20260809-revocacion-check-revoke-token]] · [[RUN-20260809-check-revoke-token]].
+- 🟡 **Logout solo-cliente** (matizado por lo de arriba): `logoutUser` sigue sin llamar al server, pero ya no es el placebo que era — un `reset_password`/promoción sí corta la sesión robada. Lo que sigue faltando es un logout *voluntario* server-side (el usuario cierra sesión él mismo sin cambiar contraseña) — eso seguiría viva hasta expirar. Ver [[logout-solo-cliente-sin-blacklist]] (sin re-verificar hoy).
+- 🟡 Resto de la lista (divergencia password mínima, nombre de `useLoginSuperAdminMutation`, código muerto `useMeQuery`, rol no validado en `SuperAdminLoginPage`) — **sin re-verificar hoy**, puede estar desactualizado.

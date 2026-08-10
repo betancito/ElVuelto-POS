@@ -1,9 +1,11 @@
 ---
 tags: [tarea, docs, tenancy]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — corregidas las 3 mentiras (root `CLAUDE.md:49,93`; `backend/CLAUDE.md:61`) + el residuo de `:69` ("used by all") vía fix. Ahora reflejan la regla real (filtrado manual; `TenantMixin` solo agrega FK; `require_tenant` para None). Corridas: [[PROMPT-FIX-DOCS-20260803-claudemd-tenancy]] (⛔) → [[PROMPT-FIX-DOCS-20260803-tenancy-viewset-overstatement]] (🟢).
 
 # DOCS-20260802-corregir-claudemd-tenancy — Corregir la mentira de tenancy en los CLAUDE.md
 

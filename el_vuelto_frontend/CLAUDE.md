@@ -10,8 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Vite dev server on port 5173
 npm run build        # tsc + vite production build
 npm run typecheck    # TypeScript type checking only
-npm run commit       # Interactive Conventional Commits (Husky + commitlint — use this, not git commit directly)
 ```
+
+**`npm run commit` is NOT a script of this package** — `el_vuelto_frontend/package.json` only defines the four above. Committing runs **from the repo root**, where `"commit": "cz"` and the Husky hooks live:
+
+```bash
+cd <repo root> && npm run commit    # Interactive Conventional Commits (commitizen + commitlint)
+```
+
+Running it inside `el_vuelto_frontend/` fails with "Missing script: commit".
 
 No test framework is configured.
 
@@ -42,9 +49,11 @@ pos                                        cart items, payment method, cash rece
 
 Auth state is persisted to `sessionStorage` via `redux-persist`. Use `useAppDispatch` and `useAppSelector` from `app/hooks.ts` — never the untyped Redux hooks.
 
-### API layer (`app/api/baseApi.ts`)
+### API layer (`app/apiBase.ts`)
 
-Single `createApi` instance with `baseQueryWithReauth`. On 401, it attempts token refresh at `/auth/refresh/`. On success it retries the original request; on failure it dispatches `logout()` and clears state. All feature APIs (`authApi`, `salesApi`, etc.) inject into this base via `baseApi.injectEndpoints()`.
+Single `createApi` instance with `baseQueryWithReauth`. On 401, it attempts token refresh at `/auth/refresh/`. On success it retries the original request; on failure it dispatches `logout()` and clears state.
+
+**A rejected refresh is what logs the user out.** The chain is `refresh 401 → logout() → isAuthenticated: false → ProtectedRoute redirects to /login` (`/super-admin/login` under that section). It only became reachable once the backend started refusing to refresh a deactivated user — before that the refresh always returned 200, so a cashier deactivated mid-shift kept a UI that looked logged in while every request failed silently. Nothing to write in the client: keep the `else` branch of `baseQueryWithReauth` dispatching `logout()`, and keep screens behind `ProtectedRoute` (that is what performs the redirect — `/pos` included). All feature APIs (`authApi`, `salesApi`, etc.) inject into this base via `apiBase.injectEndpoints()`.
 
 Tag types: `Tenant`, `User`, `Product`, `Category`, `InventoryMovement`, `Sale`, `Report`.
 
@@ -60,8 +69,10 @@ Each feature owns its API endpoints, Redux slice (if needed), pages, and sub-com
 
 `AuthUser` interface (stored in Redux):
 ```ts
-{ id, nombre, correo, cedula, rol: "SUPERADMIN"|"ADMIN"|"CAJERO", activo, tenantId, tenantNombre, tenantLogoUrl }
+{ id, nombre, correo, cedula, rol: "SUPERADMIN"|"ADMIN"|"CAJERO", activo, leadCashier, tenantId, tenantNombre, tenantSlug, tenantLogoUrl }
 ```
+
+**`tenantSlug` comes from the login response (`user.tenant_slug`) and is never computed on the client.** It is the persisted `Tenant.slug` (backend `apps/tenants/slugs.py`). Anything that needs a `/login/<slug>` URL — `PosPage`'s "Cerrar Turno", `UsersPage`'s staff link — reads it from Redux. There used to be two local slugify functions (`utils/slugify.ts`, now deleted, and a `toSlug` inside `UsersPage`) that disagreed with each other **and** with the backend on accents: a cashier of "Panadería La Esperanza" was sent to a slug the server could not resolve → "Sucursal no encontrada". Do not reintroduce one; if a new screen needs the slug, take it from `state.auth.user.tenantSlug`.
 
 **`authApi.ts`** — Two login mutations:
 - `loginSuperAdmin(correo, password)` → `POST /auth/login/` — dispatches `setCredentials` on success
@@ -82,7 +93,7 @@ Login pages:
 
 **`salesApi.ts`** — Endpoints:
 - `listSales(search?, fecha_inicio?, fecha_fin?, metodo_pago?)` — normalizes both array and paginated `{results:[]}` responses
-- `createSale({metodo_pago, monto_recibido, items[]})` — invalidates `Sale`, `InventoryMovement`, `Product` tags
+- `createSale({metodo_pago, monto_recibido, items[]})` — invalidates `Sale`, `InventoryMovement`, `Product`, `Report` tags (all 5 report queries in `reportsApi` provide `Report`, so dashboard/reports refresh live after a sale). `createMovement` does **not** invalidate `Report` — inventory movements don't feed any sales-based report figure.
 
 **`PosPage.tsx`** — Two-panel layout: left = catalog/search, right = cart + payment. Critical behaviors:
 - **Barcode scanning**: page-level `keydown` listener with 300ms idle buffer. Accumulates characters, flushes as barcode when idle. Skipped when `input/textarea/select` is focused. Same pattern in `InventoryPage.tsx`.
@@ -125,9 +136,15 @@ Endpoints: `listProducts`, `getPosProducts`, `listCategories`, `createProduct`, 
 
 `resetPassword(id)` returns `{ new_password: string }` — shown in `UserCredentialsModal`.
 
-**`UsersPage.tsx`** — Password generation at creation time:
+**`UsersPage.tsx`** — Password generation at creation time (there is no password input; it is always generated):
 - ADMIN → 12-char complex password (`generateAdminPassword()`)
 - CAJERO → 4-digit PIN (`generatePin()`)
+
+**Password policy is per role, not flat.** The backend owns it (`apps/users/password_policy.py`); the front mirrors the two numbers as `PIN_LENGTH` (4) and `ADMIN_PASSWORD_LENGTH` (12), exported from `src/utils/generatePassword.ts` — import those constants instead of hardcoding a length. `ProfilePage.tsx` builds its password Zod schema from the **logged-in user's `rol`** (`makePasswordSchema`), so a cashier keeps the intentional 4-digit PIN while an admin needs 12, with messages verbatim from the backend's `length_error_for`.
+
+**Role-conditional validation:** `schema`/`editSchema` mirror the backend's per-role rule via Zod `superRefine` — **CAJERO requires `cedula`, ADMIN requires `correo`** (`apps/users/serializers.py:192-194`) — so the form blocks before sending instead of eating a 400. Error messages match the serializer's verbatim.
+
+**Editing a user can rotate their credential — the front must show it.** When a `PATCH` on `/api/users/{id}/` raises the role's password floor (CAJERO → ADMIN) and the edit modal sends no `password` (it has no password field), the backend generates a new one for the landing role and returns it as `User.new_password` (`null` on every other update — see `apps/users/serializers.py`, Password policy section of the backend `CLAUDE.md`). `onEditSubmit` in `UsersPage.tsx` checks `result.new_password` after the mutation resolves and, if truthy, opens `UserCredentialsModal` with `isReset: true` — same pattern as `handleReset`'s password-reset flow. It reads `rol`/`correo`/`cedula` off `result` (the server-confirmed state), never off the form data or the stale `editUser`. A demotion, or an edit that doesn't touch `rol`, always gets `new_password: null` and the modal never opens.
 
 Staff login URL displayed: `/login/{tenantSlug}` with copy-to-clipboard.
 
@@ -135,17 +152,17 @@ Staff login URL displayed: `/login/{tenantSlug}` with copy-to-clipboard.
 
 ### `features/tenants/`
 
-**`tenantsApi.ts`** — `checkTenantBySlug(slug)` is the only **public** endpoint (no auth header). Used by `StaffLoginPage` to resolve tenant before login. Creating a tenant also creates the initial admin user — the response includes `initial_admin_password`.
+**`tenantsApi.ts`** — `checkTenantBySlug(slug)` is the only **public** endpoint (no auth header). Used by `StaffLoginPage` to resolve tenant before login; it matches the backend's persisted `Tenant.slug` column, so the slug in the URL must be the one that came from the login response (`tenantSlug`), never a client-side re-slugify of the name. Creating a tenant also creates the initial admin user — the response includes `initial_admin_password`.
 
 ---
 
 ### `features/reports/`
 
-**`reportsApi.ts`** — `getSummary`, `getVentasPorHora` (hourly breakdown 0–23, `America/Bogota` TZ), `getTopProductos`.
+**`reportsApi.ts`** — 5 report queries, all providing the `Report` tag: `getSummary`, `getVentasPorHora` (hourly breakdown 0–23, `America/Bogota` TZ), `getVentasPorDia`, `getTopProductos`, `getSalesDetail`.
 
-**`DashboardPage.tsx`** — Default landing for ADMIN. Uses today's date automatically. Shows KPI row, hourly bar chart, top products, recent sales.
+**`ReportsPage.tsx`** — Same data with **four period modes** (`diario` / `semanal` / `mensual` / `personalizado`, each with its own picker — day input, week calendar, month, or a custom start/end pair), a payment method breakdown, Excel/HTML export, and an error banner fed by the five queries' `error` (see the form-errors pattern below).
 
-**`ReportsPage.tsx`** — Same data but with a date picker and a payment method breakdown section.
+> **`DashboardPage.tsx` does NOT live here** — it is `src/features/dashboard/DashboardPage.tsx`. It is the default landing for ADMIN, uses today's date automatically, and shows a KPI row, hourly bar chart, top products and recent sales. It consumes `reportsApi` (and `salesApi`), which is why it is easy to misplace.
 
 ---
 
@@ -166,13 +183,18 @@ Separate section for SUPERADMIN role. Pages: `home/`, `tenants/`, `billing/`, `u
 | `/super-admin/tenants` | Tenants management | SUPERADMIN |
 | `/super-admin/billing` | Billing | SUPERADMIN |
 | `/super-admin/users` | SA Users | SUPERADMIN |
+| `/super-admin/history` | HistoryPage | SUPERADMIN |
+| `/staff` | — (redirect to `/pos`) | — |
 | `/dashboard` | DashboardPage | ADMIN |
 | `/products` | ProductsPage | ADMIN |
 | `/inventory` | InventoryPage | ADMIN |
 | `/ventas` | SalesHistoryPage | ADMIN |
 | `/reports` | ReportsPage | ADMIN |
 | `/users` | UsersPage | ADMIN |
+| `/profile` | ProfilePage | ADMIN |
 | `/pos` | PosPage | CAJERO |
+
+Plus `/` → `RootRedirect` and `*` → `/login`.
 
 `ProtectedRoute.tsx` (`utils/`) reads `isAuthenticated` and `user.rol` from Redux. Unauthorized users are redirected: CAJERO → `/pos`, ADMIN → `/dashboard`, SUPERADMIN → `/super-admin/home`, unauthenticated → `/login`.
 
@@ -181,6 +203,8 @@ Separate section for SUPERADMIN role. Pages: `home/`, `tenants/`, `billing/`, `u
 ## Layouts (`src/layouts/`)
 
 **`LayoutContext.tsx`** — Shared context for sidebar state (`collapsed`, `mobileOpen`). Both `AdminLayout` and `SuperAdminLayout` use this — import `LayoutProvider` and `useLayout` from here.
+
+`SuperAdminLayout` is canonically at `@/features/layout/super-admin` — that's what `router.tsx` imports. (The old `src/layouts/SuperAdminLayout.tsx` re-export shim was removed; import the feature module directly in new code.)
 
 **Sidebar behavior (both layouts):**
 | State | Trigger | Width |
@@ -221,7 +245,8 @@ Key classes by category:
 
 ### Fonts
 - `var(--font-sans)` → Plus Jakarta Sans (UI text)
-- `var(--font-serif)` → Noto Serif (headings)
+- `var(--font-headline)` → **Noto Serif** — this is the headline font the `ta-*` classes actually use (`ta-page-title`, `ta-card-title`, `ta-serif`, …)
+- `var(--font-serif)` → **Playfair Display** — a different font, defined in the Tailwind theme block at the top of `globals.css`. Do **not** reach for it expecting the headline look
 - `var(--font-mono)` → JetBrains Mono (numbers, codes)
 
 ---
@@ -246,13 +271,21 @@ generatePin()             // 4-digit numeric PIN
 **Adding a new admin page:**
 1. Create `features/<name>/<Name>Page.tsx`
 2. Use `ta-*` classes for layout — no new CSS module files
-3. Add RTK Query endpoints to a new `<name>Api.ts` via `baseApi.injectEndpoints()`
+3. Add RTK Query endpoints to a new `<name>Api.ts` via `apiBase.injectEndpoints()`
 4. Add route to `app/router.tsx` under the ADMIN protected block
 5. Add nav item to `AdminLayout.tsx`
 
 **RTK Query tag invalidation:** When a mutation affects multiple resources (e.g., creating a sale affects stock), list all affected tags in `invalidatesTags`.
 
-**Server-side form errors:** Uniqueness (correo global, cédula per-tenant, nit, barcode) and role-specific rules are validated only on the backend, which returns a DRF 400 `{ campo: ["msg"] }`. In a form's submit `catch`, route the error through `applyServerErrors(err, setError, fallback?)` (`src/utils/applyServerErrors.ts`) — it calls `setError(campo, { type: 'server', message })` per field (field `name` must match the backend's Spanish snake_case key: `correo`, `cedula`, `nit`, `admin_correo`, …), toasts `non_field_errors`/`detail`, and toasts `fallback` for non-400 errors. Never leave an empty `catch {}` on a form submit. Applied in `UsersPage.tsx` and `super-admin/tenants/index.tsx`; `ProductsPage.tsx` and `InventoryPage.tsx` still pending the same treatment.
+**Server-side form errors:** Uniqueness (correo global, cédula per-tenant, nit, barcode) and role-specific rules are validated only on the backend, which returns a DRF 400 `{ campo: ["msg"] }`. In a form's submit `catch`, route the error through `applyServerErrors(err, setError, fallback?)` (`src/utils/applyServerErrors.ts`) — it calls `setError(campo, { type: 'server', message })` per field (field `name` must match the backend's Spanish snake_case key: `correo`, `cedula`, `nit`, `admin_correo`, …), toasts `non_field_errors`/`detail`, and toasts `fallback` for non-400 errors. Never leave an empty `catch {}` on a form submit. The pattern now covers **all** admin forms: `UsersPage.tsx`, `super-admin/tenants/index.tsx`, `ProductsPage.tsx` (product + category forms) and `InventoryPage.tsx` (`MovementModal`). Note: for the error to be visible the field must render a `{errors.<campo> && <span className="ta-field-error">…</span>}` — the product form's `barcode`/`precio_costo`/`proveedor` fields (all returned as 400 keys by `ProductSerializer.validate` for `CON_CODIGO`) had no such span until this change.
+
+**A `setError` on a field that is not mounted is invisible.** `applyServerErrors` does its job, but if the input (and its `ta-field-error` span) lives inside a conditional branch that is not rendered, nobody paints the message and the submit fails in silence. This bit `UsersPage`: `correo` and `cedula` each render only in their rol's branch, yet react-hook-form **keeps the value of an unmounted field** (`shouldUnregister` defaults to `false`), so the payload carried both and a 400 on the hidden one vanished. **Rule: send only the fields that belong to the selected branch** — `onSubmit`/`onEditSubmit` now set the other rol's credential to `undefined`, so a 400 can only ever land on a mounted input. When adding a form with branch-conditional fields, either strip the payload the same way or make sure every possible 400 key has a rendered span.
+
+**Non-form surfaces (POS, Reports):** these are not react-hook-forms, so `setError` does not apply — pull a string out of the 400 and drop it in a banner. `ReportsPage` destructures `error` from **all five** RTK Query hooks and renders the first message in an error banner (`var(--error-container)` inline, no new CSS module) above the charts: since the backend's date-param hardening, a "personalizado" range over 366 days or an inverted one returns a 400 and the user used to get blank charts with no explanation. Note the reports 400 is keyed by the failing **param** (`fecha_inicio`, `fecha_fin`, `fecha`, `limit`), which `getServerErrorMessage` does not look at (it only knows `items`/`monto_recibido`/`non_field_errors`/`detail`), so `ReportsPage` has a small local `reportErrorMessage()` that reads those keys first and delegates to the shared helper for everything else.
+
+**Never leave a bare `.unwrap()`.** `handleReset` in `UsersPage` awaited `resetPassword(id).unwrap()` with no `try/catch` — an unhandled rejection where the admin just never saw the credentials modal. Every `.unwrap()` needs a `catch` that routes through `applyServerErrors` (forms) or `getServerErrorMessage` + `toast` (actions).
+
+**The POS specifically:** it is a manual cart, so `setError` does not apply. Use `getServerErrorMessage(err, fallback)` (same `src/utils/applyServerErrors.ts`) to pull a `string` from the 400 and drop it into the `saleError` banner. Field priority: `items` (stock/validation list, joined with " · "), then `monto_recibido`, then `non_field_errors`/`detail`; non-400 (500, network) falls back. `PosPage.tsx`'s `handleCobrar` uses it, so a sale rejected for insufficient stock or short cash now shows the real backend message instead of a generic one. With this, every 400 surface (admin forms + POS) is covered — the errores-400 work is closed.
 
 **Barcode scanning pattern** (used in POS and Inventory):
 ```ts

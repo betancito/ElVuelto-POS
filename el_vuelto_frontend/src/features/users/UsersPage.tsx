@@ -10,8 +10,9 @@ import {
   useResetPasswordMutation,
 } from './usersApi'
 import type { User } from './usersApi'
+import { toast } from 'react-toastify'
 import { generateAdminPassword, generatePin } from '@/utils/generatePassword'
-import { applyServerErrors } from '@/utils/applyServerErrors'
+import { applyServerErrors, getServerErrorMessage } from '@/utils/applyServerErrors'
 import { useAppSelector } from '@/app/hooks'
 import Spinner from '@/components/ui/Spinner'
 import UserCredentialsModal from '@/components/ui/UserCredentialsModal'
@@ -28,8 +29,20 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined'
 import BakeryDiningOutlinedIcon from '@mui/icons-material/BakeryDiningOutlined'
 
-function toSlug(s: string) {
-  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+// Backend requires `cedula` for CAJERO and `correo` for ADMIN
+// (apps/users/serializers.py:171-174). Mirror that rule here so the form blocks
+// before sending instead of relying on a (previously swallowed) 400. Messages
+// match the serializer's so client- and server-side read identically.
+const roleRequiredFields = (
+  data: { rol: 'ADMIN' | 'CAJERO'; correo?: string; cedula?: string },
+  ctx: z.RefinementCtx,
+) => {
+  if (data.rol === 'CAJERO' && !data.cedula?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['cedula'], message: 'La cédula es obligatoria para cajeros.' })
+  }
+  if (data.rol === 'ADMIN' && !data.correo?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['correo'], message: 'El correo es obligatorio para administradores.' })
+  }
 }
 
 const schema = z.object({
@@ -38,7 +51,7 @@ const schema = z.object({
   correo:       z.string().email().optional().or(z.literal('')),
   cedula:       z.string().optional(),
   lead_cashier: z.boolean().optional(),
-})
+}).superRefine(roleRequiredFields)
 
 const editSchema = z.object({
   nombre:       z.string().min(2),
@@ -46,7 +59,7 @@ const editSchema = z.object({
   correo:       z.string().email().optional().or(z.literal('')),
   cedula:       z.string().optional(),
   lead_cashier: z.boolean().optional(),
-})
+}).superRefine(roleRequiredFields)
 
 type FormData = z.infer<typeof schema>
 type EditFormData = z.infer<typeof editSchema>
@@ -61,10 +74,14 @@ export default function UsersPage() {
   const [editUser, setEditUser] = useState<User | null>(null)
 
   const tenantNombre   = useAppSelector((s) => s.auth.user?.tenantNombre)
+  const tenantSlug     = useAppSelector((s) => s.auth.user?.tenantSlug)
   const tenantId       = useAppSelector((s) => s.auth.user?.tenantId)
   const tenantLogoUrl  = useAppSelector((s) => s.auth.user?.tenantLogoUrl)
-  const staffLoginUrl = tenantNombre
-    ? `${window.location.origin}/login/${toSlug(tenantNombre)}`
+  // The slug the backend persisted, not one re-derived from the name here: the
+  // local version dropped accents while the server transliterated them, so this
+  // link was wrong (404 "Sucursal no encontrada") for any name with a tilde.
+  const staffLoginUrl = tenantSlug
+    ? `${window.location.origin}/login/${tenantSlug}`
     : null
 
   const [copied, setCopied]       = useState(false)
@@ -100,8 +117,13 @@ export default function UsersPage() {
     const password = data.rol === 'CAJERO' ? generatePin() : generateAdminPassword()
     const payload = {
       ...data,
-      cedula: data.cedula?.trim() || undefined,
-      correo: data.correo?.trim() || undefined,
+      // Only the credential of the SELECTED rol travels. The other input is not
+      // mounted (see the rol branch below), but react-hook-form keeps its value
+      // (`shouldUnregister` is false), so it used to be sent anyway — and a 400
+      // on it (e.g. "Ya existe un cajero con esta cédula") landed on a field with
+      // no span to paint it: the submit failed with zero feedback.
+      cedula: data.rol === 'CAJERO' ? data.cedula?.trim() || undefined : undefined,
+      correo: data.rol === 'ADMIN' ? data.correo?.trim() || undefined : undefined,
       lead_cashier: data.rol === 'CAJERO' ? (data.lead_cashier ?? false) : false,
       password,
     }
@@ -136,22 +158,49 @@ export default function UsersPage() {
   async function onEditSubmit(data: EditFormData) {
     if (!editUser) return
     try {
-      await updateUser({
+      const result = await updateUser({
         id: editUser.id,
         nombre: data.nombre,
         rol: data.rol,
-        correo: data.correo?.trim() || undefined,
-        cedula: data.cedula?.trim() || undefined,
+        // Same rule as create: only the credential of the selected rol is sent,
+        // so a 400 can never land on the input that is not mounted.
+        correo: data.rol === 'ADMIN' ? data.correo?.trim() || undefined : undefined,
+        cedula: data.rol === 'CAJERO' ? data.cedula?.trim() || undefined : undefined,
         lead_cashier: data.rol === 'CAJERO' ? (data.lead_cashier ?? false) : false,
       }).unwrap()
       setEditUser(null)
+      // A promotion that raised the password floor (e.g. CAJERO → ADMIN) makes
+      // the backend rotate the credential and hand it back here — show it now,
+      // same as handleReset, or the admin never learns the account has a new
+      // password. Use `result` (server-confirmed state), not `data`/`editUser`.
+      if (result.new_password) {
+        setUserCreds({
+          tenantNombre: tenantNombre ?? '',
+          tenantLogoUrl,
+          userName: result.nombre,
+          rol: result.rol,
+          loginIdentifier: result.rol === 'CAJERO' ? (result.cedula ?? '') : (result.correo ?? ''),
+          password: result.new_password,
+          isReset: true,
+        })
+      }
     } catch (err) {
       applyServerErrors(err, setEditError, 'No se pudo actualizar el usuario. Revisa los datos e intenta de nuevo.')
     }
   }
 
   async function handleReset(id: string) {
-    const r = await resetPassword(id).unwrap()
+    let r: { new_password: string }
+    try {
+      r = await resetPassword(id).unwrap()
+    } catch (err) {
+      // Was an unhandled promise rejection: a failed reset left the admin
+      // waiting for a modal that never opened.
+      toast.error(
+        getServerErrorMessage(err, 'No se pudo restablecer la contraseña. Intenta de nuevo.'),
+      )
+      return
+    }
     const u = (users ?? []).find((u) => u.id === id)
     if (u) {
       setUserCreds({

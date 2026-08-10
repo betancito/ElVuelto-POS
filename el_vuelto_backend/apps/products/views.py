@@ -48,7 +48,9 @@ class ProductViewSet(TenantModelViewSet):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        qs = Product.objects.filter(tenant=self.request.tenant).select_related("category")
+        # Overriding get_queryset drops TenantModelViewSet's guard, so call
+        # _get_tenant() (require_tenant) explicitly: no tenant ⇒ 403.
+        qs = Product.objects.filter(tenant=self._get_tenant()).select_related("category")
         activo = self.request.query_params.get("activo")
         if activo is not None:
             qs = qs.filter(activo=activo.lower() in ("true", "1"))
@@ -79,7 +81,7 @@ class ProductViewSet(TenantModelViewSet):
     def pos(self, request):
         """Returns minimal product data optimised for the POS screen."""
         products = (
-            Product.objects.filter(tenant=request.tenant, activo=True)
+            Product.objects.filter(tenant=self._get_tenant(), activo=True)
             .select_related("category")
             .order_by("nombre")
         )

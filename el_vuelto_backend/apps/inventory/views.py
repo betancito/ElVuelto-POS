@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.products.models import Product, ProductType
+from apps.tenants.date_params import parse_date_range
+from apps.tenants.utils import require_tenant
 from apps.tenants.viewsets import TenantModelViewSet
 from apps.users.permissions import IsAdmin, IsCajero
 from apps.users.models import UserRole
@@ -40,13 +42,15 @@ class InventoryMovementViewSet(
         return super().create(request, *args, **kwargs)
 
     def get_queryset(self):
+        # No tenant ⇒ 403, same rule as StockView below.
         qs = InventoryMovement.objects.filter(
-            tenant=self.request.tenant
+            tenant=require_tenant(self.request)
         ).select_related("product", "user")
 
         product_id = self.request.query_params.get("product")
-        fecha_inicio = self.request.query_params.get("fecha_inicio")
-        fecha_fin = self.request.query_params.get("fecha_fin")
+        # Same rule as SaleViewSet: parsed dates (400 on a bad one), and half a
+        # range filters open-ended.
+        fecha_inicio, fecha_fin = parse_date_range(self.request.query_params)
 
         if product_id:
             qs = qs.filter(product_id=product_id)
@@ -58,7 +62,9 @@ class InventoryMovementViewSet(
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(tenant=self.request.tenant, user=self.request.user)
+        # Guarded too: without this a tenant-less request would write a movement
+        # with tenant=None instead of being rejected.
+        serializer.save(tenant=require_tenant(self.request), user=self.request.user)
 
 
 class StockView(APIView):
@@ -67,8 +73,9 @@ class StockView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
+        tenant = require_tenant(request)
         products = Product.objects.filter(
-            tenant=request.tenant,
+            tenant=tenant,
             tipo=ProductType.CON_CODIGO,
             activo=True,
         ).select_related("category").order_by("nombre")

@@ -12,9 +12,13 @@ class UserAdmin(BaseUserAdmin):
     ordering = ("nombre",)
     readonly_fields = ("id", "created_at", "updated_at")
 
+    # `cedula` MUST be in both fieldsets. A CAJERO logs into the POS with cédula
+    # (never with correo), so leaving the field out of the form made it
+    # impossible to create a usable cashier here — and `User.clean()` would raise
+    # an error bound to a field the form does not render.
     fieldsets = (
         (None, {"fields": ("id", "correo", "password")}),
-        ("Información personal", {"fields": ("nombre", "tenant", "rol")}),
+        ("Información personal", {"fields": ("nombre", "cedula", "tenant", "rol")}),
         ("Permisos", {"fields": ("activo", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Fechas", {"fields": ("last_login", "created_at", "updated_at")}),
     )
@@ -23,7 +27,7 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("correo", "nombre", "tenant", "rol", "password1", "password2"),
+                "fields": ("correo", "nombre", "cedula", "tenant", "rol", "password1", "password2"),
             },
         ),
     )

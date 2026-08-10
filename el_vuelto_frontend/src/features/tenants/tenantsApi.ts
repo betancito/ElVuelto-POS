@@ -74,10 +74,10 @@ export const tenantsApi = apiBase.injectEndpoints({
       }),
       invalidatesTags: ['Tenant'],
     }),
-    toggleTenantActive: builder.mutation<Tenant, string>({
-      query: (id) => ({ url: `/tenants/${id}/toggle_active/`, method: 'POST' }),
-      invalidatesTags: ['Tenant'],
-    }),
+    // Deliberately no `toggleTenantActive`: `POST /tenants/{id}/toggle_active/`
+    // does not exist on the backend (TenantViewSet only adds `upload_logo`).
+    // Activating/deactivating a tenant goes through `updateTenant` with
+    // `activo`, which is what the UI already uses.
   }),
 })
 
@@ -88,5 +88,4 @@ export const {
   useCreateTenantMutation,
   useUpdateTenantMutation,
   useUploadTenantLogoMutation,
-  useToggleTenantActiveMutation,
 } = tenantsApi

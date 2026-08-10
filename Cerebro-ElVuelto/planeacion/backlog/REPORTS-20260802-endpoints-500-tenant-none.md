@@ -1,9 +1,11 @@
 ---
 tags: [tarea, reports, tenancy, seguridad]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-03
 ---
+
+> [!decision] 🟢 RESUELTO 2026-08-03 — helper `require_tenant` ([[PROMPT-FIX-REPORTS-20260803-guard-tenant-none]], [[RUN-20260803-guard-tenant-none]]). `tenant=None` → **403** en los 5 reports + `StockView` + `TenantModelViewSet._get_tenant` (este último tenía el mismo `is None` roto por el `SimpleLazyObject`). Verificado (superadmin→403, admin/cajero→200). Follow-up de los viewsets que no extienden `TenantModelViewSet`: [[BACKEND-20260803-guard-tenant-none-viewsets-restantes]].
 
 # REPORTS-20260802-endpoints-500-tenant-none — Manejar request.tenant None
 

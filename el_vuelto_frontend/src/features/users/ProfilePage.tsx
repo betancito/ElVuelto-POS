@@ -1,32 +1,60 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout, updateUser } from '@/features/auth/authSlice'
+import { ADMIN_PASSWORD_LENGTH, PIN_LENGTH } from '@/utils/generatePassword'
 import { useUpdateMeMutation } from './usersApi'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined'
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
-const infoSchema = z.object({
-  nombre: z.string().min(2, 'Mínimo 2 caracteres'),
-  correo: z.string().email('Correo inválido').or(z.literal('')).optional(),
-})
-type InfoData = z.infer<typeof infoSchema>
+// `correo` is USERNAME_FIELD: the backend rejects an ADMIN that empties it
+// (apps/users/views.py, UpdateMeView). Mirror that per rol — same superRefine
+// pattern as UsersPage — so the form blocks instead of paying a round-trip for
+// a 400 we already know is coming. Message verbatim from the serializer.
+function makeInfoSchema(rol: string | undefined) {
+  return z
+    .object({
+      nombre: z.string().min(2, 'Mínimo 2 caracteres'),
+      correo: z.string().email('Correo inválido').or(z.literal('')).optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (rol === 'ADMIN' && !data.correo?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['correo'],
+          message: 'El correo es obligatorio para administradores.',
+        })
+      }
+    })
+}
+type InfoData = z.infer<ReturnType<typeof makeInfoSchema>>
 
-const passwordSchema = z
-  .object({
-    current_password: z.string().min(1, 'Requerido'),
-    new_password: z.string().min(6, 'Mínimo 6 caracteres'),
-    confirm_password: z.string(),
-  })
-  .refine((d) => d.new_password === d.confirm_password, {
-    message: 'Las contraseñas no coinciden',
-    path: ['confirm_password'],
-  })
-type PasswordData = z.infer<typeof passwordSchema>
+// The password minimum is per role, not flat (backend: apps/users/password_policy.py
+// — CAJERO keeps its intentional 4-digit PIN, ADMIN/SUPERADMIN need 12). Built from
+// the logged-in user's rol so the form blocks with the same message the backend
+// would return instead of eating its 400.
+function makePasswordSchema(rol: string | undefined) {
+  const isCajero = rol === 'CAJERO'
+  const min = isCajero ? PIN_LENGTH : ADMIN_PASSWORD_LENGTH
+  const message = isCajero
+    ? `El PIN debe tener ${PIN_LENGTH} dígitos.`
+    : `Mínimo ${ADMIN_PASSWORD_LENGTH} caracteres.`
+  return z
+    .object({
+      current_password: z.string().min(1, 'Requerido'),
+      new_password: z.string().min(min, message),
+      confirm_password: z.string(),
+    })
+    .refine((d) => d.new_password === d.confirm_password, {
+      message: 'Las contraseñas no coinciden',
+      path: ['confirm_password'],
+    })
+}
+type PasswordData = z.infer<ReturnType<typeof makePasswordSchema>>
 
 // Pull a field-level message out of an RTK Query error body ({ campo: "mensaje" }).
 function fieldError(err: unknown, field: string): string | null {
@@ -48,6 +76,7 @@ export default function ProfilePage() {
   const [updateMe] = useUpdateMeMutation()
 
   // ── Personal info form ──
+  const infoSchema = useMemo(() => makeInfoSchema(user?.rol), [user?.rol])
   const {
     register: registerInfo,
     handleSubmit: handleInfoSubmit,
@@ -76,6 +105,7 @@ export default function ProfilePage() {
   }
 
   // ── Password form ──
+  const passwordSchema = useMemo(() => makePasswordSchema(user?.rol), [user?.rol])
   const {
     register: registerPw,
     handleSubmit: handlePwSubmit,

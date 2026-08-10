@@ -1,13 +1,13 @@
 ---
 tags: [riesgo, global, frontend, seguridad]
-status: vivo
+status: resuelto
 severidad: baja
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # Riesgo — Ruta `/test/color-bends` pública sin guard
 
-**Severidad:** 🟡 baja · **Fix prioritario:** sí (decisión D-4)
+**Severidad:** 🟡 baja · **Estado:** 🟢 RESUELTO 2026-08-03 — ruta + import + page de test eliminados (componente `ColorBends` conservado). Ver [[FRONT-20260802-cerrar-ruta-test]].
 
 ## Qué
 La ruta `/test/color-bends` está registrada **sin `ProtectedRoute`** → accesible por cualquiera en producción.

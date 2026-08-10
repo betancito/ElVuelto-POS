@@ -22,6 +22,8 @@ updated: 2026-08-02
 - [[ADR-G-20260802-tenancy-isolation]] — filtrado manual hoy, RLS como meta.
 - [[ADR-G-20260802-modelo-de-acceso-por-rol]] — cajero solo-lectura catálogo; superadmin solo plataforma (datos vía impersonación).
 - [[ADR-TENANCY-20260802-correo-admin-unico-global]] — correo único global + creación de tenant atómica (ADR del módulo tenancy).
+- [[ADR-TENANCY-20260809-slug-persistido]] — slug del tenant persistido y único en BD, no recalculado (ADR del módulo tenancy).
+- [[ADR-G-20260809-revocacion-check-revoke-token]] — `CHECK_REVOKE_TOKEN` para que cambiar contraseña revoque tokens ya emitidos.
 
 ## Riesgos (transversales)
 - [[riesgo-tenancy-sin-red-de-seguridad]] — sin red de seguridad en la BD.

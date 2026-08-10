@@ -15,6 +15,7 @@ class TenantSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "nombre",
+            "slug",
             "nit",
             "ciudad",
             "correo",
@@ -24,7 +25,11 @@ class TenantSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        # `slug` is generated once by `Tenant.save()` and never reassigned — a
+        # client that could write it would break every login link already handed
+        # out (`editable=False` makes DRF infer read-only anyway; explicit here
+        # so it survives someone "fixing" the model field).
+        read_only_fields = ["id", "slug", "created_at", "updated_at"]
 
     def get_logo_url(self, obj):
         doc = obj.documents.filter(document_type=TenantDocument.DocumentType.LOGO).first()
@@ -78,11 +83,14 @@ class TenantCreateSerializer(TenantSerializer):
     def _create_initial_admin(tenant, admin_nombre, admin_correo, password):
         from apps.users.models import User, UserRole
 
+        # NO `is_staff`: a tenant admin administers their business, not the
+        # platform. `is_staff` is exactly what Django checks to let someone into
+        # /admin/, and that site bypasses every DRF rule (see CLAUDE.md).
+        # Platform staff is created with `manage.py create_superadmin`.
         User.objects.create_user(
             correo=admin_correo,
             password=password,
             nombre=admin_nombre,
             tenant=tenant,
             rol=UserRole.ADMIN,
-            is_staff=True,
         )

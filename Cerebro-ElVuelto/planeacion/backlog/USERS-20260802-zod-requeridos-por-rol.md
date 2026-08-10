@@ -1,9 +1,12 @@
 ---
 tags: [tarea, users, forms]
-status: 🔴
+status: 🟢
 prioridad: alta
-updated: 2026-08-02
+updated: 2026-08-04
 ---
+
+> [!done] Cerrado 2026-08-04
+> Entregado por [[PROMPT-FIX-USERS-20260804-zod-requeridos-por-rol]], review ✅ en [[RUN-20260804-zod-requeridos-por-rol]]. `UsersPage.tsx:35-65` (`superRefine` en ambos schemas) + spans de error en los 4 puntos + `el_vuelto_frontend/CLAUDE.md:132`. Deuda menor derivada: [[USERS-20260804-error-400-campo-no-montado]].
 
 # USERS-20260802-zod-requeridos-por-rol — Zod no condiciona requeridos por rol
 

@@ -9,6 +9,10 @@ export interface AuthUser {
   activo: boolean
   tenantId: string | null
   tenantNombre: string | null
+  // Persisted by the backend (`Tenant.slug`), never derived on the client.
+  // Deriving it from `tenantNombre` is what sent cashiers of any business with
+  // a tilde to a `/login/<slug>` the backend could not resolve.
+  tenantSlug: string | null
   tenantLogoUrl: string | null
   tenantEmail: string | null
   tenantSupportPhone: string | null

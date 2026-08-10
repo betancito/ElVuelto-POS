@@ -9,6 +9,9 @@ export interface User {
   activo: boolean
   lead_cashier: boolean
   created_at: string
+  // Only ever a string when a PATCH raised the role's password floor and the
+  // backend rotated the credential (apps/users/serializers.py); null otherwise.
+  new_password?: string | null
 }
 
 export interface CreateUserArgs {

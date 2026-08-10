@@ -1,14 +1,20 @@
 ---
 tags: [modulo, riesgo, seguridad]
-status: abierto
+status: resuelto
 module: products
 severidad: alto
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # Riesgo — Viewsets de products sin `IsAdmin` (cualquier autenticado hace CRUD)
 
-**Ancla:** `apps/products/views.py:13` (`CategoryViewSet`) y `apps/products/views.py:39` (`ProductViewSet`).
+**Estado:** 🟢 RESUELTO 2026-08-03 · **Ancla original:** `apps/products/views.py:13` (`CategoryViewSet`) y `:39` (`ProductViewSet`).
+
+> [!decision] Resuelto — permisos por acción (verificado contra código 2026-08-03)
+> Cerrado por [[PROMPT-FIX-PRODUCTS-20260802-categorias-read-cajero]] ([[RUN-20260802-categorias-read-cajero]]). Ojo: el **primer** intento ([[PROMPT-FIX-PRODUCTS-20260802-permisos-isadmin]], [[RUN-20260802-permisos-isadmin]]) puso `[IsAdmin]` plano en `CategoryViewSet` y **rompió** la lectura de categorías del cajero en el POS (⛔); el fix bueno separa lectura/escritura:
+> - `CategoryViewSet.get_permissions`: `list`/`retrieve` → `IsCajero`, resto (create/update/partial_update/destroy + `upload_image`) → `IsAdmin` (`views.py:17-22`).
+> - `ProductViewSet`: `permission_classes=[IsAdmin]` a nivel clase; solo la acción `pos` sobreescribe a `IsCajero` (`views.py:47,78`).
+> - `IsAdmin`=ADMIN/SUPERADMIN, `IsCajero`=CAJERO/ADMIN/SUPERADMIN (`users/permissions.py:15-34`) → el CAJERO **lee** catálogo, **no escribe** (403 en cualquier mutación). El escenario de fallo de abajo ya no aplica.
 
 ## Qué pasa
 Ninguno de los dos viewsets declara `permission_classes`. Aplica el default DRF `IsAuthenticated` (`settings/base.py:97-99`). La única excepción es la acción `pos` con `permission_classes=[IsCajero]` (`views.py:70`).

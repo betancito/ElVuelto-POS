@@ -16,6 +16,8 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     # Local apps
     "apps.tenants",
     "apps.users",
@@ -99,6 +101,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # NOTE: no DEFAULT_THROTTLE_CLASSES on purpose. Throttling is opt-in, applied
     # only by the authentication views (apps/users/throttles.py). A global limit
     # would hit the POS, which is by far the busiest screen.
@@ -181,3 +184,35 @@ cloudinary.config(
     api_secret=config("CLOUDINARY_API_SECRET", default=""),
     secure=True,
 )
+
+# ── API docs (drf-spectacular) ──────────────────────────────────────────────
+# NOTE: do not import anything from the `drf_spectacular` package here. Any
+# submodule of it reads `django.conf.settings` at import time, and importing
+# it from inside a settings module being loaded triggers a reentrant settings
+# load — Django hands it a *partial* module (only the names defined above
+# this line), so drf-spectacular's global settings singleton freezes with
+# defaults (AllowAny permissions, no SERVE_AUTHENTICATION override) forever,
+# even though `django.conf.settings.SPECTACULAR_SETTINGS` itself ends up
+# correct. Verified by hitting /docs/ with no key and getting 200 instead of
+# 403. The JWTAuthentication scheme registration
+# (`drf_spectacular.contrib.rest_framework_simplejwt`) lives in
+# `elvuelto/docs_views.py` instead, which is only imported once urls.py
+# loads — always after settings have fully finished.
+from elvuelto.version import APP_VERSION
+
+DOCS_API_KEY = config("DOCS_API_KEY", default="")
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ElVuelto API",
+    "DESCRIPTION": "POS multi-tenant para negocios colombianos.",
+    "VERSION": APP_VERSION,
+    "SERVE_PERMISSIONS": ["elvuelto.docs_auth.HasDocsApiKey"],
+    "SERVE_AUTHENTICATION": [],
+    "SCHEMA_PATH_PREFIX": r"/api/",
+    # Self-hosted via drf-spectacular-sidecar instead of the library's default
+    # (an unpinned "@latest" CDN URL) — /docs/ already embeds DOCS_API_KEY in
+    # its JS; no reason to also load unpinned third-party JS onto that page.
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}

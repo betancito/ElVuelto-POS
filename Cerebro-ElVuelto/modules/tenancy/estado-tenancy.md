@@ -24,6 +24,21 @@ _(esta nota está desactualizada en general — actualizado 2026-08-09 solo en l
 
 - 🟢 ~~**Slug por nombre**~~ — **cerrado 2026-08-09**: `Tenant.slug` ahora persiste, único, generado una vez por `Tenant.save()` (`apps/tenants/slugs.py`), inmutable ante rename. `TenantBySlugView` pasó de O(n) a `filter(slug=..., activo=True)`. Ver [[ADR-TENANCY-20260809-slug-persistido]] · [[RUN-20260809-slug-persistido]] · [[riesgo-slug-por-nombre]].
 - 🟡 **Hallazgo nuevo (menor, no bloqueante):** `Tenant.save()` genera el slug con un `SELECT ... EXISTS()` sin lock — dos `POST /api/tenants/` concurrentes con el mismo `nombre` pueden generar el mismo slug candidato y el segundo INSERT choca contra el `unique=True`, saliendo como **500** (no 400, porque `IntegrityError` no lo mapea DRF) en vez de un 400 limpio. Sin corrupción de datos, sin fuga cross-tenant — solo UX del error. Ver [[TENANCY-20260809-race-slug-integrity-error]].
-- 🟡 **Sin UI para subir logo del tenant:** ver [[riesgo-logo-tenant-sin-ui]] (sin re-verificar hoy).
+- 🟢 ~~**Sin UI para subir logo del tenant**~~ — **cerrado 2026-08-12**: control tipo avatar en el
+  header de `TenantDetailPage.tsx`, cableado al hook `useUploadTenantLogoMutation` que ya existía.
+  Ver [[ADR-TENANCY-20260812-logo-tenant-superadmin-ui]] · [[RUN-20260812-logo-tenant-superadmin-ui]]
+  · [[riesgo-logo-tenant-sin-ui]].
+- 🟢 **Logo también en los modales de crear/editar — 2026-08-12 (más tarde el mismo día).** Subida
+  **diferida** (se aplica al dar Crear/Guardar; Cancelar descarta) y se puede **quitar** el logo, lo
+  que agregó `DELETE /api/tenants/{id}/logo/` (`IsSuperAdmin`, idempotente, 204) y el helper
+  `destroy_image` en `elvuelto/cloudinary_uploads.py`. El `POST /api/tenants/` sigue en **JSON** a
+  propósito: multipart dispararía `BooleanField.default_empty_html=False` y el negocio nacería
+  inactivo. Ver [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]] ·
+  [[RUN-20260812-logo-tenant-modales-crear-editar]].
+- 🔴 **Deuda de a11y en `TenantsTable.tsx`** (y replicada en `TenantDetailPage.tsx`): `role="button"`
+  sobre el `<tr>` poda las celdas del árbol de accesibilidad. Del trabajo del 08-09, sin commitear.
+  Ver [[FRONT-20260812-role-button-en-tr-rompe-tabla]].
+- 🔴 **N+1 en `TenantSerializer.get_logo_url`** — el `prefetch_related("documents")` no sirve porque el
+  serializer usa `.filter()` sobre el related manager. Ver [[BACKEND-20260812-n1-logo-url-listado-tenants]].
 - 🟡 **Errores 400 por campo se pierden en un toast genérico** en `index.tsx`. Ver [[riesgo-errores-400-silenciados]] (sin re-verificar hoy).
 - ❓ Interfaz TS `Tenant` (tenantsApi.ts) — ver [[preguntas-tenancy]] P-6 (sin re-verificar hoy).

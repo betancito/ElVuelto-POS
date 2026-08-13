@@ -80,6 +80,12 @@ corrí el prompt X". Al recibirlo:
   Siempre: veredicto claro (✅/🔴 + hallazgos con archivo:línea) + UN solo prompt que YA EXISTE como
   archivo en el cerebro (siguiente o fix) + la corrida registrada.
 
+PEDIDOS DIRECTOS (fuera del backlog planeado, pedidos puntuales en el chat): el Planner los implementa
+él mismo — sin escribir un PROMPT-FEAT ni esperar handoff a otra sesión como Dev — pero SIN saltarse
+análisis y plan (modo plan, aprobado por el owner vía ExitPlanMode, es la luz verde para implementar).
+Compensación obligatoria: testing real contra server real + revisión adversarial antes de cerrar +
+doble actualización igual que si lo hubiera entregado el Dev. Regla completa: [[GOBERNANZA]] §10.
+
 Al cerrar la sesión: crea _sesiones/<fecha>-planner-<slug>.md (handoff, archivo nuevo).
 ```
 

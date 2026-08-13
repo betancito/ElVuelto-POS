@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,6 +8,8 @@ import {
   useListTenantsQuery,
   useCreateTenantMutation,
   useUpdateTenantMutation,
+  useUploadTenantLogoMutation,
+  useDeleteTenantLogoMutation,
 } from '@/features/tenants/tenantsApi'
 import type { Tenant } from '@/features/tenants/tenantsApi'
 import Button from '@/components/ui/Button'
@@ -16,7 +19,9 @@ import PageLoader from '@/components/ui/PageLoader'
 import CredentialsModal from '@/components/ui/CredentialsModal'
 import type { CredentialsData } from '@/components/ui/CredentialsModal'
 import TenantsTable from './components/TenantsTable'
-import { applyServerErrors } from '@/utils/applyServerErrors'
+import TenantLogoField, { revokeLogoDraft } from './components/TenantLogoField'
+import type { LogoDraft } from './components/TenantLogoField'
+import { applyServerErrors, getServerErrorMessage } from '@/utils/applyServerErrors'
 import styles from './TenantsPage.module.css'
 
 const createSchema = z.object({
@@ -40,39 +45,122 @@ const editSchema = z.object({
 type CreateFormData = z.infer<typeof createSchema>
 type EditFormData = z.infer<typeof editSchema>
 
+const NO_LOGO_CHANGE: LogoDraft = { kind: 'keep' }
+
 export default function TenantsPage() {
   const { data: tenants = [], isLoading, refetch } = useListTenantsQuery()
   const [createTenant, { isLoading: creating }] = useCreateTenantMutation()
   const [updateTenant, { isLoading: updating }] = useUpdateTenantMutation()
+  const [uploadLogo, { isLoading: uploadingLogo }] = useUploadTenantLogoMutation()
+  const [deleteLogo, { isLoading: deletingLogo }] = useDeleteTenantLogoMutation()
+  const navigate = useNavigate()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editActivo, setEditActivo] = useState(true)
   const [credentials, setCredentials] = useState<CredentialsData | null>(null)
 
+  // The picked file is a `File`, not a form value — same reason `editActivo`
+  // lives outside react-hook-form.
+  const [createLogo, setCreateLogo] = useState<LogoDraft>(NO_LOGO_CHANGE)
+  const [editLogo, setEditLogo] = useState<LogoDraft>(NO_LOGO_CHANGE)
+
   const createForm = useForm<CreateFormData>({ resolver: zodResolver(createSchema) })
   const editForm = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
 
-  async function onCreateSubmit(data: CreateFormData) {
+  // Every path that drops a draft revokes its object URL first; this only
+  // catches the last one if the page unmounts with a modal still open (the
+  // superadmin navigates away mid-edit). Empty deps so the cleanup runs on a
+  // real unmount — at mount both drafts are `keep`, so `StrictMode`'s extra
+  // mount/unmount cycle has nothing to revoke and cannot break a preview.
+  const draftsRef = useRef({ create: createLogo, edit: editLogo })
+  draftsRef.current = { create: createLogo, edit: editLogo }
+  useEffect(
+    () => () => {
+      revokeLogoDraft(draftsRef.current.create)
+      revokeLogoDraft(draftsRef.current.edit)
+    },
+    [],
+  )
+
+  function changeCreateLogo(next: LogoDraft) {
+    revokeLogoDraft(createLogo)
+    setCreateLogo(next)
+  }
+
+  function changeEditLogo(next: LogoDraft) {
+    revokeLogoDraft(editLogo)
+    setEditLogo(next)
+  }
+
+  function closeCreateModal() {
+    revokeLogoDraft(createLogo)
+    setCreateLogo(NO_LOGO_CHANGE)
+    setShowCreateModal(false)
+  }
+
+  function closeEditModal() {
+    revokeLogoDraft(editLogo)
+    setEditLogo(NO_LOGO_CHANGE)
+    setEditingTenant(null)
+  }
+
+  /** Runs the deferred logo step for a tenant that already exists.
+   *  Returns an error message, or `null` when there was nothing to do or it
+   *  worked. Never throws: the caller has already committed the tenant data
+   *  and must not be rolled back by a Cloudinary problem. */
+  async function applyLogoDraft(id: string, draft: LogoDraft): Promise<string | null> {
     try {
-      const result = await createTenant(data).unwrap()
-      createForm.reset()
-      setShowCreateModal(false)
-      await refetch()
-      setCredentials({
-        tenantNombre: result.nombre,
-        adminNombre: data.admin_nombre,
-        adminCorreo: data.admin_correo,
-        password: result.initial_admin_password,
-      })
+      if (draft.kind === 'replace') {
+        const formData = new FormData()
+        formData.append('logo', draft.file)
+        await uploadLogo({ id, formData }).unwrap()
+      } else if (draft.kind === 'remove') {
+        await deleteLogo({ id }).unwrap()
+      }
+      return null
     } catch (err) {
-      applyServerErrors(err, createForm.setError, 'No se pudo crear el negocio. Verifica los datos e intenta de nuevo.')
+      return getServerErrorMessage(err, 'Intenta de nuevo desde el detalle del negocio.')
+    }
+  }
+
+  async function onCreateSubmit(data: CreateFormData) {
+    const result = await createTenant(data)
+      .unwrap()
+      .catch((err) => {
+        applyServerErrors(
+          err,
+          createForm.setError,
+          'No se pudo crear el negocio. Verifica los datos e intenta de nuevo.',
+        )
+        return null
+      })
+    if (!result) return
+
+    // The business exists from here on. Nothing below may stop the credentials
+    // modal from opening — `initial_admin_password` is shown exactly once and
+    // is unrecoverable afterwards, so a failed logo upload must not eat it.
+    const logoError = await applyLogoDraft(result.id, createLogo)
+
+    createForm.reset()
+    closeCreateModal()
+    await refetch()
+    setCredentials({
+      tenantNombre: result.nombre,
+      adminNombre: data.admin_nombre,
+      adminCorreo: data.admin_correo,
+      password: result.initial_admin_password,
+    })
+    if (logoError) {
+      toast.error(`El negocio se creó, pero el logo no se pudo subir. ${logoError}`)
     }
   }
 
   function openEditModal(tenant: Tenant) {
+    revokeLogoDraft(editLogo)
     setEditingTenant(tenant)
     setEditActivo(tenant.activo)
+    setEditLogo(NO_LOGO_CHANGE)
     editForm.reset({
       nombre: tenant.nombre,
       nit: tenant.nit,
@@ -84,17 +172,37 @@ export default function TenantsPage() {
 
   async function onEditSubmit(data: EditFormData) {
     if (!editingTenant) return
-    try {
-      await updateTenant({ id: editingTenant.id, ...data, activo: editActivo }).unwrap()
-      setEditingTenant(null)
-      await refetch()
+    const { id } = editingTenant
+
+    // Data first, logo second: the other order would leave a new logo behind
+    // on an edit the server rejected.
+    const saved = await updateTenant({ id, ...data, activo: editActivo })
+      .unwrap()
+      .then(() => true)
+      .catch((err) => {
+        applyServerErrors(
+          err,
+          editForm.setError,
+          'No se pudo actualizar el negocio. Intenta de nuevo.',
+        )
+        return false
+      })
+    if (!saved) return
+
+    const logoError = await applyLogoDraft(id, editLogo)
+
+    closeEditModal()
+    await refetch()
+    if (logoError) {
+      toast.error(
+        `Los datos de "${data.nombre}" se guardaron, pero el logo no se pudo actualizar. ${logoError}`,
+      )
+    } else {
       toast.success(`"${data.nombre}" actualizado correctamente.`)
-    } catch (err) {
-      applyServerErrors(err, editForm.setError, 'No se pudo actualizar el negocio. Intenta de nuevo.')
     }
   }
 
-  const busy = isLoading || creating || updating
+  const busy = isLoading || creating || updating || uploadingLogo || deletingLogo
 
   return (
     <div className={styles.root}>
@@ -109,12 +217,24 @@ export default function TenantsPage() {
       </div>
 
       {!isLoading && (
-        <TenantsTable tenants={tenants} onEdit={openEditModal} />
+        <TenantsTable
+          tenants={tenants}
+          onEdit={openEditModal}
+          onOpen={(t) => navigate(`/super-admin/tenants/${t.id}`)}
+        />
       )}
 
       {/* ── Create modal ── */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuevo negocio" size="md">
+      <Modal isOpen={showCreateModal} onClose={closeCreateModal} title="Nuevo negocio" size="md">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className={styles.form} noValidate>
+          {/* No `currentUrl`: the tenant does not exist yet, so the only
+              reachable states are "nothing picked" and "picked". */}
+          <TenantLogoField
+            draft={createLogo}
+            busy={creating || uploadingLogo}
+            onChange={changeCreateLogo}
+          />
+
           <div className={styles.formRow}>
             <Input label="Nombre del negocio" error={createForm.formState.errors.nombre?.message} {...createForm.register('nombre')} />
             <Input label="NIT" error={createForm.formState.errors.nit?.message} {...createForm.register('nit')} />
@@ -137,15 +257,23 @@ export default function TenantsPage() {
             La contraseña se genera automáticamente y se mostrará <strong>una sola vez</strong>.
           </p>
           <div className={styles.formActions}>
-            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
-            <Button type="submit" loading={creating}>Crear negocio</Button>
+            <Button type="button" variant="secondary" onClick={closeCreateModal}>Cancelar</Button>
+            <Button type="submit" loading={creating || uploadingLogo}>Crear negocio</Button>
           </div>
         </form>
       </Modal>
 
       {/* ── Edit modal ── */}
-      <Modal isOpen={!!editingTenant} onClose={() => setEditingTenant(null)} title="Editar negocio" size="md">
+      <Modal isOpen={!!editingTenant} onClose={closeEditModal} title="Editar negocio" size="md">
         <form onSubmit={editForm.handleSubmit(onEditSubmit)} className={styles.form} noValidate>
+          <TenantLogoField
+            draft={editLogo}
+            currentUrl={editingTenant?.logo_url ?? null}
+            nombre={editingTenant?.nombre ?? ''}
+            busy={updating || uploadingLogo || deletingLogo}
+            onChange={changeEditLogo}
+          />
+
           <div className={styles.formRow}>
             <Input label="Nombre del negocio" error={editForm.formState.errors.nombre?.message} {...editForm.register('nombre')} />
             <Input label="NIT" error={editForm.formState.errors.nit?.message} {...editForm.register('nit')} />
@@ -174,8 +302,8 @@ export default function TenantsPage() {
             </span>
           </div>
           <div className={styles.formActions}>
-            <Button type="button" variant="secondary" onClick={() => setEditingTenant(null)}>Cancelar</Button>
-            <Button type="submit" loading={updating}>Guardar cambios</Button>
+            <Button type="button" variant="secondary" onClick={closeEditModal}>Cancelar</Button>
+            <Button type="submit" loading={updating || uploadingLogo || deletingLogo}>Guardar cambios</Button>
           </div>
         </form>
       </Modal>

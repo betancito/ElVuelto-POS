@@ -1,10 +1,15 @@
-import cloudinary.uploader
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.tenants.viewsets import TenantModelViewSet
 from apps.users.permissions import IsAdmin, IsCajero
+from elvuelto.cloudinary_uploads import (
+    CATALOG_IMAGE_TRANSFORMATION,
+    image_delivery_url,
+    upload_optimized_image,
+    validate_image_upload,
+)
 
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductPOSSerializer, ProductSerializer
@@ -25,22 +30,24 @@ class CategoryViewSet(TenantModelViewSet):
     def upload_image(self, request, pk=None):
         category = self.get_object()
         image = request.FILES.get("image")
-        if not image:
-            return Response({"error": "No image provided."}, status=status.HTTP_400_BAD_REQUEST)
+        # Raises DRF ValidationError → 400 (missing file, wrong type, >10 MB).
+        validate_image_upload(image)
 
-        result = cloudinary.uploader.upload(
+        result = upload_optimized_image(
             image,
             folder="elvuelto/categories",
             public_id=f"category_{category.id}",
-            overwrite=True,
-            resource_type="image",
+            transformation=CATALOG_IMAGE_TRANSFORMATION,
         )
+        # `f_auto` URL, not `result["secure_url"]`: the stored asset is already
+        # resized, and this serves it as WebP/AVIF where the browser allows it.
+        imagen_url = image_delivery_url(result)
 
-        category.imagen_url = result["secure_url"]
+        category.imagen_url = imagen_url
         category.imagen_public_id = result["public_id"]
         category.save(update_fields=["imagen_url", "imagen_public_id"])
 
-        return Response({"imagen_url": result["secure_url"]}, status=status.HTTP_200_OK)
+        return Response({"imagen_url": imagen_url}, status=status.HTTP_200_OK)
 
 
 class ProductViewSet(TenantModelViewSet):
@@ -60,22 +67,21 @@ class ProductViewSet(TenantModelViewSet):
     def upload_image(self, request, pk=None):
         product = self.get_object()
         image = request.FILES.get("image")
-        if not image:
-            return Response({"error": "No image provided."}, status=status.HTTP_400_BAD_REQUEST)
+        validate_image_upload(image)
 
-        result = cloudinary.uploader.upload(
+        result = upload_optimized_image(
             image,
             folder="elvuelto/products",
             public_id=f"product_{product.id}",
-            overwrite=True,
-            resource_type="image",
+            transformation=CATALOG_IMAGE_TRANSFORMATION,
         )
+        imagen_url = image_delivery_url(result)
 
-        product.imagen_url = result["secure_url"]
+        product.imagen_url = imagen_url
         product.imagen_public_id = result["public_id"]
         product.save(update_fields=["imagen_url", "imagen_public_id"])
 
-        return Response({"imagen_url": result["secure_url"]}, status=status.HTTP_200_OK)
+        return Response({"imagen_url": imagen_url}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="pos", permission_classes=[IsCajero])
     def pos(self, request):

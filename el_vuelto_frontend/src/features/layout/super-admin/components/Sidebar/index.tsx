@@ -1,7 +1,6 @@
 import HomeIcon from '@mui/icons-material/Home'
 import StoreIcon from '@mui/icons-material/Store'
 import PaymentsIcon from '@mui/icons-material/Payments'
-import PersonIcon from '@mui/icons-material/Person'
 import HistoryIcon from '@mui/icons-material/History'
 import { useLayout } from '../../LayoutContext'
 import SidebarBrand from './components/SidebarBrand'
@@ -9,11 +8,13 @@ import NavItem from './components/NavItem'
 import SidebarFooter from './components/SidebarFooter'
 import styles from './Sidebar.module.css'
 
+// No "Usuarios" entry: managing a business's staff now lives inside that
+// business (Negocios → pick one → Usuarios tab), so a platform-wide users
+// screen has nothing to show.
 const NAV_ITEMS = [
   { to: '/super-admin/home',     Icon: HomeIcon,     label: 'Inicio'      },
   { to: '/super-admin/tenants',  Icon: StoreIcon,    label: 'Negocios'    },
   { to: '/super-admin/billing',  Icon: PaymentsIcon, label: 'Facturación' },
-  { to: '/super-admin/users',    Icon: PersonIcon,   label: 'Usuarios'    },
   { to: '/super-admin/history',  Icon: HistoryIcon,  label: 'Historial'   },
 ]
 

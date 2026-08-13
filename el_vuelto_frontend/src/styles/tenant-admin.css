@@ -670,6 +670,46 @@
 }
 .ta-toggle-track--on .ta-toggle-thumb { transform: translateX(1.5rem); }
 
+/* ─── Avatar Upload (click-to-change image, e.g. tenant logo) ─────── */
+
+.ta-avatar-upload {
+  position: relative;
+  display: inline-flex;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ta-avatar-upload__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ta-avatar-upload__input:disabled {
+  cursor: default;
+}
+.ta-avatar-upload__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.ta-avatar-upload:hover .ta-avatar-upload__overlay,
+.ta-avatar-upload:focus-within .ta-avatar-upload__overlay,
+.ta-avatar-upload[data-uploading="true"] .ta-avatar-upload__overlay {
+  opacity: 1;
+}
+
 /* ─── Staff URL Card ────────────────────────────────────────────── */
 
 /* Info card for staff login URL */

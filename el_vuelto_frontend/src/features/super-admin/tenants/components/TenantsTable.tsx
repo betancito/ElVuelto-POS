@@ -7,9 +7,10 @@ import styles from './TenantsTable.module.css'
 interface Props {
   tenants: Tenant[]
   onEdit: (tenant: Tenant) => void
+  onOpen: (tenant: Tenant) => void
 }
 
-export default function TenantsTable({ tenants, onEdit }: Props) {
+export default function TenantsTable({ tenants, onEdit, onOpen }: Props) {
   if (tenants.length === 0) {
     return <p className={styles.empty}>No hay negocios registrados aún.</p>
   }
@@ -30,7 +31,22 @@ export default function TenantsTable({ tenants, onEdit }: Props) {
         </thead>
         <tbody>
           {tenants.map((t) => (
-            <tr key={t.id}>
+            <tr
+              key={t.id}
+              onClick={() => onOpen(t)}
+              // Keyboard parity: a row that only responds to a mouse is
+              // unreachable for anyone tabbing through the table.
+              tabIndex={0}
+              role="button"
+              aria-label={`Ver detalle de ${t.nombre}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onOpen(t)
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <td className={styles.logoCell}>
                 {t.logo_url ? (
                   <img src={t.logo_url} alt={`${t.nombre} logo`} className={styles.logoThumb} />
@@ -48,7 +64,17 @@ export default function TenantsTable({ tenants, onEdit }: Props) {
                 </Badge>
               </td>
               <td className={styles.actions}>
-                <Button variant="ghost" size="sm" onClick={() => onEdit(t)} aria-label="Editar negocio">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  // The button sits inside the clickable row, so the click would
+                  // bubble up and navigate away the instant the edit modal opens.
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit(t)
+                  }}
+                  aria-label="Editar negocio"
+                >
                   <ModeEditIcon fontSize="small" />
                 </Button>
               </td>

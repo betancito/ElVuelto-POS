@@ -90,3 +90,34 @@ Lo transversal (no pertenece a un módulo) va en `modules/_transversal/prompts/`
 - **Estados de un prompt:** 🔴 escrito (pendiente de correr) · 🟡 en curso · 🟢 corrido-ok · ⛔ corrido-falló.
 - **Quién registra la corrida:** el **Planner** (el Dev no edita el cerebro). Al correr un prompt, el Planner actualiza la fila del `00-registro-<mod>` (estado, fecha, veredicto) y, si el reporte es extenso, crea `corridas/RUN-...`.
 - Así el cerebro guarda el **historial completo de todo lo que se ha corrido**, por módulo.
+
+## 10. Pedidos directos del owner (fuera del backlog planeado)
+
+Cuando el owner pide código puntual y acotado directo en el chat (no algo que viene del backlog
+planeado del cerebro), el Planner lo implementa directo — no escribe un `PROMPT-FEAT` para que el
+owner lo corra en otra sesión como Agente B ni espera a que se lo devuelvan para revisar. Confirmado
+explícitamente por el owner el 2026-08-11 (feature de docs Swagger) tras preguntarle cómo prefería que
+fuera en adelante: eligió "directo, como ahora" por encima de "siempre por el protocolo Planner→Dev" o
+"depende del riesgo". Ver [[RUN-20260811-docs-swagger-key-gate]].
+
+**Esto no significa saltarse el análisis y la planeación.** Confirmado de nuevo el 2026-08-12 (feature
+de logo del tenant, [[RUN-20260812-logo-tenant-superadmin-ui]]): el owner pidió explícitamente que el
+Planner investigue y planee antes de tocar código, incluso en un pedido ad-hoc. "Directo" = sin handoff
+a otra sesión como Dev, **no** = sin plan. En la práctica: modo plan (research con agentes Explore si
+el alcance lo amerita + un plan concreto) antes de escribir código.
+
+**La aprobación del plan es la luz verde para implementar.** Cuando el Planner usa modo plan y el owner
+aprueba el plan (`ExitPlanMode`), esa aprobación ya autoriza implementar de una — no hace falta una
+segunda confirmación separada antes de tocar código. Confirmado explícitamente por el owner el
+2026-08-12 tras preguntarle si prefería que el Planner pausara después del plan y esperara una
+confirmación aparte.
+
+**Compensación obligatoria** (esto sacrifica la separación real entre quien escribe y quien revisa):
+1. Testing real contra código en ejecución — server real, `curl`/requests reales, no solo lectura.
+2. Revisión adversarial (workflow, varios lentes) antes de dar la tarea por cerrada, sobre todo si
+   toca seguridad, permisos, dinero o tenancy.
+3. Doble actualización igual que si lo hubiera entregado el Dev (`CLAUDE.md` + ADR/RUN/backlog) — la
+   desviación de protocolo se anota en el RUN, no se esconde.
+
+No cambia el ciclo prompt→review normal cuando el owner maneja el backlog planeado con "review" / "ya
+corrí el prompt X" — es específico de pedidos ad-hoc directos.

@@ -36,7 +36,15 @@ function parse400Body(error: unknown): ServerErrorBody | null {
  * - Each `{ campo: "msg" }` becomes a field-level error via `setError(campo, ...)`.
  *   Field names must match the RHF `name` (backend uses Spanish snake_case:
  *   `correo`, `cedula`, `nit`, `admin_correo`, ...).
- * - `non_field_errors` / `detail` (object-level) become a `toast.error`.
+ * - `non_field_errors` / `detail` / `error` (object-level) become a `toast.error`.
+ *   `error` is what `validate_image_upload` (`elvuelto/cloudinary_uploads.py`) raises
+ *   on — shared by the product/category/tenant-logo upload endpoints. Without this
+ *   case it fell into the generic `setError('error', ...)` branch below: no form in
+ *   this app registers a field literally named `error`, so the message rendered
+ *   nowhere, and because `setError` still ran, `surfaced` was `true` — which also
+ *   skipped the `fallbackMessage` toast. An oversized/wrong-type image upload
+ *   through `applyServerErrors` (`ProductsPage.tsx`'s image catch blocks) used to
+ *   fail completely silently.
  * - Anything that is not a mappable 400 (network error, 500, empty body) shows
  *   `fallbackMessage` as a toast, so nothing is ever swallowed silently.
  *
@@ -57,7 +65,7 @@ export function applyServerErrors<T extends FieldValues>(
   for (const [field, value] of Object.entries(body)) {
     const message = firstMessage(value)
     if (!message) continue
-    if (field === 'non_field_errors' || field === 'detail') {
+    if (field === 'non_field_errors' || field === 'detail' || field === 'error') {
       toast.error(message)
     } else {
       setError(field as Path<T>, { type: 'server', message })
@@ -74,8 +82,12 @@ export function applyServerErrors<T extends FieldValues>(
  * NOT a react-hook-form — e.g. the POS cart banner, which is a manual cart, so
  * `setError` does not apply. Field priority mirrors what the sales endpoint
  * returns: `items` (the stock/validation list, joined with " · "), then
- * `monto_recibido`, then object-level `non_field_errors` / `detail`. Anything
- * that is not a recognizable 400 body (500, network error) returns `fallback`.
+ * `monto_recibido`, then object-level `non_field_errors` / `detail`. `error` is
+ * the key `validate_image_upload` (`elvuelto/cloudinary_uploads.py`) raises on —
+ * shared by all three image-upload endpoints (product/category/tenant logo), so
+ * a bad file type or an oversized upload surfaces its real message instead of
+ * the generic fallback. Anything that is not a recognizable 400 body (500,
+ * network error) returns `fallback`.
  */
 export function getServerErrorMessage(error: unknown, fallback: string): string {
   const body = parse400Body(error)
@@ -89,7 +101,7 @@ export function getServerErrorMessage(error: unknown, fallback: string): string 
     return items
   }
 
-  for (const key of ['monto_recibido', 'non_field_errors', 'detail'] as const) {
+  for (const key of ['monto_recibido', 'non_field_errors', 'detail', 'error'] as const) {
     const message = firstMessage(body[key])
     if (message) return message
   }

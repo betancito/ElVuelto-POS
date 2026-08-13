@@ -1,7 +1,7 @@
 ---
 tags: [registro, prompts, transversal]
 status: activo
-updated: 2026-08-02
+updated: 2026-08-11
 ---
 
 # Registro de prompts y corridas — _transversal
@@ -27,6 +27,8 @@ Prompts que **no pertenecen a un solo módulo** (cross-cutting: front-wide, deps
 | [[PROMPT-FIX-BACKEND-20260805-cerrar-puertas-traseras]] | fix 🔒 | [[BACKEND-20260805-escrituras-que-evaden-serializers]] | 🟢 corrido-ok | 2026-08-05 | ✅ pasó 10/10 — `User.clean()` sin migración + `cedula` en el admin + PUT deshabilitado + `is_staff` fuera. Residual: no es retroactivo | [[RUN-20260805-cerrar-puertas-traseras]] |
 | [[PROMPT-FIX-BACKEND-20260805-residuos-users-auth]] | fix 🔒 | [[BACKEND-20260805-cerrar-residuos-users-auth]] | 🟢 corrido-ok | 2026-08-05 | ✅ pasó 11/11 — migración de datos aplicada + guard generalizado ("¿tiene otra vía de login?") | [[RUN-20260805-residuos-users-auth]] |
 | [[PROMPT-FIX-20260805-desactivar-de-punta-a-punta]] | fix | [[TENANCY-20260802-toggle-active-fantasma]] + residual de refresh | 🟢 corrido-ok | 2026-08-05 | ✅ pasó 5/5; el Dev NO tocó `apiBase.ts` y tenía razón | [[RUN-20260805-desactivar-de-punta-a-punta]] |
+| [[PROMPT-FEAT-TRANSVERSAL-20260809-compresion-cloudinary]] | feature | [[BACKEND-20260809-compresion-estandar-imagenes]] | 🟢 corrido-ok | 2026-08-10 | ✅ pasó — 6/6 casos con subidas reales contra Cloudinary, incl. verificación independiente del fix de staleness/versión | [[RUN-20260809-compresion-cloudinary]] |
+| [[PROMPT-FEAT-TRANSVERSAL-20260811-docs-swagger-key-gate]] | feature | [[BACKEND-20260811-docs-swagger-api-key]] | 🟢 corrido-ok | 2026-08-11 | ✅ pasó — 12/12+6/6+9/9 casos reales; sin prompt previo (pedido directo del owner); review adversarial corrida (3 hallazgos arreglados, 2 a backlog nuevo); rediseñado a mitad de sesión de `?key=` en URL a login-form+sesión a pedido del owner | [[RUN-20260811-docs-swagger-key-gate]] |
 
 ## Cómo se registra una corrida
 El **Planner** actualiza la fila al correr (Estado, Corrida, Veredicto) y guarda el reporte extenso en `corridas/RUN-<fecha>-<slug>.md`. El Dev no edita el cerebro.

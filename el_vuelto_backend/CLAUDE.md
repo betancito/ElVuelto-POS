@@ -364,9 +364,32 @@ GET    /api/tenants/{id}/                   retrieve              IsSuperAdmin
 PATCH  /api/tenants/{id}/                   partial_update        IsSuperAdmin
 DELETE /api/tenants/{id}/                   destroy               IsSuperAdmin
 POST   /api/tenants/{id}/upload_logo/       upload_logo           IsSuperAdmin  → Cloudinary upload
+DELETE /api/tenants/{id}/logo/              delete_logo           IsSuperAdmin  → 204, removes asset + row
+
+# SUPERADMIN support surface, scoped to ONE tenant by URL (see below)
+GET    /api/tenants/{tenant_id}/users/      TenantUsersView       IsSuperAdmin  → that tenant's staff (UserSerializer)
+POST   /api/tenants/{tenant_id}/users/{user_id}/reset_password/
+                                            TenantUserResetPasswordView
+                                                                  IsSuperAdmin  → {"new_password": "..."}
+GET    /api/tenants/{tenant_id}/metrics/    TenantMetricsView     IsSuperAdmin  → {ventas_mes, ventas_hoy, num_admins, num_cajeros, fecha_alta, activo}
 ```
 
 Creating a tenant (`POST /api/tenants/`) also requires `admin_nombre` + `admin_correo` fields and auto-creates the initial ADMIN user. Returns `initial_admin_password` in the response. The tenant + admin are created inside a single `transaction.atomic()` block, so a failure creating the admin rolls the tenant back (no orphan). Because `User.correo` is globally unique, a duplicate `admin_correo` is pre-validated and returns **400** `{"admin_correo": ...}` (never a 500).
+
+#### The three SUPERADMIN tenant-scoped endpoints
+
+**Why they exist.** A SUPERADMIN has `tenant=None`, so `request.tenant` is always `None` and every tenant-scoped endpoint answers **403** via `require_tenant` — deliberate, per the access model. That left platform support with no way to answer "who works at this business and can you reset their PIN?". These three views are the explicit, bounded exception: **the tenant comes from the URL, never from `request.tenant`.**
+
+**What they are not: impersonation.** No token is issued and no session is created — nothing here lets a SUPERADMIN act *as* the tenant. They read a support snapshot and can rotate one credential. That is the entire surface; `/api/users/` and the five `/api/reports/` endpoints are untouched and still tenant-admin-only.
+
+**The invariant.** A `tenant_id` in the URL cannot reach a row belonging to a different tenant. The reset endpoint filters on **both** ids at once (`User.objects.filter(pk=user_id, tenant=tenant)`) rather than fetching by pk and checking afterwards — the query itself cannot express the wrong thing. A `user_id` from another business is a **404**, and that user's password is left untouched (verified in both directions with two real tenants).
+
+**Implementation notes.**
+- All three subclass `SuperAdminTenantScopedView` (`apps/tenants/views.py`), which pins `permission_classes = [IsSuperAdmin]` and resolves `tenant_id` with `get_object_or_404` → a missing tenant is **404**, never a 500 nor a silently-empty list.
+- They are declared before `router.urls` in `apps/tenants/urls.py` for readability, **not** out of necessity: the router's detail route is `^(?P<pk>[^/.]+)/$`, anchored at `$`, so it cannot match `<id>/users/` in either ordering (checked by resolving both). What does matter is the `<uuid:...>` converter — a non-UUID id becomes a 404 at the resolver instead of reaching the ORM and raising `ValidationError` → **500**.
+- The reset reuses `generate_new_password(user.rol)`, so a cashier gets a 4-digit PIN and an admin a 12-char password — same policy and same `{"new_password": ...}` shape as `UserViewSet.reset_password`. It also trips `CHECK_REVOKE_TOKEN` for free: the target's existing tokens die immediately.
+- `metrics` uses the same `America/Bogota` criterion as `apps/reports/views.py` (`USE_TZ` is on and rows are UTC, so an 8pm Bogotá sale is already tomorrow in UTC). `Sum` returns `None` with no rows, so both totals are coerced to `0` — a brand-new business reads `0.0`, never `null`.
+
 
 ### Products — `/api/products/`
 
@@ -559,6 +582,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+DOCS_API_KEY=
 ```
 
 ---
@@ -574,9 +598,82 @@ python-decouple==3.8
 Pillow==11.1.0
 psycopg2-binary==2.9.10       # PostgreSQL
 cloudinary==1.44.2            # Image storage
+drf-spectacular==0.30.0       # OpenAPI schema + Swagger/Redoc docs
+drf-spectacular-sidecar==2026.8.1  # self-hosted Swagger/Redoc JS/CSS, no CDN
 ```
 
 Receipts are generated on the **frontend** (`printReceipt.ts` / `generateReceipt.ts`), not the backend — there is no ESC/POS printing dependency.
+
+---
+
+## API Docs — `/docs/`, `/redoc/`, `/api/schema/`
+
+Swagger UI (`/docs/`), Redoc (`/redoc/`) and the raw OpenAPI 3 schema (`/api/schema/`) are wired in `elvuelto/urls.py` via `drf-spectacular`. All three are gated behind a **single static secret** (`DOCS_API_KEY`, `.env`) — a dev/support tool, not a per-user credential, and unrelated to real endpoint auth.
+
+**Fails closed.** `DOCS_API_KEY` unset/empty ⇒ nobody gets in, key or not (verified directly against `key_matches`, 4/4 cases: unset+no-key, unset+any-key, set+wrong, set+correct).
+
+**Browser access goes through a login form, not a URL parameter.** Visiting `/docs/` or `/redoc/` without an active session redirects (302) to `/docs/login/?next=<original path>` — a plain HTML form (`DocsLoginView`, `docs_views.py`) that POSTs the key, checks it with `hmac.compare_digest`, and on success sets a session flag (`request.session["docs_authorized"] = True`, Django's existing cookie-backed session framework — nothing new to wire). The key never has to appear in a URL: the browser sends the session cookie automatically on every later request, **including Swagger UI's own JS fetch of `/api/schema/`** — no query-param forwarding hack needed. `next` is validated with `url_has_allowed_host_and_scheme` (same helper Django's own `LoginView` uses) so a crafted `?next=https://evil.example` cannot redirect off-site after a real login — verified live. Already-logged-in `GET /docs/login/` redirects straight through instead of re-showing the form.
+
+An **earlier version of this gate accepted `?key=` in the URL** (so a bare browser visit worked with no form). Dropped after the owner asked for a GUI instead of an HTTP-parameter mechanism — which also happened to close two leaks an adversarial review had found: server/proxy access logs capturing the key, and Django's `DEBUG=True` error page echoing `request.GET` unredacted.
+
+**The `X-Docs-Api-Key` header still works**, unchanged, for curl/Postman/CI — no browser, no session, no form. `/api/schema/` keeps DRF's normal `permission_classes` (`HasDocsApiKey`, from `SPECTACULAR_SETTINGS["SERVE_PERMISSIONS"]`) and answers a plain **403** if neither the header nor the session is present — no redirect there, since it's fetched by JS/curl, not typed into an address bar. `/docs/` and `/redoc/` opt out of that automatic 403 (`permission_classes = []` on `_RedirectsToLoginMixin`) and check `HasDocsApiKey().has_permission(...)` by hand in `get()` so an unauthorized visit can redirect instead.
+
+**This key does not unlock real endpoints.** `GET /api/products/pos/` still returns `401` regardless of a valid docs session/header — verified live. Once inside `/docs/`, the separate "Authorize" 🔒 button (a `jwtAuth` Bearer scheme, auto-registered by importing `drf_spectacular.contrib.rest_framework_simplejwt` in `docs_views.py`) is what lets you actually exercise real endpoints via "Try it out", using a real user's JWT — same as any API client.
+
+**Assets are self-hosted (`drf-spectacular-sidecar`), not loaded from a CDN.** `SWAGGER_UI_DIST`/`REDOC_DIST`/`SWAGGER_UI_FAVICON_HREF` = `"SIDECAR"` in `SPECTACULAR_SETTINGS`. Served at `/static/drf_spectacular_sidecar/...` via `django.contrib.staticfiles` (already in `INSTALLED_APPS`).
+
+**All three responses carry `Cache-Control: no-store`** (`_NoStoreMixin.finalize_response`) so a shared/forward cache in front of the app can never replay a key-bearing page to a different client.
+
+> **Gotcha — never import `drf_spectacular.*` submodules from inside `settings/base.py`.** Every `drf_spectacular` submodule reads `django.conf.settings` at import time. Importing one from a settings module that is itself still being loaded triggers a **reentrant** settings load: Django hands it a *partial* module (only the names defined above that import line), so drf-spectacular's global settings singleton (`drf_spectacular.settings.spectacular_settings`) freezes forever with defaults — `SERVE_PERMISSIONS` silently reverts to `AllowAny` — even though `django.conf.settings.SPECTACULAR_SETTINGS` itself ends up fully correct afterwards. Hit this for real while building the feature: `/docs/` returned **200** with no key at all until the `rest_framework_simplejwt` contrib import was moved out of `settings/base.py` into `docs_views.py` (which is only imported once `urls.py` loads, always after settings finish). `SPECTACULAR_SETTINGS` (the dict) is fine to keep in `settings/base.py`; only *imports of the package's own submodules* are the trap.
+
+Permission logic: `elvuelto/docs_auth.py` (`HasDocsApiKey`, `key_matches`, `hmac.compare_digest`). Views + login form: `elvuelto/docs_views.py`. Settings: `SPECTACULAR_SETTINGS` + `DOCS_API_KEY` in `settings/base.py`.
+
+---
+
+## Image Uploads — `elvuelto/cloudinary_uploads.py`
+
+**All three upload endpoints — and the one delete endpoint — go through this module. Do not call `cloudinary.uploader.*` from a view.** It lives next to `settings/` (where `cloudinary.config(...)` runs) because it belongs to neither `products` nor `tenants`, and both use it.
+
+| Endpoint | Profile |
+|---|---|
+| `POST /api/products/categories/{id}/upload_image/` | `CATALOG_IMAGE_TRANSFORMATION` |
+| `POST /api/products/{id}/upload_image/` | `CATALOG_IMAGE_TRANSFORMATION` |
+| `POST /api/tenants/{id}/upload_logo/` | `LOGO_TRANSFORMATION` |
+
+Both profiles are `width/height 1000, crop "limit", quality "auto:good"`. They are **separate constants on purpose** even though the numbers match today: shrinking logos later must not silently change product photos. `crop: "limit"` only ever scales **down** — a 100×100 icon stays 100×100 (verified), it is never upscaled or cropped.
+
+### The pipeline
+
+1. `validate_image_upload(file)` → **400** before any network call if the file is missing, `content_type` is not `image/*`, or it exceeds **10 MB** (`MAX_IMAGE_BYTES`).
+2. `upload_optimized_image(...)` sends `transformation=` as an **incoming transformation**: Cloudinary resizes/recompresses *before storing*, so the original never occupies the account (`utils.build_upload_params`, `utils.py:1166`). A Cloudinary error becomes a 400, not the 500 the raw SDK exception produced — DRF does not map `cloudinary.exceptions.Error`.
+3. `image_delivery_url(result)` builds the URL to persist in `imagen_url` / `cloudinary_url`.
+
+### Why the stored URL is not `result["secure_url"]`
+
+Two things the upload response does not give you:
+
+- **`f_auto`.** `fetch_format` is a *delivery* feature (it reads the browser's `Accept` header), so it does nothing as an incoming transformation, and the URL `upload()` returns has no transformation segment at all. Measured on one stored asset: **43.969 B** from the plain URL vs **22.332 B** as WebP from the delivery URL, with a plain JPEG still served to clients that do not advertise WebP.
+- **`version`.** Every upload reuses a deterministic `public_id` (`product_<uuid>`), so replacing a photo overwrites the same path. Without `v<timestamp>` the URL is byte-identical before and after and the CDN keeps serving the old image — this really happened during verification: a 100×100 upload came back as the 1000×750 photo uploaded seconds earlier under the same id. `secure_url` had this property built in; `image_delivery_url` rebuilds it.
+
+### Measured effect
+
+A 2400×1800 / 205.717 B photo, through any of the three endpoints: stored 1000×750 / 43.969 B, **served 22.332 B as WebP — 90% smaller**, visually indistinguishable from the original (compared side by side, no artefacts). A 3000×2000 / 7.1 MB file drops to 571.729 B stored.
+
+> **Only new uploads.** Nothing here is retroactive: images uploaded before this exist unchanged at their original size, and there is deliberately no backfill script. They will shrink the next time someone replaces them.
+
+### Removing an image — `destroy_image(public_id)`
+
+`DELETE /api/tenants/{id}/logo/` (`TenantViewSet.delete_logo`) is the only caller today. It destroys the Cloudinary asset and deletes the `TenantDocument` row. Product/category images have **no** delete endpoint — replacing them is the only path.
+
+**It never raises; it returns a bool.** That is the opposite of `upload_optimized_image` (which turns a Cloudinary error into a 400) and it is deliberate: the caller deletes the row right after, and a CDN hiccup must not be able to stop a superadmin from removing a logo. The orphan a failed destroy leaves behind is bounded and **self-healing** — the `public_id` is deterministic (`tenant_<uuid>_logo`) and uploads pass `overwrite=True`, so the next logo for that tenant writes over it.
+
+> **Gotcha — `except cloudinary.exceptions.Error` does NOT catch everything the SDK throws.** `uploader.call_api` calls `utils.sign_request` (`uploader.py:882`) and `utils.cloudinary_api_url` (`:892`) **before** opening its own `try:` (`:902`), and both raise a plain **`ValueError`** — "Must supply api_key" / "api_secret" / "cloud_name" (`utils.py:619,622,910`) — which is not in the `cloudinary.exceptions` hierarchy. Only the HTTP request and the JSON parse are wrapped into `Error`. Because `settings/base.py` reads the three credentials with `default=""`, an environment that lost its `.env` **boots normally** and fails only on image operations. `destroy_image` therefore catches `Exception`, not `Error`: with the narrow catch the `ValueError` escaped, DRF did not map it (it maps no `ValueError`), `DELETE /logo/` answered **500**, and since `doc.delete()` runs after the call the row survived — leaving a logo that could never be removed from any screen. Found by an adversarial review and reproduced against `cloudinary==1.44.2`. **The same hole still exists in `upload_optimized_image`** (its documented 400 becomes a 500 on unusable credentials) — a separate, lower-impact task, since nothing is left half-written there.
+
+**Call order matters:** the destroy runs *before* `doc.delete()`. An unexpected exception the SDK does not wrap therefore leaves the row intact — a logo still shown and still stored — rather than the reverse, a row deleted while the asset lives on unreferenced and unbillable-to-anyone.
+
+**`invalidate=True` is a request, not a guarantee.** Verified live: right after a 204 the delivery URL still returned **200** from the CDN edge while `cloudinary.api.resource(public_id)` already answered `NotFound` — the origin was gone, the cached copy was not. This does not affect the app (the row is deleted, so no screen renders that URL again, and the next upload gets a fresh `v<timestamp>`), but do not use "fetch the old URL" as a test that deletion worked — check the Admin API instead.
+
+**Idempotent:** no logo ⇒ still **204**. A DELETE states a desired end state, and a double click or a retry after a dropped connection must not surface as an error on an operation that in fact succeeded.
 
 ---
 
@@ -608,6 +705,7 @@ The two `admin123` passwords are 8 chars, below `ADMIN_PASSWORD_LENGTH` (12), **
 - **`product_nombre` is a snapshot on SaleItem** — do not try to derive it from the product FK; it exists so history survives product renames.
 - **`Sale.codigo` is auto-generated** — 7-char alphanumeric in `Sale.save()`. Never set it manually.
 - **Cloudinary stores `public_id` in DB** — needed for deletion/replacement. Always save both `cloudinary_url` and `cloudinary_public_id`.
+- **Every image upload *and deletion* goes through `elvuelto/cloudinary_uploads.py`.** Never call `cloudinary.uploader.upload()` or `.destroy()` directly from a view — see the section below.
 - **`SALIDA_VENTA` movements are system-only** — `InventoryMovementSerializer.validate()` rejects them if submitted manually.
 - **Tenant-scoped endpoints must guard `request.tenant` via `require_tenant(request)`** (`apps/tenants/utils.py`) — returns the tenant or raises `PermissionDenied` (**403**) when there is no tenant context (SUPERADMIN, whose `tenant` is None and must impersonate per the access-model ADR; or an inactive/invalid tenant). **No tenant ⇒ 403. Never continue, never "return empty", never skip a validation.**
 

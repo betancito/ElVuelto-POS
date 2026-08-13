@@ -15,8 +15,8 @@ import StaffLoginPage from '@/features/auth/StaffLoginPage'
 // Super admin pages
 import HomePage from '@/features/super-admin/home'
 import TenantsPage from '@/features/super-admin/tenants'
+import TenantDetailPage from '@/features/super-admin/tenants/TenantDetailPage'
 import BillingPage from '@/features/super-admin/billing'
-import SAUsersPage from '@/features/super-admin/users'
 import HistoryPage from '@/features/super-admin/history'
 
 // Admin/Cajero pages
@@ -51,8 +51,10 @@ export const router = createBrowserRouter([
         children: [
           { path: 'home',    element: <HomePage />    },
           { path: 'tenants', element: <TenantsPage /> },
+          // Managing a business's users starts by picking the business, so the
+          // old standalone `users` screen is gone (it was a static placeholder).
+          { path: 'tenants/:id', element: <TenantDetailPage /> },
           { path: 'billing', element: <BillingPage /> },
-          { path: 'users',   element: <SAUsersPage /> },
           { path: 'history', element: <HistoryPage /> },
           { index: true,     element: <Navigate to="home" replace /> },
         ],

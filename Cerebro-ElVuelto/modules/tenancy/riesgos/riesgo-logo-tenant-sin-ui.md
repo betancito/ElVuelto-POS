@@ -1,10 +1,16 @@
 ---
 tags: [modulo, riesgo]
-status: vivo
+status: resuelto
 module: tenancy
 severity: baja
-updated: 2026-08-02
+updated: 2026-08-12
 ---
+
+> [!decision] ✅ Resuelto 2026-08-12
+> El hook ya se invoca desde una pantalla real: `TenantDetailPage.tsx` (header, control tipo avatar
+> clickeable). Ver [[ADR-TENANCY-20260812-logo-tenant-superadmin-ui]] ·
+> [[RUN-20260812-logo-tenant-superadmin-ui]]. El resto de esta nota queda como registro histórico del
+> gap tal como se encontró.
 
 # Riesgo — Logo del negocio: backend y hook existen, no hay UI
 

@@ -6,7 +6,9 @@ import styles from './QuickActions.module.css'
 
 const ACTIONS = [
   { label: 'Nuevo negocio',   icon: StoreIcon,   to: '/super-admin/tenants'  },
-  { label: 'Gestionar usuarios', icon: PersonIcon, to: '/super-admin/users'  },
+  // Points at the business list on purpose: there is no standalone users screen
+  // any more, so managing staff starts by choosing the business.
+  { label: 'Gestionar usuarios', icon: PersonIcon, to: '/super-admin/tenants'  },
   { label: 'Ver historial',   icon: HistoryIcon,  to: '/super-admin/history' },
 ]
 

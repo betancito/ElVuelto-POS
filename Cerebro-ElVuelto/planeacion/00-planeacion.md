@@ -1,7 +1,7 @@
 ---
 tags: [indice, planeacion]
 status: activo
-updated: 2026-08-02
+updated: 2026-08-11
 ---
 
 # 00-planeacion — Índice de planeación
@@ -13,6 +13,7 @@ updated: 2026-08-02
 
 ## Épicas
 - [[EPIC-20260802-estabilizacion]] — estabilizar + documentar en paralelo (🟢 cerrada 2026-08-09).
+- [[EPIC-20260809-superadmin-gestion-tenants]] — primera feature post-estabilización: detalle de negocio con métricas + gestión de usuarios, reemplaza el módulo Usuarios de super-admin (🟢 cerrada 2026-08-09).
 
 ## Sprints
 - [[Sprint-2026-08-02-estabilizacion-doc]] — cerebro base + 4 arreglos prioritarios (🟢 cerrado 2026-08-03).
@@ -87,3 +88,27 @@ updated: 2026-08-02
 |---|---|---|
 | [[USERS-20260809-promocion-no-muestra-password-rotado]] | 🔒 alta | 🟢 |
 | [[TENANCY-20260809-race-slug-integrity-error]] | baja | 🔴 |
+
+### Features (2026-08-09) — post-estabilización
+| ítem | prioridad | estado |
+|---|---|---|
+| [[SUPERADMIN-20260809-pagina-detalle-negocio]] | feature | 🟢 (ambas fases corridas) |
+| [[BACKEND-20260809-compresion-estandar-imagenes]] | feature | 🟢 (corrida y verificada) |
+| [[BACKEND-20260811-docs-swagger-api-key]] | feature | 🟢 (corrida y verificada; pedida directo al Planner, sin prompt previo) |
+| [[SUPERADMIN-20260812-logo-tenant-desde-panel]] | feature | 🟢 (corrida y verificada; pedida directo al Planner, con análisis/planeación primero) |
+| [[SUPERADMIN-20260812-logo-en-modales-crear-editar]] | feature | 🟢 (corrida y verificada; agrega también quitar el logo — endpoint backend nuevo) |
+
+### Descubiertos en la revisión adversarial de la feature de docs (2026-08-11)
+| ítem | prioridad | estado |
+|---|---|---|
+| [[BACKEND-20260811-manage-py-settings-fallback-inseguro]] | alta | 🔴 |
+| [[BACKEND-20260811-falta-https-enforcement-produccion]] | media | 🔴 |
+
+### Descubiertos en la feature de logo en modales (2026-08-12)
+| ítem | prioridad | estado |
+|---|---|---|
+| [[FRONT-20260812-role-button-en-tr-rompe-tabla]] | media | 🔴 (a11y; viene del trabajo del 08-09, sin commitear) |
+| [[BACKEND-20260812-upload-optimized-image-valueerror-500]] | baja | 🔴 (mismo agujero que sí se arregló en `destroy_image`) |
+| [[BACKEND-20260812-n1-logo-url-listado-tenants]] | baja | 🔴 (preexistente) |
+| [[BACKEND-20260812-borrar-tenant-deja-asset-cloudinary]] | baja | 🔴 (preexistente) |
+| [[FRONT-20260812-passwordbanner-codigo-muerto]] | baja | 🔴 (preexistente) |

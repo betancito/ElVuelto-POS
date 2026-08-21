@@ -77,7 +77,19 @@ export default function InventoryEntryPanel({ product, onClear }: Props) {
                 <p className="pos-inv-product-meta">{product.barcode}</p>
               )}
             </div>
-            <span className="pos-inv-stock-badge">Stock: {product.stock_actual}</span>
+            {/* This panel is where the lead cashier registers the arrival, so
+                it is the one screen where a negative must not look like any
+                other number — it is the reason they are standing here. */}
+            <span
+              className="pos-inv-stock-badge"
+              style={
+                product.stock_actual < 0
+                  ? { background: 'var(--error-container)', color: 'var(--on-error-container)' }
+                  : undefined
+              }
+            >
+              Stock: {product.stock_actual}
+            </span>
           </div>
 
           {/* Quantity */}

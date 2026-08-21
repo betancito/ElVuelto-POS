@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { toast } from 'react-toastify'
 import CircularProgress from '@mui/material/CircularProgress'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -33,6 +34,102 @@ export function revokeLogoDraft(draft: LogoDraft) {
   if (draft.kind === 'replace') URL.revokeObjectURL(draft.preview)
 }
 
+/** Validate a file and turn it into a `replace` draft, or `null` when it is
+ *  rejected (the toast is already shown by then).
+ *
+ *  **Both** ways of choosing a logo go through here — the file input and the
+ *  clipboard — so they cannot drift apart. `ProductsPage`'s paste handler is
+ *  the counter-example: it skips `validateImageFile`, so an oversized pasted
+ *  image only fails after a round trip.
+ */
+function draftFromFile(file: File): LogoDraft | null {
+  const error = validateImageFile(file)
+  if (error) {
+    toast.error(error)
+    return null
+  }
+  return { kind: 'replace', file, preview: URL.createObjectURL(file) }
+}
+
+const IS_MAC =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)
+
+/** The shortcut as the superadmin's own keyboard spells it. */
+export const PASTE_SHORTCUT = IS_MAC ? '⌘V' : 'Ctrl+V'
+
+/** `<input type="...">` values that hold no text, so pasting into them is not
+ *  "the user is typing". A file input matters here specifically: it is the
+ *  logo control itself, and it is focusable. */
+const NON_TEXT_INPUT_TYPES = new Set([
+  'file', 'checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'image',
+])
+
+function isTextEntry(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true
+  if (target instanceof HTMLInputElement) return !NON_TEXT_INPUT_TYPES.has(target.type)
+  return false
+}
+
+/** Lets the superadmin paste an image from the clipboard as the logo while a
+ *  modal is open. Pass `active` = "that modal is open and not submitting".
+ *
+ *  **Listens on `document`, not on the `<form>`.** A `paste` event targets the
+ *  focused element, so an `onPaste` on the form never fires until something
+ *  inside it already has focus — and the natural gesture is "open the modal,
+ *  press ⌘V", with focus still on `body`. (`ProductsPage.tsx` puts it on the
+ *  form and has exactly that gap.) Same shape as the POS/Inventory barcode
+ *  listener: global, plus an explicit rule for when to ignore it.
+ *
+ *  **It must not steal ⌘V from someone typing.** An image is taken only when
+ *  the clipboard carries no plain text *or* the focus is not on a text field —
+ *  so a screenshot becomes the logo even mid-typing, while a copied web
+ *  fragment (text + image) still pastes as text into the field. `preventDefault`
+ *  runs **only** when the image is actually taken, so a plain text paste is
+ *  never altered.
+ */
+export function usePastedLogo(active: boolean, onPick: (next: LogoDraft) => void) {
+  // The callback lives in a ref so the listener is registered once per `active`
+  // change instead of on every render of a parent that did not memoize it.
+  const onPickRef = useRef(onPick)
+  onPickRef.current = onPick
+
+  useEffect(() => {
+    if (!active) return
+
+    function handlePaste(e: ClipboardEvent) {
+      const data = e.clipboardData
+      if (!data) return
+      const items = Array.from(data.items)
+      const imageItem = items.find((i) => i.kind === 'file' && i.type.startsWith('image/'))
+      if (!imageItem) return
+
+      const hasText = items.some((i) => i.kind === 'string' && i.type === 'text/plain')
+      if (hasText && isTextEntry(e.target)) return
+
+      const file = imageItem.getAsFile()
+      if (!file) return
+      const draft = draftFromFile(file)
+      if (!draft) return
+
+      e.preventDefault()
+      onPickRef.current(draft)
+      // The paste path is the only one that loads a file the user never saw in
+      // a dialog, and it *swallows* the keystroke — someone who meant to paste
+      // a NIT into a field would otherwise see nothing happen there and never
+      // look up at the 4rem avatar. Also the only announcement a screen reader
+      // gets: react-toastify renders with role="alert", while the hint span
+      // that changes underneath is silent.
+      toast.success('Imagen pegada como logo. Se subirá al guardar.')
+    }
+
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [active])
+}
+
 interface Props {
   draft: LogoDraft
   /** The logo the business has today. `null` in the create modal — the tenant
@@ -63,12 +160,8 @@ export default function TenantLogoField({
     // — otherwise the second pick fires no `change` event.
     e.target.value = ''
     if (!file) return
-    const error = validateImageFile(file)
-    if (error) {
-      toast.error(error)
-      return
-    }
-    onChange({ kind: 'replace', file, preview: URL.createObjectURL(file) })
+    const draft = draftFromFile(file)
+    if (draft) onChange(draft)
   }
 
   // One secondary action, whose meaning follows the state — no ambiguity about
@@ -87,7 +180,8 @@ export default function TenantLogoField({
       ? `Se subirá al guardar · ${draft.file.name}`
       : draft.kind === 'remove'
         ? 'Se quitará al guardar.'
-        : 'PNG o JPG · máx 10 MB'
+        // The paste path is invisible unless the field says it exists.
+        : `PNG o JPG · máx 10 MB · o pega con ${PASTE_SHORTCUT}`
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

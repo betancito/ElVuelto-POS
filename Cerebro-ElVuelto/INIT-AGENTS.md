@@ -106,8 +106,12 @@ REGLAS DURAS:
 
 STACK INMUTABLE (versiones reales):
 - Backend: Python + Django 5.1.4, DRF 3.15.2, djangorestframework-simplejwt 5.3.1,
-  django-cors-headers 4.6.0, python-decouple 3.8, Pillow 11.1.0, psycopg2-binary 2.9.10,
-  cloudinary 1.44.2. PostgreSQL. (python-escpos figura en requirements pero NO se usa.)
+  django-cors-headers 4.6.0, python-decouple 3.8, psycopg2-binary 2.9.10, cloudinary 1.44.2,
+  drf-spectacular 0.30.0 + drf-spectacular-sidecar 2026.8.1. PostgreSQL.
+  (Corregido 2026-08-15: `python-escpos` **ya NO figura** en `requirements.txt` — se borró en el commit
+  `a15f6cc` — pero **sigue instalado en el `.venv` local**, con `python-barcode`/`qrcode` detrás.
+  `Pillow==11.1.0` sí está declarado en `requirements.txt:6` pero es **dependencia muerta**: cero
+  imports, cero `ImageField`, y `cloudinary` no lo pide. Ver [[riesgo-deps-duplicadas-y-escpos]].)
 - Frontend: React 18.3.1, @reduxjs/toolkit 2.3.0 (RTK Query), react-redux 9.1.2, redux-persist 6.0.0
   (sessionStorage), react-router-dom 6.28.0, react-hook-form 7.54.0, @hookform/resolvers 3.9.1,
   zod 3.23.8, MUI 9.0.0, tailwindcss 4.2.2, vite 5.4.10, typescript 5.6.3. Alias @/ → src/.

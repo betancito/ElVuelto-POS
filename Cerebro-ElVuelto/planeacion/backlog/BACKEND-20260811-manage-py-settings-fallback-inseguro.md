@@ -2,14 +2,36 @@
 tags: [tarea, backend, seguridad, config]
 status: 🔴
 prioridad: alta
-updated: 2026-08-11
+updated: 2026-08-15
 ---
 
 # BACKEND-20260811-manage-py-settings-fallback-inseguro — `manage.py` cae a settings de dev si falta la env var
 
 **Tipo:** robustez/seguridad · **Encontrado en:** review adversarial de
-[[ADR-G-20260811-docs-swagger-key-gate]] (lente config-drift, workflow), no verificado con un deploy
-real — análisis estático de `manage.py`/`wsgi.py` confirmado leyendo ambos archivos.
+[[ADR-G-20260811-docs-swagger-key-gate]] (lente config-drift, workflow) · **Reproducido en vivo el
+2026-08-15** (ya no es análisis estático).
+
+> [!info] Re-verificado en el PASO 0 del 2026-08-15
+> - **Reproducido en proceso:** con `env -u DJANGO_SETTINGS_MODULE`, tras leer el `.env` la variable
+>   sigue ausente de `os.environ`, el `setdefault` de `manage.py:8` la fija en `elvuelto.settings.local`
+>   y Django arranca con `DEBUG=True` y `ALLOWED_HOSTS=['*']`.
+> - **Por qué el `.env` no salva:** `python-decouple 3.8` **solo lee** `os.environ`
+>   (`decouple.py:86-87`), nunca lo escribe — grep de `os.environ[...] =` → cero. La línea
+>   `DJANGO_SETTINGS_MODULE=elvuelto.settings.local` del `.env` es **inerte** frente al `setdefault`.
+> - **`SECRET_KEY` NO difiere** entre `local` y `production`: sale de `base.py:7` y ningún módulo la
+>   pisa. Caer a `local` no cambia la llave; lo que cambia es `DEBUG`, `ALLOWED_HOSTS` y el logging de
+>   SQL (`local.py:22-25`).
+> - **Trampa para el fix:** ni `.env` ni `.env.example` declaran la clave `ALLOWED_HOSTS`, así que la vía
+>   sugerida abajo (caer a `production`) hoy arrancaría con `ALLOWED_HOSTS=[]` y rechazaría todo request.
+>   Falla ruidoso, no silencioso, pero hay que agregar la clave en el mismo cambio.
+> - **No existe `asgi.py`**: los únicos dos lugares del código que tocan la variable son `manage.py:8` y
+>   `wsgi.py:5`. `manage.py` no se toca desde el commit `d0cad23` (2026-04-12).
+> - **Corrección al texto de abajo:** el trade-off de fuga de `DOCS_API_KEY` que menciona el último
+>   párrafo del problema **ya no existe** — la key dejó de viajar en la URL y
+>   [[ADR-G-20260811-docs-swagger-key-gate]] lo dice explícito. Lo que sí queda con `DEBUG=True` es la
+>   fuga por POST: ver [[BACKEND-20260815-docs-login-key-en-traceback-debug]].
+> - Se mantiene en **alta**: el riesgo es latente sólo porque hoy no existe ningún deploy (cero
+>   Dockerfile/Procfile/CI en el repo). El día que exista, es bloqueante.
 
 ## El problema
 `el_vuelto_backend/manage.py:8` hace `os.environ.setdefault("DJANGO_SETTINGS_MODULE",

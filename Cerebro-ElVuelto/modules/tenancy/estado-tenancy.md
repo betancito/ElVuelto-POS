@@ -2,7 +2,7 @@
 tags: [modulo, estado]
 status: vivo
 module: tenancy
-updated: 2026-08-09
+updated: 2026-08-15
 ---
 
 # Tenancy — Estado
@@ -35,9 +35,18 @@ _(esta nota está desactualizada en general — actualizado 2026-08-09 solo en l
   propósito: multipart dispararía `BooleanField.default_empty_html=False` y el negocio nacería
   inactivo. Ver [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]] ·
   [[RUN-20260812-logo-tenant-modales-crear-editar]].
+- 🟢 **Pegar el logo con ⌘V / Ctrl+V — 2026-08-15.** Segundo camino de entrada al mismo `LogoDraft`, en
+  los dos modales. El listener va en `document` (no en el `<form>`: un `paste` apunta al elemento con
+  foco, así que el handler del form no dispara hasta que algo adentro lo tenga — el gesto natural es
+  abrir y pegar). Regla imagen-vs-texto para no robarle el ⌘V a quien está escribiendo, y
+  `toast.success` obligatorio porque el pegado **se come la tecla** y es el único camino que carga un
+  archivo que el usuario nunca vio. Cero backend. Ver
+  [[ADR-TENANCY-20260815-pegar-logo-portapapeles]] · [[RUN-20260815-pegar-logo-portapapeles]].
+  ⚠️ El ⌘V real no se pudo ejecutar (sin navegador en el entorno) — falta confirmación visual del owner.
 - 🔴 **Deuda de a11y en `TenantsTable.tsx`** (y replicada en `TenantDetailPage.tsx`): `role="button"`
-  sobre el `<tr>` poda las celdas del árbol de accesibilidad. Del trabajo del 08-09, sin commitear.
-  Ver [[FRONT-20260812-role-button-en-tr-rompe-tabla]].
+  sobre el `<tr>` poda las celdas del árbol de accesibilidad. Viene del trabajo del 08-09 y **ya está
+  commiteada en `9727c03`** — es deuda en `main`, no trabajo pendiente de commitear (corregido en el
+  PASO 0 del 2026-08-13). Ver [[FRONT-20260812-role-button-en-tr-rompe-tabla]].
 - 🔴 **N+1 en `TenantSerializer.get_logo_url`** — el `prefetch_related("documents")` no sirve porque el
   serializer usa `.filter()` sobre el related manager. Ver [[BACKEND-20260812-n1-logo-url-listado-tenants]].
 - 🟡 **Errores 400 por campo se pierden en un toast genérico** en `index.tsx`. Ver [[riesgo-errores-400-silenciados]] (sin re-verificar hoy).

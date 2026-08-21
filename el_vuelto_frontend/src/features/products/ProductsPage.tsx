@@ -356,10 +356,18 @@ function ProductsTab() {
 
                       {p.tipo === 'CON_CODIGO' && (
                         <p
-                          className="ta-mono ta-mono--muted"
-                          style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}
+                          // A negative stock is a pending ENTRADA, not a quiet
+                          // detail: sales are allowed to oversell, so the muted
+                          // grey would read exactly like a healthy count.
+                          className={`ta-mono ${p.stock_actual < 0 ? '' : 'ta-mono--muted'}`}
+                          style={{
+                            fontSize: '0.875rem',
+                            marginTop: '0.25rem',
+                            ...(p.stock_actual < 0 ? { color: 'var(--error)', fontWeight: 700 } : null),
+                          }}
                         >
                           Stock: {p.stock_actual} u.
+                          {p.stock_actual < 0 && ' · falta registrar entrada'}
                         </p>
                       )}
                     </div>

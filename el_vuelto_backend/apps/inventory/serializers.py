@@ -69,12 +69,20 @@ class InventoryMovementSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """Apply the movement, refusing to leave `stock_actual` below zero.
+        """Apply the movement. A movement that *removes* stock may not push it
+        below zero; one that *adds* stock is always allowed.
 
-        The rule is about the **result**, not the sign: a negative `AJUSTE` is
-        legitimate (correcting shrinkage), what it cannot do is push the stock
-        negative. Sales already guard their own path; inventory is the other door
-        and had no check at all — an `AJUSTE` of -99 over a stock of 5 left -94.
+        The guard is **directional**, and that matters since sales were allowed
+        to go negative (`ADR-SALES-20260816-stock-negativo-permitido`). The old
+        rule looked only at the result, so with `stock_actual = -10` a partial
+        `ENTRADA` of +5 landed on -5 and was **rejected** — the shop could fall
+        into the hole but only climb out in a single jump that covered the whole
+        debt. Any positive `cantidad` can only improve the situation, so it goes
+        through even when the stock is still negative afterwards.
+
+        A negative `AJUSTE` keeps the old treatment (an `AJUSTE` of -99 over a
+        stock of 5 must not leave -94): a sale is a fact that already happened,
+        a manual adjustment is somebody typing.
 
         The product row is locked with `select_for_update()` inside the
         transaction, the same treatment the sale gives it: without the lock two
@@ -83,7 +91,7 @@ class InventoryMovementSerializer(serializers.ModelSerializer):
         product = Product.objects.select_for_update().get(pk=validated_data["product"].pk)
         cantidad = validated_data["cantidad"]
         resultante = product.stock_actual + cantidad
-        if resultante < 0:
+        if cantidad < 0 and resultante < 0:
             raise serializers.ValidationError(
                 {
                     "cantidad": (

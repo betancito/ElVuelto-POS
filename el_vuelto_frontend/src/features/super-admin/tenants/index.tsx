@@ -19,7 +19,7 @@ import PageLoader from '@/components/ui/PageLoader'
 import CredentialsModal from '@/components/ui/CredentialsModal'
 import type { CredentialsData } from '@/components/ui/CredentialsModal'
 import TenantsTable from './components/TenantsTable'
-import TenantLogoField, { revokeLogoDraft } from './components/TenantLogoField'
+import TenantLogoField, { revokeLogoDraft, usePastedLogo } from './components/TenantLogoField'
 import type { LogoDraft } from './components/TenantLogoField'
 import { applyServerErrors, getServerErrorMessage } from '@/utils/applyServerErrors'
 import styles from './TenantsPage.module.css'
@@ -92,6 +92,20 @@ export default function TenantsPage() {
     revokeLogoDraft(editLogo)
     setEditLogo(next)
   }
+
+  // Pasting an image (⌘V / Ctrl+V) is the second way into the same `LogoDraft`,
+  // so it goes through `changeCreateLogo`/`changeEditLogo` like the file picker
+  // — same validation, same preview, same deferred upload, and the previous
+  // draft's object URL still gets revoked. Nothing below this line changes.
+  //
+  // `!showCreateModal` on the edit one: the listener is on `document`, so if
+  // both modals were ever open at once the two would fight over the same paste.
+  // The UI cannot do that today; the guard makes it not matter if it ever can.
+  usePastedLogo(showCreateModal && !creating && !uploadingLogo, changeCreateLogo)
+  usePastedLogo(
+    !!editingTenant && !showCreateModal && !updating && !uploadingLogo && !deletingLogo,
+    changeEditLogo,
+  )
 
   function closeCreateModal() {
     revokeLogoDraft(createLogo)

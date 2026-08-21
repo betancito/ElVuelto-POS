@@ -14,6 +14,12 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  /* The on-screen keypad is fixed to the bottom edge, so the page reserves its
+     height while it is up. The value is set inline from the panel's *measured*
+     height (see StaffLoginPage.tsx / NumericKeypad's onHeightChange) — a
+     constant here would drift the moment a key size, a padding or the
+     safe-area inset changes, and the panel would cover the submit button. */
+  transition: padding-bottom 0.16s ease-out;
 }
 
 /* Dot pattern background */

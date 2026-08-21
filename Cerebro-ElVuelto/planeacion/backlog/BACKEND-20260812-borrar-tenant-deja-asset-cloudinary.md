@@ -20,8 +20,11 @@ A diferencia del huérfano que puede dejar `destroy_image` cuando falla (acotado
 **auto-sanable**, porque el `public_id` es determinista y la próxima subida lo pisa), este **no se
 auto-sana**: el tenant ya no existe, nadie va a volver a subir bajo ese `public_id`.
 
-Lo mismo aplica a las imágenes de productos y categorías cuando se borra un producto/categoría, y a
-`Category`/`Product` cuando se borra el tenant en cascada — pero eso no se auditó, así que queda ❓.
+**CONFIRMADO en el PASO 0 del 2026-08-13** (antes estaba ❓): productos y categorías tienen el **mismo
+agujero, y peor**. `Category`/`Product` guardan `imagen_public_id` (`apps/products/models.py:19`, `:65`)
+y `apps/products/views.py` nunca importa ni llama `destroy_image` — solo sube (`views.py:7-12`). Así
+que ni el `DELETE` de un producto/categoría, ni el CASCADE del tenant sobre ellos (vía `TenantMixin`,
+`apps/tenants/models.py:87-91`), destruyen esos assets. Sin el atenuante de la auto-sanación.
 
 ## Criterio de aceptación
 Borrar un tenant que tiene logo destruye también su asset en Cloudinary. Verificable con
@@ -33,4 +36,5 @@ Borrar un tenant que tiene logo destruye también su asset en Cloudinary. Verifi
   cualquier otro camino de cascada — pero ojo: haría que `delete_logo` destruya dos veces (inofensivo,
   la segunda da "not found"), y un signal que hace I/O de red en medio de una transacción tiene su
   propio riesgo. Decidir antes de implementar.
-- ❓ Sin auditar: si productos y categorías tienen el mismo agujero.
+- El alcance real es mayor que el título: cubrir también `Product`/`Category` (ver arriba), o dejar
+  explícito que esta tarea es solo el logo del tenant y abrir otra para el catálogo.

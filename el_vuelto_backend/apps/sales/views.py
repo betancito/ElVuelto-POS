@@ -2,6 +2,7 @@ from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
+from apps.products.models import Product
 from apps.tenants.date_params import parse_date_range
 from apps.tenants.utils import require_tenant
 from apps.users.permissions import IsCajero, IsAdmin
@@ -67,5 +68,25 @@ class SaleViewSet(
         serializer = self.get_serializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         sale = serializer.save()
-        output = SaleSerializer(sale, context={"request": request})
-        return Response(output.data, status=status.HTTP_201_CREATED)
+        data = SaleSerializer(sale, context={"request": request}).data
+
+        # Which products this sale left below zero. Sales no longer refuse to
+        # oversell (ADR-SALES-20260816-stock-negativo-permitido), so this is the
+        # only thing that tells the cashier a `ENTRADA` is now owed — the POS
+        # prints it on the success modal.
+        #
+        # Added here rather than on `SaleSerializer` on purpose: on `list` and
+        # `retrieve` the same key would be a stale photo of a stock that has
+        # moved since, which is worse than not having it. Scoped to this sale's
+        # own items, so it cannot leak another tenant's rows.
+        negativos = list(
+            Product.objects.filter(
+                id__in=sale.items.values_list("product_id", flat=True),
+                stock_actual__lt=0,
+            ).values("id", "nombre", "stock_actual")
+        )
+        data["stock_negativo"] = [
+            {"id": str(p["id"]), "nombre": p["nombre"], "stock_actual": p["stock_actual"]}
+            for p in negativos
+        ]
+        return Response(data, status=status.HTTP_201_CREATED)

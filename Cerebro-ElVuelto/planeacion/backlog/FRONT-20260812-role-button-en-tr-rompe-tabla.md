@@ -24,14 +24,19 @@ updated: 2026-08-12
    propietaria y pierden la asociación con sus `<th>`. Es el par `aria-required-parent` /
    `aria-required-children` de axe-core.
 
-Mismo patrón replicado en `TenantDetailPage.tsx:273-285` (`role="button"` + `aria-label` sobre el `<tr>`
+Mismo patrón replicado en `TenantDetailPage.tsx:272-286` (`role="button"` + `aria-label` sobre el `<tr>`
 de la tabla de usuarios). Un `grep` de `role="button"` en todo `src/` da exactamente esos dos lugares.
 
 ## Por qué no se arregló en la corrida donde se encontró
-**No lo introdujo esa corrida.** Viene del trabajo del 2026-08-09 (página de detalle de negocio), que
-sigue sin commitear — `git show HEAD:...TenantsTable.tsx` tiene un `<tr>` pelado. La tarea del owner ese
-día era el logo en los modales; arreglar la semántica de dos tablas es otro alcance y es decisión suya,
-no del Planner ampliando solo.
+**No lo introdujo esa corrida.** Viene del trabajo del 2026-08-09 (página de detalle de negocio). La
+tarea del owner ese día era el logo en los modales; arreglar la semántica de dos tablas es otro alcance
+y es decisión suya, no del Planner ampliando solo.
+
+> [!info] Corregido en el PASO 0 del 2026-08-13
+> Esta sección decía "sigue sin commitear — `git show HEAD:...TenantsTable.tsx` tiene un `<tr>` pelado".
+> **Ya es falso:** el owner commiteó todo en `9727c03` (2026-08-12 22:21) y `git show
+> HEAD:...TenantsTable.tsx` trae `role="button"` en su línea 40. Es **deuda en `main`**, no trabajo sin
+> commitear. Ver [[2026-08-13-planner-paso0-resync]].
 
 ## Criterio de aceptación
 Las celdas vuelven a exponerse: la fila conserva su rol `row` y sus `<td>`/`<th>` su asociación,

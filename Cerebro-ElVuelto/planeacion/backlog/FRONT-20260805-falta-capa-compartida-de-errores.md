@@ -12,8 +12,8 @@ updated: 2026-08-05
 Dos piezas compartidas que **faltan**, así que cada pantalla nueva las reinventa. Ninguna es un bug: son el motivo por el que el próximo 400 volverá a quedar mal presentado.
 
 ## 1. No existe una clase `ta-*` de alerta
-`tenant-admin.css` tiene `ta-badge--error` (`:297`) y el token `--error-container` (`:220`), pero **ningún banner de alerta**. Resultado: ya hay dos implementaciones del mismo componente visual —
-- `pos-error-banner` (CSS propio del POS, `PosPage.tsx:395`),
+`tenant-admin.css` tiene `ta-badge--error` (`:297`) y el token `--error-container` (definido en `src/styles/globals.css:148`), pero **ningún banner de alerta**. Resultado: ya hay dos implementaciones del mismo componente visual —
+- `pos-error-banner` (CSS propio del POS, `PosPage.tsx:397` + `pos.css:813`),
 - estilos **inline** en `ReportsPage.tsx` (banner de `queryError`),
 
 ambas con los mismos tokens. La regla del proyecto ([[patron-diseno-ta]]) es usar clases `ta-*` y no crear `.module.css` por página — se respetó la parte dura, pero faltaba la clase que debía usarse.
@@ -21,7 +21,7 @@ ambas con los mismos tokens. La regla del proyecto ([[patron-diseno-ta]]) es usa
 **Propuesta:** `ta-alert` + `ta-alert--error` / `--warning` / `--info` en `tenant-admin.css`, y migrar los dos sitios.
 
 ## 2. `getServerErrorMessage` está cableado a las claves de ventas
-`applyServerErrors.ts:80-98` busca en orden: `items` → `monto_recibido` → `non_field_errors` → `detail`. Cualquier 400 con otra clave cae al fallback genérico y **esconde el mensaje real del backend**.
+`getServerErrorMessage` (`applyServerErrors.ts:92-110`) busca en orden: `items` → `monto_recibido` → `non_field_errors` → `detail` → `error`. Cualquier 400 con otra clave cae al fallback genérico y **esconde el mensaje real del backend**.
 
 Por eso `ReportsPage` tuvo que escribir un `reportErrorMessage()` local que lee `fecha_inicio`/`fecha_fin`/`fecha`/`limit` antes de delegar. Fue la decisión correcta bajo la restricción de aquel prompt (no tocar el helper), pero no escala: cada endpoint nuevo con claves propias necesitará su wrapper.
 

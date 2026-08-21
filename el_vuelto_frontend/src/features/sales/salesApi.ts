@@ -19,6 +19,11 @@ export interface Sale {
   cambio: string
   created_at: string
   items: SaleItem[]
+  /** Products this sale left below zero. **Only present on the `POST` response**
+   *  — a sale is never refused for lack of stock, so this is what tells the
+   *  cashier an `ENTRADA` is now owed. Deliberately absent from `list`/`retrieve`,
+   *  where it would be a stale photo of a stock that has moved since. */
+  stock_negativo?: { id: string; nombre: string; stock_actual: number }[]
 }
 
 export interface CreateSaleArgs {

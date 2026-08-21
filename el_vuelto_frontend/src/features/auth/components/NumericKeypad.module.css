@@ -1,0 +1,127 @@
+/* On-screen numeric keypad for the staff login (touch POS).
+   Key styling mirrors the POS numpads in features/sales/pos.css so the cashier
+   meets the same buttons on the login screen and inside the till. */
+
+.panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above everything this app actually renders: its own Modal portal is 1000
+     (components/ui/Modal.module.css) and the highest thing in pos.css is 1100.
+     Toasts sit at 9999 and must stay on top of the keypad, so do not raise
+     this past them. The app uses no MUI overlays. */
+  z-index: 1300;
+  background: var(--surface-container);
+  border-top: 1px solid var(--outline-variant);
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  animation: keypadUp 0.16s ease-out;
+}
+
+@keyframes keypadUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+}
+
+/* Everything lines up with the key grid instead of the full-width panel, so
+   "Ocultar" sits over the keys rather than off at the screen edge. */
+.inner {
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.handleRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.375rem;
+}
+
+.close {
+  background: none;
+  border: none;
+  padding: 0.375rem 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--primary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.key {
+  height: 3.75rem;
+  border-radius: 0.875rem;
+  border: 1.5px solid var(--outline-variant);
+  background: var(--surface-container-highest);
+  color: var(--on-surface);
+  font-family: var(--font-mono), monospace;
+  font-size: 1.375rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Two quick taps on the same key are a cashier typing "11", not a request to
+     zoom. Without this the browser waits ~300ms for a double-tap and can zoom
+     the page instead of registering the second digit. */
+  touch-action: manipulation;
+}
+
+.key:hover {
+  background: var(--primary-fixed);
+  border-color: var(--primary);
+}
+
+.key:active {
+  transform: scale(0.93);
+}
+
+.keyBackspace {
+  background: var(--error-container);
+  color: var(--on-error-container);
+  border-color: transparent;
+}
+
+.keyBackspace:hover {
+  filter: brightness(0.95);
+  border-color: var(--error);
+}
+
+.keyNext {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: transparent;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+}
+
+.keyNext:hover {
+  filter: brightness(1.08);
+  border-color: transparent;
+}
+
+/* Short screens (a POS in landscape): shrink the keys instead of pushing the
+   card off-screen. */
+@media (max-height: 700px) {
+  .key { height: 3rem; font-size: 1.125rem; }
+  .panel { padding-top: 0.25rem; }
+}

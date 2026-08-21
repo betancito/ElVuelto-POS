@@ -80,7 +80,29 @@ Each feature owns its API endpoints, Redux slice (if needed), pages, and sub-com
 
 Login pages:
 - `TenantLoginPage.tsx` — email login, routes ADMIN → `/dashboard`, CAJERO → `/pos`
-- `StaffLoginPage.tsx` — resolves tenant by slug (calls `checkTenantBySlug`), then cedula + 4-digit PIN (auto-submits on PIN complete)
+- `StaffLoginPage.tsx` — resolves tenant by slug (calls `checkTenantBySlug`), then cedula + 4-digit PIN (auto-submits on PIN complete). **This is the only screen with an on-screen numeric keypad** — see below.
+
+#### The staff login's on-screen keypad (`components/NumericKeypad.tsx`)
+
+`/login/<tenantSlug>` runs on a **touch POS**, and both of its fields are numeric — so the OS keyboard is the wrong tool (a full QWERTY covering half the screen to type digits, or on a kiosk, nothing at all). `StaffLoginPage` renders its own keypad, portalled to `document.body` and fixed to the bottom edge. Key styling mirrors the three numpads the POS already ships (`features/sales/pos.css`: `pos-cash-modal__numpad`, `pos-qty-editor__numpad`, `pos-inv-numpad`).
+
+The feature is two pieces of state: `activeField: 'cedula' | 'pin' | null` (`null` = hidden, otherwise the field the keys write into) and `hasPhysicalKeyboard`.
+
+- **Opens on `pointerdown` *and* `click`, never on `focus`.** Not focus, because after "Ocultar" — or after a physical key hid the panel — the input still *holds* focus, so the next tap emits no `focus` at all and a touch-only POS would be left with no keyboard and no way back; focus would also fire on Tab, flashing an on-screen keypad at the one user who provably does not need it. Both pointer *and* click, because `<label htmlFor>` forwards a **click** to its input but never a pointer event — tapping the label focused the field with `inputMode="none"` and no keypad. Setting the same value twice bails out in React, so the pair is free.
+- **Closes on any `keydown`** reaching `document` — the keys are `<button>`s driven by click/tap whose `onPointerDown` cancels the default, so they never take focus and never emit `keydown`.
+- **`hasPhysicalKeyboard` drives `inputMode`, and it flips both ways.** `'none'` from the first render (a value derived from "is the keypad up" lands one render *after* the focus event, so the first tap would flash the OS keyboard before ours); `'numeric'` once a keydown proves there is a keyboard; back to `'none'` on the next tap. **The reset is not optional** — this POS uses HID barcode scanners whose keydowns are indistinguishable from typing, and a one-way latch meant one stray scan classified a pure-touch tablet as keyboard-bearing forever, stacking the OS keyboard on top of ours from then on.
+
+Three things are load-bearing and easy to break:
+
+1. **Every key does `onPointerDown` → `preventDefault()`**, and so do the PIN boxes. `pointerdown` is what moves focus: on the keys it keeps the caret in the field being fed; on the boxes it stops the browser focusing the *tapped* box, so the caret stays pinned where the next digit lands.
+2. **The keypad writes to the *value*, never to the DOM** (`setCedula`/`setPin`), so tapping and typing are one code path. That is what keeps the `useEffect` on `[pin]` auto-submitting on the 4th digit whichever way it arrived, and what makes the tapped cédula clear the PIN exactly like the input's own `onChange` does.
+3. **The page reserves the panel's *measured* height** (`ResizeObserver` with `box: 'border-box'` → `onHeightChange` → inline `paddingBottom`). A constant drifted the moment a key size, a padding or `env(safe-area-inset-bottom)` changed, and the panel then covered the submit button. Scrolling uses `block: 'nearest'` + `scroll-margin-bottom`, not `block: 'center'` — "centre of the viewport" is partly *behind* the fixed panel on a short screen.
+
+**On touch the PIN fills left-to-right and the only correction is backspace**, the same contract as a phone lockscreen: `handleKeypadDigit` appends, so tapping a box does not move the caret there — a focus ring parked mid-PIN would promise positional editing the keypad cannot perform, and the wrong digit would silently ride along into the auto-submit. Positional editing exists with a physical keyboard, where `handleChange(idx, char)` writes at the box that has focus and the panel is closed anyway.
+
+`PinInput` is a `forwardRef` exposing `focusNextEmpty()`. Typing advances the caret by itself; tapping has nothing that would, so the page drives it — and the "Siguiente" key (shown only while filling the cédula) uses the same handle to jump to the PIN. On the PIN there is no "Siguiente": the 4th digit submits on its own.
+
+**Error text note:** a wrong PIN comes back **403**, not 401 — DRF turns `AuthenticationFailed` into 403 when the request had no successful authenticator, which is the case on an `AllowAny` login endpoint. It carries `{"detail": "Credenciales incorrectas."}` and `handleSubmit` reads `data.detail` *before* checking the status, so the cashier sees the right message. The `status === 401` branch is a fallback that this path never reaches.
 - `SuperAdminLoginPage.tsx` — standalone superadmin login with Three.js animated background
 
 ---
@@ -93,6 +115,7 @@ Login pages:
 
 **`salesApi.ts`** — Endpoints:
 - `listSales(search?, fecha_inicio?, fecha_fin?, metodo_pago?)` — normalizes both array and paginated `{results:[]}` responses
+- `createSale(...)`'s response carries **`stock_negativo?`** — the products that sale left below zero (`id`, `nombre`, `stock_actual`). It exists **only on the `POST` response**, never on `list`/`retrieve`, where it would be a stale photo; `SuccessModal` renders it as a non-blocking notice ("Gaseosa 400ml quedó en -10 u. — falta registrar la entrada"), which is the one moment the cashier learns an `ENTRADA` is owed.
 - `createSale({metodo_pago, monto_recibido, items[]})` — invalidates `Sale`, `InventoryMovement`, `Product`, `Report` tags (all 5 report queries in `reportsApi` provide `Report`, so dashboard/reports refresh live after a sale). `createMovement` does **not** invalidate `Report` — inventory movements don't feed any sales-based report figure.
 
 **`PosPage.tsx`** — Two-panel layout: left = catalog/search, right = cart + payment. Critical behaviors:
@@ -125,6 +148,10 @@ Endpoints: `listProducts`, `getPosProducts`, `listCategories`, `createProduct`, 
 **`inventoryApi.ts`** — Endpoints: `listMovements`, `createMovement` (only `ENTRADA` or `AJUSTE` — `SALIDA_VENTA` is backend-only), `getStock`.
 
 `StockItem` includes `bajo_minimo: boolean` flag (stock < stock_minimo).
+
+**`stock_actual` can be negative, and negative is its own category — not a worse "bajo mínimo".** A sale is never refused for lack of stock (backend `CLAUDE.md`, "Selling into negative stock"), so `-10` means "these units were handed over and the `ENTRADA` is still owed": a debt to settle, not a level to top up. `InventoryPage` therefore keeps the two counts **disjoint** — `enNegativo` is `stock_actual < 0`, and `alertas` is `bajo_minimo && stock_actual >= 0` — so the KPIs read as "8 to restock, 3 to register". There is no `en_negativo` field on the API: it is a one-field comparison, derived on the client. The filter chip is a **toggle that stacks on the category chips** (asking "what do I owe?" is a question about the whole catalogue), and it only renders while `enNegativo > 0`.
+
+Anything new that renders `stock_actual` must assume it may be negative — check bar widths, `aspectRatio`, and any `reduce` that multiplies stock by a price (`InventoryPage`'s "Valor total stock" deliberately lets a negative subtract: those units are owed).
 
 **`InventoryPage.tsx`** — Same global barcode scanning pattern as POS. Scanning auto-opens `MovementModal` pre-filled with the scanned product. KPI cards show total products, total stock value, and low-stock count.
 
@@ -196,6 +223,17 @@ Two invariants in those handlers, both about **partial failure** (the tenant wri
 2. **Edit: data first, logo second.** The reverse order would leave a new logo behind on an edit the server rejected. On a logo-step failure the toast says explicitly that the data *was* saved.
 
 Object URLs from `URL.createObjectURL` are revoked imperatively on every transition (pick, discard, remove, undo, cancel, Escape, backdrop, submit) plus once on unmount via a ref — **not** from a `useEffect` keyed on the draft, because `StrictMode` is on and its simulated remount would revoke a preview still on screen. `deleteTenantLogo` (`DELETE /tenants/{id}/logo/`) invalidates `'Tenant'` like its sibling.
+
+**There are two ways into the same draft: the file picker and the clipboard (⌘V / Ctrl+V).** Both funnel through `draftFromFile()` in `TenantLogoField.tsx`, which runs `validateImageFile` and builds the `replace` draft — so they cannot drift apart. The paste path is the `usePastedLogo(active, onPick)` hook exported from the same file; `index.tsx` calls it once per modal with `active` = "this modal is open and not submitting", and hands it the same `changeCreateLogo`/`changeEditLogo` that the picker uses, so the previous draft's object URL is still revoked and the deferred upload is untouched.
+
+Two things about that hook are deliberate and easy to get wrong:
+
+- **It listens on `document`, not on the `<form>`.** A `paste` event targets the *focused* element, so an `onPaste` on the form never fires until something inside it already has focus — and the natural gesture is "open the modal, press ⌘V", with focus still on `body`. `ProductsPage.tsx`'s `handlePaste` is wired to the form (`onPaste={handlePaste}`) and has exactly that gap, plus it skips `validateImageFile`; do not copy it as the reference implementation.
+- **It must not steal ⌘V from someone typing.** An image is taken only when the clipboard carries **no** `text/plain` **or** the focus is not on a text-entry element (`isTextEntry` treats `file`/`checkbox`/`radio`/… inputs as non-text). So a screenshot becomes the logo even mid-typing, while a copied web fragment (image + text) still pastes as text into the field. `e.preventDefault()` runs **only** when the image is actually taken, so a plain text paste is never altered.
+
+The hint under the avatar spells the shortcut for the running platform (`PASTE_SHORTCUT`, `⌘V` on macOS / `Ctrl+V` elsewhere) — an input path nobody can see is an input path nobody uses.
+
+**A consumed paste must acknowledge itself** (`toast.success('Imagen pegada como logo…')`). The picker does not need one — the user just navigated a native dialog — but the paste path is the only way to load a file the user never saw, *and* it swallows the keystroke: someone who meant to paste a NIT into a field would otherwise see nothing land there and never look up at the 4rem avatar, then save a screenshot as the business's public logo. It is also the only announcement a screen reader gets — `react-toastify` renders with `role="alert"`, while the hint `<span>` that changes underneath has no `aria-live`. An adversarial review (2026-08-15) landed on this from three independent lenses; the toast is the whole fix.
 
 Design: `ta-*` classes only, no new `.module.css` (the `.module.css` files left in `super-admin/` belong to older pages that predate the convention).
 
@@ -315,7 +353,7 @@ generatePin()             // 4-digit numeric PIN
 
 **Never leave a bare `.unwrap()`.** `handleReset` in `UsersPage` awaited `resetPassword(id).unwrap()` with no `try/catch` — an unhandled rejection where the admin just never saw the credentials modal. Every `.unwrap()` needs a `catch` that routes through `applyServerErrors` (forms) or `getServerErrorMessage` + `toast` (actions).
 
-**The POS specifically:** it is a manual cart, so `setError` does not apply. Use `getServerErrorMessage(err, fallback)` (same `src/utils/applyServerErrors.ts`) to pull a `string` from the 400 and drop it into the `saleError` banner. Field priority: `items` (stock/validation list, joined with " · "), then `monto_recibido`, then `non_field_errors`/`detail`/`error`; non-400 (500, network) falls back. `PosPage.tsx`'s `handleCobrar` uses it, so a sale rejected for insufficient stock or short cash now shows the real backend message instead of a generic one. With this, every 400 surface (admin forms + POS) is covered — the errores-400 work is closed.
+**The POS specifically:** it is a manual cart, so `setError` does not apply. Use `getServerErrorMessage(err, fallback)` (same `src/utils/applyServerErrors.ts`) to pull a `string` from the 400 and drop it into the `saleError` banner. Field priority: `items` (per-line list, joined with " · "), then `monto_recibido`, then `non_field_errors`/`detail`/`error`; non-400 (500, network) falls back. `PosPage.tsx`'s `handleCobrar` uses it, so a rejected sale shows the real backend message instead of a generic one. **Note the `items` list no longer carries "stock insuficiente"** — a sale is never refused for lack of stock (see `StockItem` above); what still lands there is a product that does not exist, belongs to another tenant, or is inactive. Short cash still comes back on `monto_recibido`. With this, every 400 surface (admin forms + POS) is covered — the errores-400 work is closed.
 
 **`error` key added to both `getServerErrorMessage` and `applyServerErrors` for image uploads (2026-08-12).** The backend's shared `validate_image_upload` (`elvuelto/cloudinary_uploads.py`, used by all three upload endpoints: product/category/tenant-logo) raises its 400s as `{"error": "<msg>"}`. `getServerErrorMessage` didn't recognize it, so a bad file type or an oversized upload always fell through to the caller's generic fallback string. Worse in `applyServerErrors`: an adversarial review (2026-08-12) found the untreated `error` key hit the generic `setError('error', ...)` branch — no form registers a field literally named `error`, so the message rendered nowhere, and `applyServerErrors` still counted it as `surfaced`, which skipped the fallback toast too. `ProductsPage.tsx`'s product/category image-upload catches (routed through `applyServerErrors`, not `getServerErrorMessage`) failed **completely silently** on an oversized/wrong-type file — no message anywhere. Both helpers now toast the real `error` message like `non_field_errors`/`detail`.
 

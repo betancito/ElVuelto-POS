@@ -11,7 +11,7 @@ updated: 2026-08-12
 [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]] (agente Explore sobre el frontend).
 
 ## El problema
-`src/features/super-admin/tenants/components/PasswordBanner.tsx` (25 líneas) y su
+`src/features/super-admin/tenants/components/PasswordBanner.tsx` (24 líneas + 46 de su `.module.css` = 70 a borrar) y su
 `PasswordBanner.module.css` son **código muerto**: `grep -rn "PasswordBanner" src/` solo encuentra
 referencias dentro de los propios archivos. Lo reemplazó `components/ui/CredentialsModal.tsx`, que es
 lo que `index.tsx` usa hoy para mostrar la contraseña inicial del admin.

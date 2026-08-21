@@ -515,16 +515,25 @@ function StockCard({ item, onClick }: { item: StockItem; onClick: () => void }) 
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>uds</span>
         </div>
-        {item.bajo_minimo && (
+        {/* Disjoint from the badge below, matching the two KPIs: a negative is
+            a pending ENTRADA, not a low level. Showing both marks on the same
+            card would contradict counts that deliberately do not overlap. */}
+        {item.bajo_minimo && item.stock_actual >= 0 && (
           <WarningAmberOutlinedIcon style={{ fontSize: '1.125rem', color: 'var(--error)', flexShrink: 0 }} />
         )}
       </div>
 
-      {item.category_nombre && (
+      {/* Says what to DO, not just that something is wrong: a negative stock is
+          a pending ENTRADA, and the number above already shows how deep. */}
+      {item.stock_actual < 0 ? (
+        <span style={{ alignSelf: 'flex-start', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0.2rem 0.5rem', borderRadius: '9999px', background: 'var(--error-container)', color: 'var(--on-error-container)' }}>
+          Falta registrar entrada
+        </span>
+      ) : item.category_nombre ? (
         <span style={{ alignSelf: 'flex-start', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0.2rem 0.5rem', borderRadius: '9999px', background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }}>
           {item.category_nombre}
         </span>
-      )}
+      ) : null}
     </button>
   )
 }
@@ -540,6 +549,7 @@ export default function InventoryPage() {
   const [notFoundCode, setNotFoundCode] = useState('')
   const [activeTab, setActiveTab] = useState<'stock' | 'historial'>('stock')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [negativeOnly, setNegativeOnly] = useState(false)
   const [stockSearch, setStockSearch] = useState('')
 
   const categories = useMemo(() => {
@@ -553,12 +563,15 @@ export default function InventoryPage() {
   const filteredStock = useMemo(() => {
     let items = stock ?? []
     if (categoryFilter !== 'all') items = items.filter((s) => s.category_id === categoryFilter)
+    // Independent of the category chips on purpose: "show me what I owe" is a
+    // question you ask across the whole catalogue, not inside one category.
+    if (negativeOnly) items = items.filter((s) => s.stock_actual < 0)
     if (stockSearch.trim()) {
       const q = stockSearch.toLowerCase()
       items = items.filter((s) => s.nombre.toLowerCase().includes(q))
     }
     return items
-  }, [stock, categoryFilter, stockSearch])
+  }, [stock, categoryFilter, negativeOnly, stockSearch])
 
   const stockRef = useRef<StockItem[]>([])
   useEffect(() => { stockRef.current = stock ?? [] }, [stock])
@@ -621,7 +634,13 @@ export default function InventoryPage() {
     const costo = parseFloat(s.precio_costo ?? '0')
     return acc + s.stock_actual * (isNaN(costo) ? 0 : costo)
   }, 0) ?? 0
-  const alertas = stock?.filter((s) => s.bajo_minimo).length ?? 0
+  // Negative stock is its own category, not a worse "bajo mínimo". A sale is
+  // allowed to oversell (ADR-SALES-20260816-stock-negativo-permitido), so a -10
+  // means "these units were handed over and the ENTRADA is still owed" — a debt
+  // to settle, not a level to top up. The two counts are kept **disjoint** so
+  // they can be read as "8 to restock, 3 to register".
+  const enNegativo = stock?.filter((s) => s.stock_actual < 0).length ?? 0
+  const alertas = stock?.filter((s) => s.bajo_minimo && s.stock_actual >= 0).length ?? 0
 
   return (
     <div className="ta-page">
@@ -681,6 +700,22 @@ export default function InventoryPage() {
           </p>
           <div className="ta-kpi-meta" style={{ color: alertas > 0 ? 'var(--error)' : 'var(--on-surface-variant)' }}>
             <span style={{ fontSize: '0.75rem' }}>{alertas > 0 ? 'Bajo stock mínimo' : 'Niveles normales'}</span>
+          </div>
+        </div>
+
+        {/* Products the till sold past zero — the ENTRADA is still owed. */}
+        <div className="ta-kpi-card" style={{ borderLeft: enNegativo > 0 ? '3px solid var(--error)' : 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+            <p className="ta-kpi-label">En negativo</p>
+            <ErrorOutlinedIcon style={{ color: enNegativo > 0 ? 'var(--error)' : 'var(--outline)', fontSize: '1.25rem' }} />
+          </div>
+          <p className="ta-kpi-value" style={{ color: enNegativo > 0 ? 'var(--error)' : 'var(--primary)' }}>
+            {enNegativo}
+          </p>
+          <div className="ta-kpi-meta" style={{ color: enNegativo > 0 ? 'var(--error)' : 'var(--on-surface-variant)' }}>
+            <span style={{ fontSize: '0.75rem' }}>
+              {enNegativo > 0 ? 'Falta registrar la entrada' : 'Sin faltantes por registrar'}
+            </span>
           </div>
         </div>
       </div>
@@ -750,6 +785,33 @@ export default function InventoryPage() {
                   {c.nombre}
                 </button>
               ))}
+              {/* Toggle, not a category: it stacks on top of whichever category
+                  is selected.
+                  Rendered while there is something to show **or while it is
+                  on** — dropping it the moment the last negative is settled
+                  would leave the filter active with no way to turn it off, and
+                  the admin staring at an empty inventory. */}
+              {(enNegativo > 0 || negativeOnly) && (
+                <button
+                  type="button"
+                  aria-pressed={negativeOnly}
+                  className={`ta-chip ${negativeOnly ? 'ta-chip-active' : ''}`}
+                  onClick={() => {
+                    // Turning it on clears the category so the list matches the
+                    // count on the chip. Without this it promises "3" and shows
+                    // whatever subset lives in the selected category.
+                    if (!negativeOnly) setCategoryFilter('all')
+                    setNegativeOnly((v) => !v)
+                  }}
+                  style={
+                    negativeOnly
+                      ? undefined
+                      : { background: 'var(--error-container)', color: 'var(--on-error-container)' }
+                  }
+                >
+                  En negativo ({enNegativo})
+                </button>
+              )}
             </div>
           </div>
 

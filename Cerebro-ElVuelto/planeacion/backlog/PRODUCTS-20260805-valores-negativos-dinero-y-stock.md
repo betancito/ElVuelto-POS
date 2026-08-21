@@ -2,8 +2,21 @@
 tags: [tarea, products, inventory, sales, dinero, stock, bug]
 status: 🟢
 prioridad: alta
-updated: 2026-08-05
+updated: 2026-08-16
 ---
+
+> [!warning] Matizado el 2026-08-16 — el piso de `stock_actual` se retiró a propósito
+> **El dinero conserva su piso intacto** (`precio_venta`, `precio_costo`), y `stock_minimo` también. Lo
+> único que cambió es `Product.stock_actual`, que **perdió su `MinValueValidator(0)`** por
+> [[ADR-SALES-20260816-stock-negativo-permitido]]: una venta puede dejar el stock negativo a propósito,
+> y el validator no protegía ese camino (las ventas escriben con `F()` + `.update()`, que nunca llaman
+> `full_clean()`) — solo haría mentir al modelo y dejaría a un admin sin poder guardar en `/admin/` sobre
+> un producto en −10.
+>
+> **A cambio, esa superficie quedó MÁS cerrada que antes:** `stock_actual` pasó a `read_only` en
+> `ProductSerializer` y el `update()` ahora guarda con `update_fields`, así que ya no se puede escribir
+> stock por API sin `F()`, sin lock y sin rastro — algo que este ítem nunca cubrió y que un PATCH
+> concurrente sí podía romper. Ver [[RUN-20260816-stock-negativo-permitido]].
 
 > [!done] Cerrado 2026-08-05 — ✅ [[RUN-20260805-valores-negativos]]
 > `MinValueValidator(0)` en `precio_venta`, `precio_costo`, `stock_actual` y `stock_minimo` (sin `CheckConstraint`: cero riesgo de migración fallida), heredado por DRF vía `ModelSerializer`. El stock no puede quedar negativo por ningún movimiento, con `select_for_update()` dentro de la transacción y un 400 que dice el disponible. Cero permitido a propósito. Verificado 10/10, incluido `full_clean()` desde el shell.

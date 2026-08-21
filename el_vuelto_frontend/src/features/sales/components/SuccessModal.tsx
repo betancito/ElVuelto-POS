@@ -2,6 +2,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import AddShoppingCartOutlinedIcon from '@mui/icons-material/AddShoppingCartOutlined'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import { formatCOP } from '@/utils/formatCOP'
 import { printReceipt } from '@/utils/printReceipt'
 import { useAppSelector } from '@/app/hooks'
@@ -119,6 +120,50 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
             >
               {formatCOP(cambio)}
             </p>
+          </div>
+        )}
+
+        {/* ── Negative stock notice ──
+            The sale went through even though there was not enough registered
+            stock (that is the point — the till must never block). This is the
+            only moment the cashier learns an ENTRADA is owed, so it says which
+            product and how deep. It informs; it never asks for anything. */}
+        {sale.stock_negativo && sale.stock_negativo.length > 0 && (
+          <div
+            role="status"
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'flex-start',
+              padding: '0.875rem 1rem',
+              marginBottom: '2rem',
+              background: 'var(--error-container)',
+              color: 'var(--on-error-container)',
+              borderRadius: '10px',
+            }}
+          >
+            <WarningAmberOutlinedIcon style={{ fontSize: '1.25rem', flexShrink: 0, marginTop: '0.0625rem' }} />
+            <div style={{ minWidth: 0 }}>
+              {/* Capped at three: this block sits above "Nueva Venta", and a
+                  cart with ten negatives would push the primary action off a
+                  90vh modal — in the middle of the rush this feature exists to
+                  unblock. The full list lives in Inventario. */}
+              {sale.stock_negativo.slice(0, 3).map((p) => (
+                <p key={p.id} style={{ fontSize: '0.9375rem', fontWeight: 600, margin: 0 }}>
+                  {p.nombre} quedó en{' '}
+                  <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{p.stock_actual} u.</span>
+                </p>
+              ))}
+              {sale.stock_negativo.length > 3 && (
+                <p style={{ fontSize: '0.9375rem', fontWeight: 600, margin: 0 }}>
+                  y {sale.stock_negativo.length - 3} producto
+                  {sale.stock_negativo.length - 3 === 1 ? '' : 's'} más.
+                </p>
+              )}
+              <p style={{ fontSize: '0.8125rem', margin: '0.25rem 0 0', opacity: 0.85 }}>
+                Falta registrar la entrada en inventario.
+              </p>
+            </div>
           </div>
         )}
 

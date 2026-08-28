@@ -1,4 +1,4 @@
-import CloseIcon from '@mui/icons-material/Close'
+import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined'
 import ShoppingBasketOutlinedIcon from '@mui/icons-material/ShoppingBasketOutlined'
 import CartItemComponent from './CartItem'
 import type { CartItem } from '@/features/sales/posSlice'
@@ -17,9 +17,17 @@ export default function CartPanel({ items, onUpdateQuantity, onRemove, onClear, 
       <div className="pos-cart__header">
         <h2 className="pos-cart__title">Venta Actual</h2>
         {items.length > 0 && (
-          <button className="pos-cart__cancel-btn" onClick={onClear}>
-            <CloseIcon style={{ fontSize: '1rem' }} />
-            Cancelar
+          /* Decía "Cancelar" con una X, y borraba la venta de un toque sin
+             preguntar. "Cancelar" en una caja es ambiguo — ¿cancelar qué? —,
+             y quien lo tocaba sin querer perdía todo. Ahora dice qué hace y
+             `onClear` abre una confirmación en vez de borrar. */
+          <button
+            className="pos-cart__cancel-btn"
+            onClick={onClear}
+            aria-label="Vaciar el carrito"
+          >
+            <DeleteSweepOutlinedIcon style={{ fontSize: '1.125rem' }} />
+            Vaciar
           </button>
         )}
       </div>

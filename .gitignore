@@ -14,6 +14,10 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 package-lock.json
+# Except the frontend's: the Docker image builds with `npm ci`, which
+# refuses to run without a lockfile. Ignoring it makes a clean checkout
+# unbuildable.
+!el_vuelto_frontend/package-lock.json
 
 # ── Vite / frontend build ──────────────────────────────────────────────────
 el_vuelto_frontend/dist/
@@ -71,3 +75,5 @@ coverage.xml
 # ── Misc ───────────────────────────────────────────────────────────────────
 *.bak
 *.tmp
+temp.md
+temp/

@@ -27,9 +27,32 @@ No test framework is configured.
 ## Environment
 
 ```
-VITE_API_URL=http://localhost:8000/api
 VITE_APP_NAME=El Vuelto
+# VITE_API_URL=/api   ← optional, and normally WRONG to set
 ```
+
+**The API base URL is the relative path `/api`, and should stay that way.**
+`apiBase.ts` defaults to it (`import.meta.env.VITE_API_URL ?? '/api'`), so the
+SPA and the API share one origin: nginx routes `/` to the app and `/api/` to
+Django. That is what makes the app work from a phone at
+`http://192.168.x.x:5173` with no CORS preflight and no host:port compiled into
+the bundle — one build serves localhost, the LAN and a future domain alike.
+
+Set `VITE_API_URL` **only** to point at a backend on a genuinely different
+origin (a staging server). An absolute `http://localhost:8000/api` there is the
+exact thing that breaks LAN access, because `localhost` on the phone is the
+phone.
+
+Running `npm run dev` on the host without Docker gets the same relative path via
+`server.proxy['/api']` in `vite.config.ts` (target overridable with
+`VITE_PROXY_TARGET`).
+
+The rest of the `server` block exists for the container setup and is documented
+inline: `host: true` and `strictPort`, `hmr.clientPort` (the browser reaches the
+HMR socket through nginx, so it must dial the **published** port, fed by
+`VITE_HMR_CLIENT_PORT`), `watch.usePolling` (bind mounts on Docker Desktop for
+Mac emit no inotify events — without it, saving a file silently does nothing)
+and `allowedHosts`. See `docs/docker.md`.
 
 Path alias: `@/` → `src/` (configured in both `vite.config.ts` and `tsconfig.json`).
 
@@ -121,7 +144,26 @@ Three things are load-bearing and easy to break:
 **`PosPage.tsx`** — Two-panel layout: left = catalog/search, right = cart + payment. Critical behaviors:
 - **Barcode scanning**: page-level `keydown` listener with 300ms idle buffer. Accumulates characters, flushes as barcode when idle. Skipped when `input/textarea/select` is focused. Same pattern in `InventoryPage.tsx`.
 - Payment flows: `EFECTIVO` opens `CashInputModal` to capture cash received; `NEQUI_TRANSFERENCIA` skips it.
-- `SuccessModal` renders receipt preview with print option after successful sale.
+- `SuccessModal` renders receipt preview with print option after successful sale. It is styled
+  **100% inline**, so `pos.css` reaches it only through two hook classes: `.pos-success-modal__footer`
+  (wraps **all three** actions — `Nueva Venta` + the two secondary buttons — and is what goes
+  `position: sticky; bottom: 0` under `@media (max-height: 820px)`) and `.pos-success-modal__recibo`.
+  Sticking only the secondary pair is the trap: the **primary** button is the one the cashier needs on
+  every sale, and on a 768px-tall screen it fell below the fold *behind the sticky bar itself*.
+
+**Idle screensaver (`components/ui/IdleScreensaver.tsx`)** — after 5 min the cashier station shows a
+screensaver; touching it wakes and refetches. Two non-obvious rules, both learned the hard way:
+- **The waking gesture must not reach the app.** The overlay unmounts on `pointerdown`, so the
+  compatibility `click` lands on whatever was underneath — a product card — and **adds a product the
+  cashier never asked for**. `preventDefault()` on `pointerdown` does **not** help: per Pointer Events
+  L3 it suppresses `mousedown`/`mouseup` but the `click` still fires. A capture-phase `click` swallower
+  is the *only* defense, and it must be tied to the **gesture**, not to a clock started at
+  `pointerdown` — and it must **not** disarm on the first click, or the second tap of a double-tap
+  gets through. Regression test: `node scripts/probar-tragador-reposo.mjs` (zero deps; runs the real
+  source against a virtual clock).
+- **Keys are discarded, not forwarded.** A barcode scanner is a keyboard; letting a wake-up scan
+  through would feed `PosPage`'s buffer a mutilated code. The listener sits on `window` in **capture**
+  (ahead of `PosPage`'s `document` bubble listener) and swallows for 500ms.
 
 **`SalesHistoryPage.tsx`** — Paginated list (20/page), date range filter, receipt preview modal.
 
@@ -326,9 +368,26 @@ generateAdminPassword()   // 12-char mixed complexity
 generatePin()             // 4-digit numeric PIN
 ```
 
-`printReceipt.ts` — 80mm thermal receipt layout.
-`generateReceipt.ts` — jsPDF receipt for download.
-`downloadCredentials.ts` — exports credentials as `.txt`.
+`printReceipt.ts` — sends the 80mm receipt to the printer. **Desktop-aware:** if `window.elVuelto.printReceipt` exists (injected by the Electron wrapper in `el_vuelto_desktop/`), the receipt goes straight to the configured thermal printer with no OS print dialog; in a plain browser that branch is skipped and the old `window.open` + `win.print()` flow runs unchanged. Do not remove the fallback — the same build serves both.
+`generateReceipt.ts` — builds the **80mm thermal receipt as an HTML string**
+(`generateReceiptHTML(sale, tenant)`). It does **not** use jsPDF and does not
+download anything; `printReceipt.ts` is its only call site. Rewritten 2026-08-27
+for legibility on a real thermal head: the tenant logo is gone (a grey smudge at
+203 dpi), every line is bold and pure `#000` (grey dithers into a faded mess),
+the font is Arial instead of Courier, and the columns are flex rows rather than
+space-padded monospace — which is also why product names no longer truncate at
+16 characters. One knob, `BASE_PX`, scales the whole thing.
+**`ReceiptTenantInfo` has no `logoUrl`, and nothing enforces that.** Verified by
+experiment on 2026-08-27: adding `logoUrl` back to a caller's `tenant` object
+still passes `tsc` (exit 0). TypeScript's excess-property check only fires on an
+object literal passed *directly* as the argument; both call sites build a `const
+tenant = {…}` first, so the extra key is silently allowed and then ignored by
+`generateReceiptHTML`. With no tests either, the only thing keeping the logo out
+of the receipt is this note — if you see `logoUrl` reappear in a caller, it is
+dead weight, not a feature coming back.
+
+`downloadCredentials.ts` — builds a **PDF with jsPDF** (A5 landscape) and saves
+it as `.pdf`. It is the only file in the repo that imports jspdf.
 `applyServerErrors.ts` — `applyServerErrors(err, setError, fallback?)` maps a DRF 400 onto a react-hook-form (see the form-errors pattern below).
 `imageUpload.ts` — `MAX_IMAGE_BYTES` + `validateImageFile(file) → string | null`, the client-side mirror of the backend's `validate_image_upload`. Import it instead of retyping the 10 MB; the messages are verbatim from the backend so a file rejected on either side reads the same. Same mirror pattern as `generatePassword.ts` ↔ `password_policy.py`.
 

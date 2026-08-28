@@ -1,0 +1,41 @@
+# Build context for docker/backend/Dockerfile.
+
+# The host virtualenv is darwin-arm64 and ~200 MB — the image builds its own
+# under /opt/venv. Copying this in would be slow and broken.
+.venv/
+venv/
+env/
+ENV/
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg-info/
+
+# Secrets never enter an image layer. In dev the bind mount puts .env back in
+# place; in prod the values arrive through compose `env_file`/`environment`.
+.env
+.env.*
+!.env.example
+
+# Regenerated inside the image by collectstatic; media lives on a volume
+# (and images actually go to Cloudinary).
+staticfiles/
+media/
+
+# Docs and tooling the runtime has no use for. CLAUDE.md alone is 64 KB.
+CLAUDE.md
+*.md
+!README.md
+
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+*.log
+.DS_Store
+.pytest_cache/
+.coverage
+htmlcov/

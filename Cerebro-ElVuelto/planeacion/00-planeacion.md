@@ -1,7 +1,7 @@
 ---
 tags: [indice, planeacion]
 status: activo
-updated: 2026-08-20
+updated: 2026-08-27
 ---
 
 # 00-planeacion — Índice de planeación
@@ -163,12 +163,12 @@ Los 5 ítems 🔴 de más peso se re-verificaron contra el código real: **los 5
 prioridad baja **no** se re-verificaron a propósito. **No se abrió ningún ítem nuevo** — no se salió a
 buscar. Detalle: [[2026-08-20-planner-paso0-resync]].
 
-> [!warning] Hay trabajo terminado sin commitear desde el 2026-08-12
-> HEAD sigue en `9727c03`. Las features 6, 7 y 8 (19 archivos modificados + 3 nuevos) están solo en el
-> árbol de trabajo, **incluida la migración `0004_alter_product_stock_actual.py`, que está aplicada en la
-> BD local pero no existe en git**. El cambio de regla de negocio de
-> [[ADR-SALES-20260816-stock-negativo-permitido]] no es reproducible en otra máquina hasta que se
-> commitee. Acción del owner.
+> [!info] ~~Hay trabajo terminado sin commitear desde el 2026-08-12~~ — **RESUELTO el 2026-08-20**
+> Este warning ya no aplica y se deja tachado como historia. El owner commiteó: HEAD = **`eacaae0`**
+> (2026-08-20 20:43), `products/migrations/0004_alter_product_stock_actual.py` **está en git**, las
+> features 6, 7 y 8 quedaron versionadas y `main` está **pusheado** (`main` == `origin/main`, verificado
+> el 2026-08-24). El cambio de regla de [[ADR-SALES-20260816-stock-negativo-permitido]] ya es
+> reproducible en otra máquina.
 
 > [!info] Anclas corregidas hoy — las features del 08-16 corrieron líneas del backlog
 > [[DOCS-20260813-claudemd-drift-post-features]]: front `:292→:330`, `:293→:331`, `:145→:172`,
@@ -180,3 +180,140 @@ buscar. Detalle: [[2026-08-20-planner-paso0-resync]].
 > [[SUPERADMIN-20260815-pegar-logo-portapapeles]] (⌘V real), [[AUTH-20260816-teclado-numerico-staff-login]]
 > (gesto táctil) y [[SALES-20260816-stock-negativo-permitido]] (la venta en negativo en pantalla) están
 > 🟢 con ⚠️: ninguna se pudo ejecutar en navegador desde este entorno.
+
+### Features evaluadas, no arrancadas (2026-08-21)
+| ítem | prioridad | estado |
+|---|---|---|
+| [[DESKTOP-20260821-app-escritorio-cajero-exe]] | feature | 🟡 **fase 1 implementada el 2026-08-24** (beta manual: `el_vuelto_desktop/`), ⚠️ sin validar en papel. Falta la fase 2 (módulo de descarga, firma, hosting) |
+
+> [!decision] Lo que decidió la arquitectura fue un motivo que no venía en el pedido
+> El owner pidió "un módulo para descargar un `.exe`", pero al preguntarle el dolor de fondo marcó
+> **impresión silenciosa del recibo** como motivo #1. Eso descarta la PWA (10× más barata, resolvía los
+> otros dos motivos) y descarta Tauri, porque **sólo un wrapper de escritorio puede imprimir sin el
+> diálogo del sistema**. Propuesta: **Electron**. No es ADR todavía — se ratifica cuando se apruebe el
+> plan de la fase 1.
+
+> [!warning] El pedido tiene el peso al revés
+> El "módulo de descarga" es la pieza **más chica** (una card con el molde de `UsersPage.tsx:235` + un
+> endpoint que hace redirect). El trabajo real es el wrapper y el puente de impresión — y **no se puede
+> generar un `.exe` por tenant en el servidor**: se compila uno solo y el slug entra por el nombre del
+> archivo. Costos que no son código: firma (~USD 200-400/año, sin ella SmartScreen bloquea y contradice
+> el motivo "verse profesional"), hosting del binario y un runner Windows en CI.
+
+### PASO 0 (2026-08-24) — re-verificación, sin ítems nuevos
+Los 5 ítems 🔴 de más peso se re-verificaron contra el código real: **los 5 siguen abiertos y sin una
+sola ancla corrida** (el código no se toca desde el 2026-08-16 17:50). Los 7 de prioridad baja **no** se
+re-verificaron a propósito. **No se abrió ningún ítem nuevo.** Entorno verde (`makemigrations --check`
+exit 0, `tsc --noEmit` exit 0), árbol de app limpio, sin prompts 🟡 en curso. Detalle:
+[[2026-08-24-planner-paso0-resync]].
+
+> [!todo] Sigue pendiente lo mismo que el 2026-08-21, y ya arrastra nueve días
+> (a) La **fase 1** de [[DESKTOP-20260821-app-escritorio-cajero-exe]] — nada implementado; el paso
+> natural es modo plan sobre el wrapper Electron + puente de impresión, contra `localhost`, en el Mac.
+> (b) La **confirmación visual del owner** de [[SUPERADMIN-20260815-pegar-logo-portapapeles]],
+> [[AUTH-20260816-teclado-numerico-staff-login]] y [[SALES-20260816-stock-negativo-permitido]]: es abrir
+> el navegador y mirar, la deuda más barata del tablero.
+
+### Novena feature, cerrada 2026-08-24 — beta manual del `.exe` de caja
+| ítem | prioridad | estado |
+|---|---|---|
+| [[DESKTOP-20260821-app-escritorio-cajero-exe]] (fase 1) | feature | 🟡 (corrida; pedido directo con modo plan. Generador `build.py` + wrapper Electron + selector de impresora, en `el_vuelto_desktop/`. Generación verificada punta a punta y CLI 11/11 contra tty real; revisión adversarial propia → 5 hallazgos, 5 arreglados. ⚠️ **la impresión NO se pudo probar**: este Mac no tiene impresoras y el owner testea en Windows) |
+
+> [!decision] El supuesto que se cayó: sí se puede hacer un `.exe` desde el Mac
+> La ficha decía que desde macOS *"no se genera un `.exe` confiable"* y que hacía falta CI en Windows.
+> **Falso**, probado con un binario real: `@electron/packager` + **`resedit`** (JS puro) hacen el trabajo
+> sin wine. Lo que exigía wine era `rcedit`. El CI servirá para **firmar**, no para producir.
+> Ver [[ADR-DESKTOP-20260824-wrapper-electron-y-generador-manual]].
+
+> [!warning] Deuda que nace con esta beta
+> Sin firma de código (SmartScreen avisa — contradice el motivo "verse profesional" y **no** sirve para
+> vender) · el `config.json` horneado **adentro** del paquete habrá que sacarlo cuando se firme ·
+> `elvuelto:print` queda expuesto a la página remota (mitigado con serialización + tope de 512 KB).
+
+> [!todo] Ahora hay CUATRO cosas esperando el ojo del owner
+> Las tres del 08-15/08-16 (⌘V, teclado numérico, stock negativo) **más** la beta del `.exe`: que
+> arranque en Windows, que liste impresoras y que el recibo salga en la térmica sin diálogo.
+
+### PASO 0 (2026-08-26) — re-verificación, sin ítems nuevos
+Los 5 ítems 🔴 de más peso se re-verificaron contra el código real: **los 5 siguen abiertos y sin una
+sola ancla corrida**. La edición de `printReceipt.ts` del 08-24 **no movió** las líneas del bloque de
+doc: `el_vuelto_frontend/CLAUDE.md:330` y `:331` siguen siendo exactamente las dos afirmaciones falsas
+que dice [[DOCS-20260813-claudemd-drift-post-features]]. Los 7 de prioridad baja **no** se
+re-verificaron a propósito. **No se abrió ningún ítem nuevo.** Entorno verde (`makemigrations --check`
+exit 0, `tsc --noEmit` exit 0), sin prompts 🟡 en curso. Detalle:
+[[2026-08-26-planner-paso0-resync]].
+
+> [!warning] La beta del `.exe` lleva dos días sin commitear
+> El árbol de app **ya no está limpio**: `el_vuelto_desktop/` (15 archivos que sí entran al commit),
+> `printReceipt.ts`, los dos `CLAUDE.md` y `.gitignore`. HEAD sigue en `eacaae0`, pusheado. Commitear es
+> acción del owner ([[GOBERNANZA]] §0). El arreglo del `.gitignore` del 08-24 se auditó con
+> `git check-ignore` archivo por archivo y **aguanta**: `tools/elvuelto.ico` y `tools/patch-exe.js`
+> entran; solo se ignora lo que debe (`dist/`, `node_modules/`, `app/config.json`, `urls.json`).
+
+> [!question] Dos cosas anotadas que NO se convirtieron en ficha
+> (a) `.gitignore:16` ignora `package-lock.json` en todo el repo, así que el generador del `.exe` no es
+> reproducible al 100% en un clon nuevo (`electron` clavado en `44.0.0`, pero `@electron/packager` y
+> `resedit` con `^`). Convención preexistente → **decisión del owner** si la beta merece excepción.
+> (b) ❓ `.gitignore` tiene `+temp.md` sin commitear, sin rastro en ningún RUN ni nota. Hipótesis: lo
+> agregó el owner. Impacto bajo, se anota para no dejar el cambio sin trazabilidad.
+
+> [!todo] Las cuatro cosas que esperan al owner siguen esperando
+> (a) Correr `ElVuelto-<slug>.exe` en **Windows con la térmica** — es lo único que decide si la fase 1 de
+> [[DESKTOP-20260821-app-escritorio-cajero-exe]] sirve, y la fase 2 no arranca antes.
+> (b) La confirmación visual de [[SUPERADMIN-20260815-pegar-logo-portapapeles]],
+> [[AUTH-20260816-teclado-numerico-staff-login]] y [[SALES-20260816-stock-negativo-permitido]]: once días.
+
+### Décima feature, cerrada 2026-08-26 — el stack en Docker
+| ítem | prioridad | estado |
+|---|---|---|
+| [[INFRA-20260826-dockerizacion-stack]] | feature | 🟢 (corrida; pedido directo. Front + back + nginx en contenedores, un solo origen, `scripts/manage-docker.sh`. Dev y prod verificados contra servidor real. Revisión propia → 3 defectos, 3 arreglados. ✅ **la revisión adversarial §10.2 se pagó el 2026-08-27** (2 de las 7 lentes fueron de Docker, ver [[RUN-20260827-caja-adulto-mayor-y-recibo]]). ⚠️ falta que el owner lo abra en el celular) |
+
+> [!decision] Lo que decidió la arquitectura fue el mismo origen, no los contenedores
+> El owner pidió front en `:5173` y back en `:8000`, "el mismo puerto adentro y afuera". Eso literalmente
+> son **dos orígenes** y devuelve el CORS que la tarea venía a eliminar. Se concilió haciendo que **nginx
+> escuche en los dos puertos**: `:5173` sirve la app entera en un origen y `:8000` es passthrough al
+> backend. Los números quedaron como los pidió. Ver [[ADR-INFRA-20260826-docker-nginx-mismo-origen]].
+
+> [!warning] El repo ya tenía el camino de mismo origen, y su propio default lo desandaba
+> `vite.config.ts:19-23` tenía el proxy `/api` desde antes, con un comentario que menciona un nginx en
+> `192.168.1.9:5173` — pero sin `.env` en el frontend, `VITE_API_URL` quedaba `undefined` y ganaba el
+> fallback absoluto de `apiBase.ts:7`. El proxy era código muerto. Salió del Discovery, no de buscar.
+
+> [!todo] Deuda nueva, y una vieja que se volvió blocker
+> (a) ✅ **SALDADA el 2026-08-27.** Quedó escrito acá que la revisión adversarial de [[GOBERNANZA]] §10.2
+> no se había corrido (solo revisión propia, y el setup toca CSRF y validación de hosts). Se pagó esa
+> misma madrugada: **2 de las 7 lentes** del workflow adversarial fueron de Docker. Ver
+> [[RUN-20260827-caja-adulto-mayor-y-recibo]].
+> (b) La deuda del lockfile que anotó el PASO 0 de esta mañana (Hallazgo 6) **se volvió un blocker real**:
+> con `package-lock.json` ignorado, `npm ci` no puede correr en un clon nuevo. Resuelto para el frontend
+> con una negación puntual; **`el_vuelto_desktop/package-lock.json` sigue ignorado**.
+
+### Décima primera feature, cerrada 2026-08-27 — la caja, para el cajero real
+| ítem | prioridad | estado |
+|---|---|---|
+| [[POS-20260827-caja-1366x768-y-reposo]] | feature | 🟢 (corrida; pedido directo con ronda de preguntas y ejecución autónoma nocturna. Cinco tareas: POS usable en 1366×768, `.exe` en pantalla completa, modo reposo con salvapantallas, recibo térmico legible y vaciado de carrito con confirmación. ⚠️ **nada se pudo ver en pantalla**: falta el ojo del owner) |
+| [[POS-20260827-escaner-activo-con-modales]] | media | 🔴 (preexistente, descubierto al construir el modal de vaciado; no se tocó) |
+| [[POS-20260827-tres-arreglos-a-medias]] | **alta** | 🔴 (nace de la re-verificación del 2026-08-27: de los 7 arreglos que la revisión adversarial dio por cerrados, **3 no cierran el caso que decían cerrar**. El peor: el toque que despierta **todavía mete un producto al carrito** con un toque sostenido >400 ms — el gesto exacto del adulto mayor para el que se rediseñó la caja) |
+
+> [!decision] Cinco pedidos, un solo criterio
+> Al responder la ronda de preguntas el owner agregó la restricción que ordena todo lo demás: *"esto
+> sera manejado por adultos boomers colombianos que muchas veces la tecnologia los confunde"*. Eso
+> convierte cinco tareas sueltas en un criterio de diseño, y explica por qué el POS venía fallando:
+> está construido con la densidad de una app de escritorio, sobre un equipo de 1366×768 manejado con
+> el dedo. Ver [[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]].
+
+> [!warning] Lo que estaba roto no era estético
+> `.pos-cash-modal` medía **~871px de alto sin `max-height` ni scroll**, y el backdrop lo centra: se
+> recortaban ~50px arriba y ~50px abajo. **Abajo vive el botón Confirmar** — el cajero no podía verlo
+> ni alcanzarlo. Y el botón que **borraba la venta entera** medía 24px, sin fondo y sin confirmación.
+> Las tres media queries que existían eran todas de ANCHO; el problema siempre fue el alto.
+
+> [!info] El workflow de mapeo se pagó solo
+> Antes de tocar código, 6 lectores + 1 arquitecto sobre el POS. Encontraron 3 defectos que la lectura
+> directa no vio (el carrito vacío empujando el pago fuera; el numpad flotante abriéndose fuera de
+> pantalla; el salvapantallas tapando el aviso de stock negativo, que solo viene en la respuesta del
+> POST) **y corrigieron un cálculo mío que hacía desaparecer el precio de las tarjetas**.
+
+> [!todo] Sigue sin verificarse en pantalla
+> Sin navegador en el entorno. Para el recibo quedó `temp/recibo-antes-y-despues.html`, que se abre y
+> se manda a la térmica con Ctrl+P. Para el resto, falta el ojo del owner.

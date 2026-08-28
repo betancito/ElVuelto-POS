@@ -22,9 +22,10 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
 
   const user = useAppSelector((state) => state.auth.user)
 
+  // Sin logoUrl a propósito: el recibo térmico ya no imprime el logo del negocio
+  // (salía como una mancha gris a 203 dpi). Ver utils/generateReceipt.ts.
   const tenant = {
     nombre: tenantNombre,
-    logoUrl: user?.tenantLogoUrl,
     email: user?.tenantEmail,
     supportPhone: user?.tenantSupportPhone,
   }
@@ -63,6 +64,7 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
           maxHeight: '90vh',
           overflowY: 'auto',
         }}
+        className="pos-success-modal"
       >
         {/* ── Section 1: Icon + Title ── */}
         <div style={{ marginBottom: showVuelto ? '1.5rem' : '2.5rem' }}>
@@ -168,77 +170,94 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
         )}
 
         {/* ── Section 3: Receipt preview ── */}
-        <div style={{ marginBottom: '2rem' }}>
+        <div className="pos-success-modal__recibo" style={{ marginBottom: '2rem' }}>
           <ReceiptPreview sale={sale} tenantNombre={tenantNombre} />
         </div>
 
-        {/* ── Section 4: Actions ── */}
-        <button
-          onClick={onNewSale}
-          style={{
-            width: '100%',
-            padding: '1.25rem',
-            borderRadius: '0.75rem',
-            background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)',
-            color: 'white',
-            fontWeight: 700,
-            fontSize: '1.0625rem',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.625rem',
-            boxShadow: '0 4px 16px rgba(106,38,0,0.28)',
-            marginBottom: '0.875rem',
-          }}
-        >
-          <AddShoppingCartOutlinedIcon style={{ fontSize: '1.25rem' }} />
-          Nueva Venta
-        </button>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        {/* ── Section 4: Actions ──
+            Las TRES acciones viven en un solo bloque que en pantallas bajas
+            queda pegado al fondo del modal. Antes solo se pegaban las dos
+            secundarias y `Nueva Venta` —el botón primario, el que se usa en
+            CADA venta— quedaba en flujo normal más arriba: con un ticket de
+            varios ítems caía bajo el fold, y encima la propia barra pegada lo
+            tapaba. El cajero tenía que descubrir el scroll para cerrar la
+            venta. */}
+        <div className="pos-success-modal__footer">
           <button
-            onClick={() => printReceipt(sale, tenant)}
+            onClick={onNewSale}
             style={{
-              padding: '0.875rem',
+              width: '100%',
+              padding: '1.25rem',
               borderRadius: '0.75rem',
-              background: 'var(--surface-container-high)',
-              color: 'var(--primary)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
+              background: 'linear-gradient(135deg, #6a2600 0%, #8b3a0f 100%)',
+              color: 'white',
+              fontWeight: 700,
+              fontSize: '1.0625rem',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem',
+              gap: '0.625rem',
+              boxShadow: '0 4px 16px rgba(106,38,0,0.28)',
+              marginBottom: '0.875rem',
             }}
           >
-            <PrintOutlinedIcon style={{ fontSize: '1.125rem' }} />
-            Imprimir Recibo
+            <AddShoppingCartOutlinedIcon style={{ fontSize: '1.25rem' }} />
+            Nueva Venta
           </button>
 
-          <button
-            onClick={handleWhatsApp}
-            style={{
-              padding: '0.875rem',
-              borderRadius: '0.75rem',
-              background: 'transparent',
-              color: 'var(--on-surface-variant)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-            }}
+          {/* Grilla de las dos acciones secundarias. Quien queda pegado al fondo
+              en pantallas bajas es `__footer`, arriba — esta clase ya no lleva
+              ninguna regla propia y se conserva como gancho con nombre para
+              pos.css, porque este componente está hecho con estilos inline y no
+              admite media queries. */}
+          <div
+            className="pos-success-modal__acciones"
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}
           >
-            <ShareOutlinedIcon style={{ fontSize: '1.125rem' }} />
-            Enviar WhatsApp
-          </button>
+            <button
+              onClick={() => printReceipt(sale, tenant)}
+              style={{
+                padding: '0.875rem',
+                borderRadius: '0.75rem',
+                background: 'var(--surface-container-high)',
+                color: 'var(--primary)',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <PrintOutlinedIcon style={{ fontSize: '1.125rem' }} />
+              Imprimir Recibo
+            </button>
+
+            <button
+              onClick={handleWhatsApp}
+              style={{
+                padding: '0.875rem',
+                borderRadius: '0.75rem',
+                background: 'transparent',
+                color: 'var(--on-surface-variant)',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <ShareOutlinedIcon style={{ fontSize: '1.125rem' }} />
+              Enviar WhatsApp
+            </button>
+        </div>
         </div>
       </div>
     </div>

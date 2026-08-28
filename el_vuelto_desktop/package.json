@@ -1,0 +1,14 @@
+{
+  "name": "el-vuelto-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generador de la app de escritorio de caja de El Vuelto",
+  "scripts": {
+    "start": "electron app"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.0",
+    "electron": "44.0.0",
+    "resedit": "^3.0.2"
+  }
+}

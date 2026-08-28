@@ -585,11 +585,30 @@ DB_PASSWORD=
 DB_HOST=localhost
 DB_PORT=5432
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 DOCS_API_KEY=
 ```
+
+> **`CSRF_TRUSTED_ORIGINS` (added with the Docker setup).** Read in
+> `settings/base.py` right after `CORS_ALLOWED_ORIGINS`, comma-separated, default
+> `http://localhost:5173,http://127.0.0.1:5173`. `CsrfViewMiddleware` compares the
+> browser's `Origin` against this list whenever it does not already match
+> `request.get_host()` — so without the LAN origin in it, the admin login and
+> **every** POST from another device fail with 403. Scheme and port are both
+> required: `http://192.168.1.75:5173`, never the bare IP.
+>
+> There is a second half people miss: the reverse proxy has to forward `Host`
+> **with the port** (`proxy_set_header Host $http_host`, not `$host`). With
+> `$host` the port is dropped, `get_host()` can never match the `Origin`, and no
+> entry here will fix it. See `docker/nginx/proxy_common.conf` and `docs/docker.md`.
+
+> **Running in Docker.** The container overrides `DB_HOST` to
+> `host.docker.internal` (inside a container `localhost` is the container). Postgres
+> is *not* part of the compose stack — it runs as a container outside it. See
+> `docs/docker.md`.
 
 ---
 
@@ -606,7 +625,11 @@ psycopg2-binary==2.9.10       # PostgreSQL
 cloudinary==1.44.2            # Image storage
 drf-spectacular==0.30.0       # OpenAPI schema + Swagger/Redoc docs
 drf-spectacular-sidecar==2026.8.1  # self-hosted Swagger/Redoc JS/CSS, no CDN
+gunicorn==23.0.0              # WSGI server, prod container only (added with Docker)
 ```
+
+`gunicorn` is used **only** by the `prod` stage of `docker/backend/Dockerfile`.
+Local development and the `dev` container both keep running `manage.py runserver`.
 
 Receipts are generated on the **frontend** (`printReceipt.ts` / `generateReceipt.ts`), not the backend — there is no ESC/POS printing dependency.
 

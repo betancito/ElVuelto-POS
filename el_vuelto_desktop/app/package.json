@@ -1,0 +1,9 @@
+{
+  "name": "el-vuelto-caja",
+  "productName": "El Vuelto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "El Vuelto — Caja",
+  "main": "main.js",
+  "author": "El Vuelto"
+}

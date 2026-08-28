@@ -29,6 +29,8 @@ import CashInputModal from './components/CashInputModal'
 import SearchBar from './components/SearchBar'
 import SuccessModal from './components/SuccessModal'
 import InventoryEntryPanel from './components/InventoryEntryPanel'
+import ClearCartModal from './components/ClearCartModal'
+import IdleScreensaver from '@/components/ui/IdleScreensaver'
 import type { Category, PosProduct } from '@/features/products/productsApi'
 import type { Sale } from '@/features/sales/salesApi'
 
@@ -52,6 +54,7 @@ export default function PosPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastSale, setLastSale] = useState<Sale | null>(null)
   const [saleError, setSaleError] = useState<string | null>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => { posModeRef.current = posMode }, [posMode])
 
@@ -62,8 +65,9 @@ export default function PosPage() {
     setView('catalog')
   }
 
-  const { data: products = [], isLoading: loadingProducts } = useGetPosProductsQuery()
-  const { data: categories = [] } = useListCategoriesQuery()
+  const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } =
+    useGetPosProductsQuery()
+  const { data: categories = [], refetch: refetchCategories } = useListCategoriesQuery()
   const [createSale, { isLoading: creating }] = useCreateSaleMutation()
 
   // Stable ref — never goes stale inside the barcode listener closure
@@ -420,7 +424,7 @@ export default function PosPage() {
               dispatch(updateQuantity({ productId: id, cantidad: qty }))
             }
             onRemove={(id) => dispatch(removeItem(id))}
-            onClear={() => dispatch(clearCart())}
+            onClear={() => setShowClearConfirm(true)}
           >
             <PaymentSection
               totalVenta={totalVenta}
@@ -445,6 +449,17 @@ export default function PosPage() {
           onClose={() => setShowCashModal(false)}
         />
       )}
+      {showClearConfirm && (
+        <ClearCartModal
+          items={items}
+          montoRecibido={montoRecibido}
+          onCancel={() => setShowClearConfirm(false)}
+          onConfirm={() => {
+            dispatch(clearCart())
+            setShowClearConfirm(false)
+          }}
+        />
+      )}
       {showSuccessModal && lastSale && (
         <SuccessModal
           sale={lastSale}
@@ -453,6 +468,43 @@ export default function PosPage() {
           onClose={() => { setShowSuccessModal(false); setView('catalog') }}
         />
       )}
+
+      {/* ── Modo reposo ──────────────────────────────────────────────────
+          Vive DENTRO de PosPage a propósito: el refetch pasa por
+          `baseQueryWithReauth`, y tras una noche dormido es justo donde el
+          refresh puede fallar y despachar `logout()`. Montado desde afuera, el
+          overlay quedaría colgado encima de la pantalla de login; acá se
+          desmonta con la ruta.
+
+          La guarda es larga porque cada término tapa una forma distinta de
+          perderle trabajo al cajero:
+          · items.length     — media venta cargada en el carrito.
+          · posMode          — en inventario la cantidad a medio teclear vive en
+                               estado LOCAL de InventoryEntryPanel, no en Redux,
+                               así que `items` no la ve.
+          · showSuccessModal — `handleCobrar` vacía el carrito ANTES de abrir
+                               este modal, o sea que items ya es 0 mientras el
+                               cajero lee el vuelto y el aviso de stock negativo.
+                               Ese aviso solo viene en la respuesta del POST: si
+                               el salvapantallas lo tapa, se pierde para siempre.
+          · saleError        — no tapar un error que el cajero no leyó.        */}
+      <IdleScreensaver
+        disabled={
+          user?.rol !== 'CAJERO' ||
+          posMode !== 'sale' ||
+          items.length > 0 ||
+          showCashModal ||
+          showSuccessModal ||
+          showClearConfirm ||
+          saleError !== null
+        }
+        onWake={() => {
+          // Refetch, NO location.reload(): el carrito no está persistido
+          // (store.ts solo persiste auth), así que recargar lo destruiría.
+          refetchProducts()
+          refetchCategories()
+        }}
+      />
     </div>
   )
 }

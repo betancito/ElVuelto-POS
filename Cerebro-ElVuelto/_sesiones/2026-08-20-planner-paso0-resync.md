@@ -114,3 +114,64 @@ sincronizado en 7 anclas de línea y en un hecho que la nota anterior daba al re
 2. La config de deploy (2 ítems; necesita una respuesta suya sobre infraestructura).
 3. RLS ([[GLOBAL-20260802-migracion-rls-postgres]], desbloqueado desde el 08-09, mini-proyecto).
 4. Una feature nueva.
+
+---
+
+# 2026-08-21 — el commit entró + evaluación de la app de escritorio
+
+## El commit se hizo (cierra el riesgo que abría el PASO 0)
+El owner pidió el mensaje de commit y commiteó. Verificado: HEAD = **`eacaae0`** (2026-08-20 20:43),
+`products/migrations/0004_alter_product_stock_actual.py` **está en git**, y `git status` fuera del
+cerebro → **limpio**. Las tres features (pegar logo ⌘V, teclado numérico, stock negativo) quedaron
+versionadas. **El Hallazgo 1 y su warning de la migración solo-local están resueltos**; lo demás del
+PASO 0 sigue vigente tal cual.
+
+## Feature evaluada: app de escritorio (.exe) para la caja
+El owner pidió evaluar un módulo en el dashboard del tenant admin para **descargar un `.exe`** ligado a
+`/login/<slug>` del negocio, y después pidió **dejarlo documentado porque lo va a hacer "sí o sí"**.
+Ficha completa con todo lo hablado: [[DESKTOP-20260821-app-escritorio-cajero-exe]].
+
+**Lo que más valió del análisis** — el motivo que decidió la arquitectura **no venía en el pedido**. El
+owner pidió un `.exe`; al preguntarle el dolor de fondo marcó tres motivos, y el #1 fue **impresión
+silenciosa del recibo**. Ese motivo salió de leer `printReceipt.ts:12-14` (`win.print()` → diálogo del
+SO en **cada** venta), no del pedido. Y es el que descarta la alternativa barata: una **PWA** resolvía
+"ícono en el escritorio" y "verse profesional" por ~1 día de trabajo, sin firma ni hosting — pero no
+puede imprimir sin diálogo, por diseño del navegador. Sin esa pregunta se habría construido lo caro sin
+saber si hacía falta, o lo barato sin resolver el dolor real.
+
+**Las tres cosas que hay que recordar de esta evaluación:**
+1. **No se genera un `.exe` por tenant en el servidor** (Django/Linux no compila binarios de Windows). Se
+   compila **uno** y el slug entra por el **nombre del archivo** — renombrar no rompe la firma
+   Authenticode, pero **agregarle bytes sí**. Corolario: nada de inyectar el slug dentro del binario.
+2. **El pedido tiene el peso al revés.** El "módulo de descarga" es la pieza más chica (molde ya existe:
+   `UsersPage.tsx:235`). El trabajo real es el wrapper + el puente de impresión.
+3. **Lo caro no es el código:** firma (~USD 200-400/año — y sin firma SmartScreen contradice el motivo
+   "verse profesional"), hosting del binario (Cloudinary no sirve para 100MB) y un runner Windows en CI.
+
+**Restricción del entorno, dicha en voz alta:** el owner está en **macOS** y desde ahí no sale un `.exe`
+confiable. Eso bloquea el ~20% del trabajo, no el 80%: la fase 1 (wrapper + impresión) se desarrolla y
+valida en el Mac contra `localhost`. La validación final de la térmica **tiene** que ser en Windows.
+El deploy y la exposición por LAN con nginx los hace el owner por separado — **pidió explícitamente que
+el Planner no los planee ni los ejecute**, y no se tocaron.
+
+## Efecto colateral: el cerebro repetía la mentira que él mismo denuncia
+Al abrir [[patron-impresion-recibos]] para enlazarlo, resultó que decía que `generateReceipt.ts` genera
+**PDF con jsPDF** y que `downloadCredentials.ts` exporta **`.txt`** — los dos archivos descritos **al
+revés**. Es literalmente el mismo par de mentiras que los puntos 2 y 3 de
+[[DOCS-20260813-claudemd-drift-post-features]] le achacan a los `CLAUDE.md`, escrita en el cerebro desde
+el 2026-08-02. Verificado contra `eacaae0`: `generateReceipt.ts:10` exporta `generateReceiptHTML(...):
+string` y no importa jsPDF (el 80mm está en `:89`); `downloadCredentials.ts:130,254` sí construye jsPDF
+A5 apaisado y guarda `.pdf` (`:239`, `:367`). **Nota corregida y re-anclada**, más el dato de que
+`python-escpos` ya no está en `requirements.txt` (salió en `a15f6cc`) aunque siga sucio el `.venv`.
+
+No se salió a buscar esto: apareció escribiendo el enlace de la feature.
+
+## Por dónde retomar en frío
+1. Leer [[00-INDEX]] (sección del 2026-08-21) + [[GOBERNANZA]] + esta nota completa.
+2. HEAD = `eacaae0`. **Árbol de app limpio**; el cerebro tiene cambios sin commitear (los del 08-13,
+   08-15, 08-20 y los de hoy).
+3. Backlog verificado al 2026-08-20 en sus 5 ítems de peso, con las anclas ya corregidas.
+4. **Trabajo firme pendiente:** [[DESKTOP-20260821-app-escritorio-cajero-exe]]. Nada implementado. El
+   siguiente paso natural es **modo plan sobre la fase 1** (wrapper Electron + puente de impresión
+   silenciosa, contra `localhost`, en el Mac). No hace falta esperar el deploy para eso.
+5. Sigue pendiente la **confirmación visual del owner** de las tres features del 08-15/08-16.

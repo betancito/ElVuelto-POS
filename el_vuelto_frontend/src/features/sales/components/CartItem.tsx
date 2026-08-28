@@ -29,6 +29,15 @@ const NUMPAD: string[] = ['1','2','3','4','5','6','7','8','9','⌫','0','✓']
 
 const NUMPAD_WIDTH = 224 // px — must match CSS width
 
+/**
+ * Alto real del panel, sumado desde pos.css:1262-1330 — 28 de padding + 10 de
+ * gap + 45 del display + 226 de las 4 filas de teclas + 2 de bordes.
+ * Se usa solo para decidir si el panel cabe debajo del botón; si el CSS cambia
+ * y este número queda corto, lo peor que pasa es que se voltee de más.
+ */
+const NUMPAD_HEIGHT = 311
+const MARGEN = 8
+
 const CartItem = React.memo(function CartItem({ item, onUpdateQuantity }: Props) {
   const { bg, text } = avatarColor(item.nombre)
   const [editingQty, setEditingQty] = useState(false)
@@ -41,8 +50,24 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity }: Props)
       const rect = qtyBtnRef.current.getBoundingClientRect()
       // Center horizontally over the button, clamped to viewport
       let left = rect.left + rect.width / 2 - NUMPAD_WIDTH / 2
-      left = Math.max(8, Math.min(left, window.innerWidth - NUMPAD_WIDTH - 8))
-      setNumpadPos({ top: rect.bottom + 8, left })
+      left = Math.max(MARGEN, Math.min(left, window.innerWidth - NUMPAD_WIDTH - MARGEN))
+
+      // El eje Y también hay que acotarlo, y antes no se hacía: el panel mide
+      // 311px y en una pantalla de 768 cualquier producto cuyo botón caiga por
+      // debajo de y≈441 lo abría fuera de la pantalla — con la tecla ✓ de
+      // confirmar en la última fila, o sea inalcanzable. Como el carrito es una
+      // lista que scrollea, eso le pasaba a casi todos los productos menos los
+      // dos primeros.
+      const alto = window.innerHeight
+      let top = rect.bottom + MARGEN
+      if (top + NUMPAD_HEIGHT > alto - MARGEN) {
+        // No cabe debajo: se voltea encima del botón.
+        top = rect.top - MARGEN - NUMPAD_HEIGHT
+      }
+      // Y si tampoco cabe encima (pantalla muy baja), se pega arriba del todo.
+      top = Math.max(MARGEN, Math.min(top, alto - NUMPAD_HEIGHT - MARGEN))
+
+      setNumpadPos({ top, left })
     }
     setQtyInput('')   // always start blank — display shows 0
     setEditingQty(true)

@@ -1,0 +1,68 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# ElVuelto — PROD override.
+#
+# No bind mounts anywhere: every image is self-contained and could be pushed to
+# a registry and pulled on a server as-is. gunicorn instead of runserver, the
+# built dist/ instead of Vite, DEBUG=False via elvuelto.settings.production.
+#
+#   TAG=$(git rev-parse --short HEAD) ./scripts/manage-docker.sh build prod
+#   ./scripts/manage-docker.sh up prod
+#
+# Before the first `up prod`, set in .env at least:
+#   ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, DB_HOST, TAG=prod
+# ═════════════════════════════════════════════════════════════════════════════
+
+services:
+  backend:
+    image: ${IMAGE_PREFIX:-elvuelto}-backend:${TAG:-prod}
+    build:
+      target: prod
+    environment:
+      DJANGO_SETTINGS_MODULE: elvuelto.settings.production
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      # The entrypoint re-runs collectstatic on boot so the volume never serves
+      # assets from a previous image. Migrations stay manual on purpose —
+      # `manage-docker.sh migrate prod` — so a restart can never migrate a
+      # production database by surprise.
+      RUN_COLLECTSTATIC: "1"
+      RUN_MIGRATIONS: "0"
+      # Throttle counters live in the cache. With more than one gunicorn worker
+      # and LocMemCache, every login rate limit is silently multiplied by the
+      # worker count (each process keeps its own count). Set REDIS_URL to make
+      # the workers share one counter — see settings/base.py.
+      REDIS_URL: ${REDIS_URL:-}
+      # ── HTTPS ──────────────────────────────────────────────────────────────
+      # Sin estas líneas el bloque `if SECURE_SSL:` de settings/production.py es
+      # CÓDIGO MUERTO. El `.env` de la raíz NO se inyecta a los contenedores:
+      # compose solo lo usa para interpolar ${...} dentro de estos YAML, y el
+      # único env_file del backend es el de el_vuelto_backend/. O sea que
+      # documentar SECURE_SSL en .env.example sin mapearlo acá hace que el
+      # deploy salga sin HTTPS forzado, sin cookies Secure y sin que Django se
+      # entere de que la request llegó por TLS — sin un solo error en el log.
+      # El default es "0" y no vacío porque el cast=bool de decouple lo lee bien.
+      SECURE_SSL: ${SECURE_SSL:-0}
+      SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
+      SECURE_HSTS_INCLUDE_SUBDOMAINS: ${SECURE_HSTS_INCLUDE_SUBDOMAINS:-0}
+      SECURE_HSTS_PRELOAD: ${SECURE_HSTS_PRELOAD:-0}
+    volumes:
+      - elvuelto_static:/app/staticfiles
+      - elvuelto_media:/app/media
+    restart: unless-stopped
+
+  frontend:
+    image: ${IMAGE_PREFIX:-elvuelto}-frontend:${TAG:-prod}
+    build:
+      target: prod
+    restart: unless-stopped
+
+  nginx:
+    image: ${IMAGE_PREFIX:-elvuelto}-nginx:${TAG:-prod}
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    volumes:
+      # Read-only: nginx serves these, the backend writes them.
+      - elvuelto_static:/vol/static:ro
+      - elvuelto_media:/vol/media:ro
+    restart: unless-stopped

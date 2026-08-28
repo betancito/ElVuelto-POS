@@ -1,7 +1,7 @@
 ---
 tags: [indice, global]
 status: activo
-updated: 2026-08-15
+updated: 2026-08-27
 ---
 
 # 00-global — Índice de lo transversal
@@ -32,6 +32,9 @@ updated: 2026-08-15
 - [[ADR-TENANCY-20260815-pegar-logo-portapapeles]] — segundo camino de entrada al mismo `LogoDraft`: pegar con ⌘V/Ctrl+V. Listener en `document` (no en el `<form>`, que no dispara sin foco previo) + regla imagen-vs-texto para no robarle el paste a quien escribe + `toast.success` obligatorio porque el pegado se come la tecla.
 - [[ADR-SALES-20260816-stock-negativo-permitido]] — una venta **nunca** se rechaza por falta de stock: el negativo es la deuda de una ENTRADA pendiente. Arrastra: guard de inventario **direccional**, `stock_actual` sin piso pero **read-only** (y `update()` con `update_fields`), y señal propia "en negativo" separada de "bajo mínimo".
 - [[ADR-AUTH-20260816-teclado-numerico-staff-login]] — keypad numérico propio en `/login/<slug>` (POS táctil). Abre con `pointerdown`+`click` (nunca `focus`), cierra con cualquier `keydown`, `inputMode` de dos vías porque los lectores HID emiten keydown, PIN de llenado izquierda→derecha, y la página reserva el alto **medido** del panel.
+- [[ADR-DESKTOP-20260824-wrapper-electron-y-generador-manual]] — el `.exe` del cajero es un **wrapper Electron** sobre la misma web, y existe por una sola razón: **impresión silenciosa** (el navegador no imprime sin diálogo). Se genera **a mano** con `build.py`; no hay módulo de descarga ni firma de código.
+- [[ADR-INFRA-20260826-docker-nginx-mismo-origen]] — el stack corre tras **un solo nginx** y la app se sirve en **mismo origen** (`apiBase.ts` llama a `/api` relativo). Sin eso, `localhost:8000` horneado en el bundle significa *el celular* cuando lo abre el celular. `Host $http_host`, nunca `$host`.
+- [[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]] — la caja se diseña para un **adulto mayor sobre pantalla táctil en 1366×768**: el problema siempre fue el **alto**, no el ancho. Arrastra: media queries de `max-height`, modo reposo con guarda de 6 términos, recibo térmico sin grises y vaciado con confirmación.
 
 ## Riesgos (transversales)
 - [[riesgo-tenancy-sin-red-de-seguridad]] — sin red de seguridad en la BD.

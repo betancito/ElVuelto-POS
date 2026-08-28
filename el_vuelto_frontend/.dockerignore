@@ -1,0 +1,30 @@
+# Build context for docker/frontend/Dockerfile.
+
+# Built for darwin-arm64 on the host; the image installs its own linux-arm64
+# tree. Copying this in is both slow and wrong.
+node_modules/
+
+# Rebuilt by `npm run build` inside the image.
+dist/
+.vite/
+*.tsbuildinfo
+
+# Vite inlines VITE_* vars into the bundle at build time — a stray .env here
+# would bake a developer's machine into a production artifact.
+.env
+.env.*
+!.env.example
+
+# 36 KB of agent documentation, useless at runtime.
+CLAUDE.md
+*.md
+
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# NOTE: package-lock.json is deliberately NOT ignored — `npm ci` requires it.

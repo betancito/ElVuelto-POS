@@ -67,6 +67,14 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD", default=""),
         "HOST": config("DB_HOST", default="localhost"),
         "PORT": config("DB_PORT", default="5432"),
+        # Azure Database for PostgreSQL EXIGE TLS. psycopg2 por defecto usa
+        # `prefer`, que negocia SSL si el servidor lo pide pero acepta texto
+        # plano si no — o sea que en una base gestionada funciona por
+        # casualidad, no por contrato. `DB_SSLMODE=require` lo vuelve explícito
+        # y hace que la conexión FALLE si algún día deja de haber TLS, que es
+        # justo lo que uno quiere de una base con datos de ventas.
+        # Local sigue en `prefer`, que es el default de siempre.
+        "OPTIONS": {"sslmode": config("DB_SSLMODE", default="prefer")},
     }
 }
 
@@ -173,6 +181,27 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in config("CORS_ALLOWED_ORIGINS", default="http://localhost:5173").split(",")
+]
+
+# Origins Django accepts an unsafe request (POST/PUT/PATCH/DELETE) from.
+# CsrfViewMiddleware compares the browser's `Origin` header against this list
+# whenever it does not already match `request.get_host()`.
+#
+# This is what stands between you and a 403 "CSRF verification failed" when the
+# app is reached from another device on the LAN — on the Django admin login and
+# on every form POST. Two things are easy to get wrong:
+#   • scheme and port are BOTH required: "http://192.168.1.75:5173", never the
+#     bare IP;
+#   • the reverse proxy must forward `Host` WITH the port (proxy_set_header Host
+#     $http_host, not $host), or get_host() silently loses it and no entry here
+#     can ever match. See docker/nginx/proxy_common.conf.
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in config(
+        "CSRF_TRUSTED_ORIGINS",
+        default="http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
 ]
 
 # ── Cloudinary ────────────────────────────────────────────────────────────────

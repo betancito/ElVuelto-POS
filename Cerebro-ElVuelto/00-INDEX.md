@@ -1,7 +1,7 @@
 ---
 tags: [indice, router]
 status: activo
-updated: 2026-08-20
+updated: 2026-08-27
 ---
 
 # 00-INDEX — Router del cerebro ElVuelto
@@ -36,7 +36,169 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
 - ✅ **Cuarta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-tenant-desde-panel]] — subir el logo de un tenant desde `TenantDetailPage.tsx`, pedida directo al Planner (con análisis/planeación primero, modo plan). Backend y hook del frontend ya existían — solo faltaba la pantalla. Decisión: [[ADR-TENANCY-20260812-logo-tenant-superadmin-ui]]. Verificado con servidor real: permiso 403/401, validación de archivo 400×3, upsert+versionado de Cloudinary; revisión adversarial (workflow) corrida. Ver [[RUN-20260812-logo-tenant-superadmin-ui]].
 - ✅ **Quinta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-en-modales-crear-editar]] — el logo también desde los modales de **crear** y **editar** negocio, con subida **diferida** (se aplica al guardar; Cancelar descarta) y la opción de **quitarlo**, que necesitó un endpoint nuevo (`DELETE /api/tenants/{id}/logo/` + helper `destroy_image`). Pedida directo al Planner, con modo plan aprobado. Decisión: [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]], que **supersede el punto 1** de la decisión anterior. 15/15 casos contra servidor real; la revisión adversarial (24 agentes) encontró **1 bug real propio** — `destroy_image` no atrapaba el `ValueError` que el SDK de Cloudinary levanta con credenciales vacías, así que el DELETE daba 500 y la fila del logo sobrevivía — arreglado y re-verificado. Ver [[RUN-20260812-logo-tenant-modales-crear-editar]].
 
-## PASO 0 del 2026-08-20 — el más reciente (lee este primero)
+## 2026-08-27 — la caja, rediseñada para el cajero real (lee esto primero)
+- 🟢 **Cinco tareas en una noche**, pedido directo del owner con una ronda de preguntas y ejecución
+  autónoma: POS usable en **1366×768**, `.exe` en **pantalla completa**, **modo reposo** con
+  salvapantallas, **recibo térmico legible** y **vaciar el carrito con confirmación**. Decisión:
+  [[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]] · corrida:
+  [[RUN-20260827-caja-adulto-mayor-y-recibo]] · ficha: [[POS-20260827-caja-1366x768-y-reposo]].
+- 🎯 **Las cinco tareas son una sola.** Al responder las preguntas el owner agregó el criterio que las
+  ordena: la caja la manejan **adultos mayores** sobre una pantalla táctil. Eso explica por qué venía
+  fallando — está construida con la densidad de una app de escritorio para alguien con mouse.
+- 🔴 **Lo que estaba roto no era estético.** El modal donde se digita el efectivo medía **~871px de
+  alto sin `max-height` ni scroll**, y el backdrop lo centra: se recortaban ~50px arriba y ~50px abajo.
+  **Abajo vive el botón Confirmar** — el cajero no podía verlo ni alcanzarlo. Y el botón que **borraba
+  la venta entera** medía 24px, sin fondo y sin confirmación. Las tres media queries que existían eran
+  todas de **ancho**; el problema siempre fue el **alto**.
+- ⚖️ **El workflow de mapeo previo se pagó solo:** halló 3 defectos que la lectura directa no vio (el
+  carrito vacío empujando el pago fuera, el numpad flotante abriéndose fuera de pantalla, el reposo a
+  punto de tapar el aviso de stock negativo) **y corrigió un cálculo mío que hacía desaparecer el
+  precio de las tarjetas**.
+- 🔴 **La revisión adversarial (7 lentes, 61 hallazgos, 3 escépticos cada uno) encontró cosas peores en
+  mi propio trabajo de la noche**: el toque que despierta se colaba y **agregaba un producto al
+  carrito**; mi anti-escaneo solo se tragaba la primera tecla de trece; `restaurarFullscreen` era una
+  variable muerta; `transform: scale()` no recuperaba un píxel de alto; el modal de **cada venta**
+  quedó fuera del pase de altura; y **mi propia afirmación en el `CLAUDE.md` era falsa** (lo probé:
+  `tsc` sale 0).
+- ⛔ **CORREGIDO EL 2026-08-27 (sesión siguiente): la línea de arriba decía "Todo corregido" y era
+  falso.** La madrugada se quedó sin tokens antes de anexar el resultado al RUN, y ese "todo
+  corregido" se escribió sin verificar. Al re-verificar contra el código real (7 verificadores + 1
+  escéptico cada uno), **4 de los 7 arreglos aguantan y 3 no**: el toque que despierta **todavía agrega
+  el producto** (los 400 ms se cuentan desde el `pointerdown`, no desde el `pointerup`, y por Pointer
+  Events L3 el `preventDefault()` no suprime el `click`); en el `SuccessModal` la barra sticky sujeta
+  solo los dos botones **secundarios** y **"Nueva Venta" sigue cayendo bajo el fold**; y el arreglo del
+  rollo **mide el viewport, no el recibo** (piso constante de 154,3 mm — el ahorro es ≈28,5 m/día, no
+  los ~34 m que escribí). Ficha: [[POS-20260827-tres-arreglos-a-medias]]. Detalle con anclas: la
+  sección "Resultado" del [[RUN-20260827-caja-adulto-mayor-y-recibo]].
+- 🧠 **Y una lección sobre el propio cerebro:** el "antes roto" de 5 de los 7 hallazgos **no es
+  verificable en git** — `el_vuelto_desktop/` está sin trackear, `IdleScreensaver.tsx` es archivo nuevo
+  y los bloques `@media (max-height: …)` no existen en ningún commit. Eran iteraciones **dentro** de la
+  misma sesión, no defectos que hayan vivido en el repo. Un comentario del autor no es evidencia.
+- 🖨️ **Un hallazgo que ahorra plata:** la opción "Forzar 80 mm" del wrapper fijaba la página en
+  **297 mm** — casi 30 cm de rollo por recibo. Ahora se mide el alto real: **~34 metros de papel al día**
+  en un negocio de 200 ventas.
+- 📄 **Dos afirmaciones falsas de [[DOCS-20260813-claudemd-drift-post-features]] quedaron corregidas**
+  de paso (el `generateReceipt.ts` que "usa jsPDF" y el `downloadCredentials.ts` que "exporta `.txt`").
+- ⚠️ **Nada se pudo ver en pantalla** — sin navegador en el entorno. Para el recibo quedó
+  `temp/recibo-antes-y-despues.html` (se abre y va a la térmica con Ctrl+P); para el resto **falta el
+  ojo del owner**. Y **nada está commiteado**.
+- Detalle: [[2026-08-27-planner-cierre-run-caja]] (cierre y re-verificación) · la madrugada quedó
+  anexada en [[2026-08-26-planner-paso0-resync]].
+
+## 2026-08-26 (tarde) — el stack corre en Docker (lee esto primero)
+- 🟢 **Front + back + nginx en contenedores**, arrancables con `./scripts/manage-docker.sh up dev`.
+  Pedido directo del owner, con Discovery y decisiones aprobadas antes de tocar código. Decisión:
+  [[ADR-INFRA-20260826-docker-nginx-mismo-origen]] · corrida: [[RUN-20260826-dockerizacion-stack]] ·
+  ficha: [[INFRA-20260826-dockerizacion-stack]].
+- 🎯 **Lo que decidió la arquitectura fue el MISMO ORIGEN.** `apiBase.ts` ahora llama al API en la ruta
+  relativa `/api`; nginx sirve el SPA y Django bajo un solo puerto. Sin eso, `localhost:8000` horneado
+  en el bundle significa *el celular* cuando lo abre el celular.
+- ⚖️ **El pedido de puertos del owner no cuadraba y se concilió sin negociárselo.** Pidió front en
+  `:5173` y back en `:8000`, mismo número adentro y afuera — que literalmente son **dos orígenes**.
+  Solución: **nginx escucha en los dos**. `:5173` = la app completa en un origen · `:8000` = passthrough
+  al backend. **Solo nginx publica puertos.**
+- 🔴 **Sin servicio `db`, por decisión del owner.** El Postgres es de OTRO proyecto suyo
+  (`naia-postgres`) y tiene la base `elvuelto` viva adentro; el backend la alcanza por
+  `host.docker.internal`. Para prod se cambia `DB_HOST` y nada más.
+- ⚠️ **La trampa que más caro se paga:** `proxy_set_header Host $http_host`, **nunca `$host`** — `$host`
+  descarta el puerto, `get_host()` deja de coincidir con el `Origin` y **todo POST desde la LAN muere en
+  403 CSRF** sin que ninguna entrada de `CSRF_TRUSTED_ORIGINS` pueda arreglarlo. (`CSRF_TRUSTED_ORIGINS`
+  tampoco existía en el repo: se creó acá.)
+- 🔴 **Revisión propia → 3 defectos, 3 arreglados.** El healthcheck no podía pasar nunca (opciones de
+  GNU `wget` contra busybox + `localhost` resolviendo a `::1` con nginx en IPv4); `build prod` iba a
+  **pisar las imágenes de dev** (`TAG=dev` en `.env` ganaba en los dos entornos); y el `.gitignore`
+  ignoraba `package-lock.json`, así que **`npm ci` no corría en un clon nuevo**.
+- 🔴 **Desviación de protocolo anotada:** [[GOBERNANZA]] §10.2 pide revisión adversarial y **no se
+  corrió**. El setup toca CSRF y validación de hosts, así que no es inocua.
+- ⚠️ **Falta el ojo del owner en el celular** (se probó con `curl` desde `192.168.1.75`: 200 en todo,
+  WebSocket del HMR 101) y **falta el commit** — nada de esto está versionado.
+
+## PASO 0 del 2026-08-26 — lee esto primero
+- 🟢 **Código quieto, entorno verde.** HEAD = **`eacaae0`** y **`main` == `origin/main`**.
+  `makemigrations --check` → *No changes detected* (exit 0); `tsc --noEmit` → exit 0, cero salida.
+  **Ningún prompt 🟡 en curso** en los 7 registros. La app web no se toca desde el **2026-08-16 17:50**.
+- 🔴 **El árbol de app YA NO está limpio: la beta del `.exe` lleva dos días sin commitear.** Cinco
+  entradas sucias — `el_vuelto_desktop/` (15 archivos que sí entrarían al commit), `printReceipt.ts`,
+  los dos `CLAUDE.md` y `.gitignore`. Commitear es del owner ([[GOBERNANZA]] §0).
+- 🔴 **Los 5 ítems de peso siguen abiertos**, verificados hoy contra código y **sin una sola ancla
+  corrida** (`viewsets.py:19-21`, front `CLAUDE.md:330-331`, `manage.py:8`, `production.py` con **0**
+  hits de `SECURE_*`, `sales/views.py:43,52`, `products/models.py:87`). **Ningún ítem nuevo** — no se
+  salió a buscar.
+- ⚖️ **El arreglo del `.gitignore` del 08-24 se auditó y aguanta:** `git check-ignore` archivo por
+  archivo confirma que `tools/elvuelto.ico` y `tools/patch-exe.js` **sí** entran al commit; lo único
+  ignorado es lo que debe estarlo (`dist/`, `node_modules/`, `app/config.json`, `urls.json`).
+- 🧩 **Observación sin ficha:** `.gitignore:16` ignora `package-lock.json` en todo el repo, así que el
+  generador del `.exe` no es reproducible al 100% en un clon nuevo — `electron` está clavado en
+  `44.0.0`, pero `@electron/packager` y `resedit` flotan con `^`. Decisión del owner si amerita excepción.
+- ❓ **Un cambio de repo sin dueño:** `.gitignore` tiene `+temp.md` sin commitear, que no figura en
+  ningún RUN ni nota (`grep` sobre el cerebro → 0 hits). Hipótesis: lo agregó el owner.
+- 🎯 **Lo primero que corresponde no es código:** correr `ElVuelto-<slug>.exe` en Windows contra la
+  térmica. La fase 2 no arranca antes. Siguen esperando el ojo del owner las tres features del
+  08-15/08-16 (once días).
+- Detalle: [[2026-08-26-planner-paso0-resync]].
+
+## 2026-08-24 — beta manual del `.exe` de caja (lee esto primero)
+- 🟡 **Fase 1 de [[DESKTOP-20260821-app-escritorio-cajero-exe]] IMPLEMENTADA**, como pedido directo del
+  owner: `el_vuelto_desktop/` con `build.py` (pregunta Test/Prod → IP → tenant → `.exe`), wrapper
+  Electron, puente de impresión silenciosa y **selector de impresora en el primer arranque**. Decisión:
+  [[ADR-DESKTOP-20260824-wrapper-electron-y-generador-manual]] · corrida:
+  [[RUN-20260824-beta-manual-exe-caja]].
+- ⚖️ **Se cayó un supuesto de la ficha:** decía que desde macOS *"no se genera un `.exe` confiable"* y
+  que hacía falta CI en Windows. **Falso** — `@electron/packager` + **`resedit`** (JS puro) produjeron un
+  `PE32+ executable (GUI) x86-64` real, con ícono y metadatos, **sin wine**. Lo que exigía wine era
+  `rcedit`. El CI servirá para **firmar**, no para producir.
+- 🎯 **Windows y nada más:** el owner descartó explícitamente probar en Mac y pidió que **Test no asuma
+  `localhost`** — la IP del servidor (que monta en una máquina Linux de su red) la provee quien corre el
+  comando. Ambas cosas están implementadas y verificadas.
+- ⚠️ **Lo que NO se probó: la impresión.** Este Mac no tiene impresoras (`lpstat -p` → *No destinations
+  added*). Que el recibo salga en la térmica sin diálogo lo valida el owner en Windows. Traza para
+  diagnosticar: `set ELVUELTO_DEBUG=1 && ElVuelto-<slug>.exe`.
+- 🔴 **Revisión adversarial propia → 5 hallazgos reales, 5 arreglados.** Los dos peores: la pantalla
+  de impresoras leía `isDefault`/`status`, campos que **no existen** en `PrinterInfo` de Electron 44 (el
+  botón Guardar quedaba deshabilitado); y el `.gitignore` raíz (`build/`) se tragaba el ícono y el
+  parcheador del `.exe`, así que en un clon nuevo el generador se rompía.
+
+## PASO 0 del 2026-08-24 — nada se movió
+- 🟢 **Estado congelado y sano.** HEAD = **`eacaae0`** y **`main` == `origin/main`** (el commit está
+  **pusheado**, no solo local). Árbol de app **limpio**. Último archivo de app tocado: **2026-08-16
+  17:50** — ocho días de silencio en el código; el cerebro, tres días.
+- 🟢 **Entorno verde:** `makemigrations --check` → *No changes detected* (exit 0); `tsc --noEmit` → exit
+  0, cero salida. **Ningún prompt 🟡 en curso** en los 7 registros.
+- 🔴 **Los 5 ítems de peso siguen abiertos**, verificados hoy contra código — y esta vez **sin una sola
+  ancla corrida**, porque el código no se tocó (`viewsets.py:20-21`, front `CLAUDE.md:330-331`,
+  `manage.py:8`, `production.py` con **0** hits de `SECURE_*`, `sales/views.py:43,52`,
+  `products/models.py:87`). **No se abrió ningún ítem nuevo** — no se salió a buscar.
+- ⚖️ **La corrección del 08-21 se auditó a sí misma y es cierta:** [[patron-impresion-recibos]] ahora
+  acierta (`generateReceipt.ts` sin un solo hit de jspdf; `downloadCredentials.ts:1,130,239` sí arma el
+  PDF). También confirmadas las anclas de la app de escritorio: `printReceipt.ts:13` (`win.print()`) y
+  `UsersPage.tsx:235` (`ta-url-card`).
+- 📐 **Un dato de la nota del 08-21 quedó corregido:** decía que el cerebro tenía sin commitear lo del
+  08-13/08-15/08-20 — `eacaae0` se llevó el cerebro **completo** hasta el 08-20 (61 archivos). Sin
+  commitear hoy: **solo los 5 archivos del 08-21**.
+- 🟡 **Sigue pendiente lo mismo:** la fase 1 de [[DESKTOP-20260821-app-escritorio-cajero-exe]] (nada
+  implementado) y la **confirmación visual del owner** de las tres features del 08-15/08-16, que ya
+  arrastra nueve días.
+- Detalle: [[2026-08-24-planner-paso0-resync]].
+
+## 2026-08-21 — commit hecho + feature evaluada (histórico; sigue vigente)
+- 🟢 **El owner commiteó.** HEAD real = **`eacaae0`** ("feat(pos): stock negativo, teclado numérico del
+  cajero y pegar logo con ⌘V", 2026-08-20 20:43). La migración `products/0004_alter_product_stock_actual`
+  **ya está en git** y el árbol quedó **limpio fuera del cerebro**. Todo el bloque de riesgo que abría el
+  PASO 0 del 08-20 (8 días sin commit, migración solo local) **está resuelto**.
+- 🔴 **Feature nueva evaluada, no arrancada:** [[DESKTOP-20260821-app-escritorio-cajero-exe]] — app de
+  escritorio descargable desde el dashboard del tenant admin que abre `/login/<slug>` del negocio. El
+  owner pidió dejarla documentada porque **la va a hacer "sí o sí"**. Factibilidad ✅, con la trampa de
+  que **no se genera un `.exe` por tenant en el servidor** y que lo caro no es el código (firma,
+  hosting, CI en Windows). Propuesta técnica: **Electron** — la PWA queda descartada por la impresión
+  silenciosa. Fase 1 (wrapper + puente de impresión, validable en Mac) **no depende del deploy**.
+- ⚖️ **El cerebro repetía una mentira que él mismo denuncia:** [[patron-impresion-recibos]] decía que
+  `generateReceipt.ts` genera PDF con jsPDF y que `downloadCredentials.ts` exporta `.txt` — los dos
+  archivos descritos **al revés**, exactamente los puntos 2 y 3 de
+  [[DOCS-20260813-claudemd-drift-post-features]]. Escrito así desde el 2026-08-02. **Corregido hoy** y
+  re-anclado contra `eacaae0`. Salió de evaluar la feature de escritorio, no de buscar.
+- Detalle: [[2026-08-20-planner-paso0-resync]] (sección del 08-21).
+
+## PASO 0 del 2026-08-20 — histórico (el bloque del commit pendiente YA se resolvió; lo demás sigue vigente)
 - 🔴 **El árbol de app YA NO está limpio, y la nota anterior dice que sí.** HEAD sigue en `9727c03`
   (2026-08-12) — **ocho días sin commit** — con **19 archivos de app modificados + 3 sin trackear**: las
   features 6, 7 y 8 (pegar logo ⌘V, teclado numérico, stock negativo) más la doble actualización de los

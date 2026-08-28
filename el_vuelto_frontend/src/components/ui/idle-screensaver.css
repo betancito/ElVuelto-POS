@@ -1,0 +1,103 @@
+/* Salvapantallas de reposo — ver IdleScreensaver.tsx */
+
+.idle-screensaver {
+  position: fixed;
+  inset: 0;
+  /* Por encima de todo, modales del POS incluidos: si el reposo entra, tapa. */
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+
+  /* Marrón terracota oscuro: es la paleta de El Vuelto pero apagada. Una caja
+     queda encendida toda la noche y un fondo claro a pantalla completa alumbra
+     el local entero. */
+  background: radial-gradient(circle at 50% 40%, #3a1a08 0%, #1c0c04 70%);
+  color: #fff8f0;
+
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  /* Sin esto, en una pantalla táctil el primer toque a veces se interpreta
+     como scroll y no despierta. */
+  touch-action: none;
+
+  animation: idle-fade-in 900ms ease-out;
+}
+
+@keyframes idle-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Deriva lenta contra el quemado de panel: una caja muestra esto muchas horas
+   seguidas siempre en el mismo lugar. */
+.idle-screensaver__drift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  animation: idle-drift 90s ease-in-out infinite;
+}
+
+@keyframes idle-drift {
+  0%   { transform: translate(-3.5vw, -2.5vh); }
+  25%  { transform: translate(3.5vw, 2vh); }
+  50%  { transform: translate(2.5vw, -3vh); }
+  75%  { transform: translate(-3vw, 2.5vh); }
+  100% { transform: translate(-3.5vw, -2.5vh); }
+}
+
+.idle-screensaver__logo {
+  width: clamp(9rem, 18vw, 15rem);
+  height: auto;
+  opacity: 0.92;
+  /* El PNG es sobre transparente y el fondo acá es oscuro: sin esto el trazo
+     terracota del isotipo se pierde. */
+  filter: drop-shadow(0 0 24px rgba(255, 248, 240, 0.14));
+}
+
+.idle-screensaver__clock {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.idle-screensaver__date {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  opacity: 0.72;
+  /* es-CO devuelve el día y el mes en minúscula. */
+  text-transform: capitalize;
+}
+
+.idle-screensaver__hint {
+  position: absolute;
+  bottom: clamp(2rem, 8vh, 5rem);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  opacity: 0.65;
+  animation: idle-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes idle-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.8; }
+}
+
+/* Quien pidió menos movimiento no debería recibir un logo flotando ni un
+   texto latiendo. */
+@media (prefers-reduced-motion: reduce) {
+  .idle-screensaver,
+  .idle-screensaver__drift,
+  .idle-screensaver__hint {
+    animation: none;
+  }
+}

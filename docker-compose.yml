@@ -1,0 +1,112 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# ElVuelto — base stack. Everything shared by dev and prod lives here; the
+# differences live in docker-compose.dev.yml / docker-compose.prod.yml and are
+# layered on top:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.<env>.yml <cmd>
+#
+# Never invoke this file on its own — use ./scripts/manage-docker.sh.
+#
+# TOPOLOGY
+#   nginx is the ONLY service that publishes ports. backend and frontend are
+#   reachable exclusively over the internal `elvuelto` network, by service name.
+#   The published port numbers match the internal ones on purpose, so "5173"
+#   and "8000" mean the same thing inside and outside Docker.
+#
+#     host :5173 → nginx :5173 → "/" frontend:5173  ·  "/api/" backend:8000
+#     host :8000 → nginx :8000 → backend:8000 (passthrough)
+#
+# DATABASE
+#   There is deliberately no `db` service. This project's Postgres already runs
+#   as a container outside this stack, publishing 5432 on the host, and holds
+#   the live `elvuelto` database. The backend reaches it through
+#   host.docker.internal. For a deployment, point DB_HOST at the managed
+#   instance — nothing else changes.
+# ═════════════════════════════════════════════════════════════════════════════
+
+name: elvuelto
+
+services:
+  backend:
+    image: ${IMAGE_PREFIX:-elvuelto}-backend:${TAG:-dev}
+    build:
+      context: ./el_vuelto_backend
+      dockerfile: ../docker/backend/Dockerfile
+    env_file:
+      # The app's own secrets (SECRET_KEY, Cloudinary, DOCS_API_KEY). Optional so
+      # a fresh clone can still `build` before the file has been created.
+      - path: ./el_vuelto_backend/.env
+        required: false
+    environment:
+      # Overrides whatever the file above says: inside a container "localhost"
+      # is the container itself, not the Mac.
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-5432}
+      # Igual que DB_HOST: vive acá y no en el .env del backend porque depende
+      # del deploy, no de la app. `prefer` mantiene el comportamiento de
+      # siempre en local; una base gestionada (Azure) va con `require`.
+      DB_SSLMODE: ${DB_SSLMODE:-prefer}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    extra_hosts:
+      # Docker Desktop provides this name already; declaring it explicitly makes
+      # the same compose file work on a Linux host too.
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "8000"
+    networks:
+      - elvuelto
+
+  frontend:
+    image: ${IMAGE_PREFIX:-elvuelto}-frontend:${TAG:-dev}
+    build:
+      context: ./el_vuelto_frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    expose:
+      - "5173"
+    networks:
+      - elvuelto
+
+  nginx:
+    ports:
+      # BIND_HOST defaults to 0.0.0.0 — every interface, which is what makes the
+      # app reachable from a phone at http://<mac-lan-ip>:5173. Docker's short
+      # syntax ("5173:5173") already means this, but spelling it out keeps it
+      # honest and makes the alternative available:
+      #
+      #   BIND_HOST=127.0.0.1  →  loopback only. Use this if you put your OWN
+      #   nginx on the host in front of the stack; then that nginx is the only
+      #   thing on 0.0.0.0 and the containers are not directly reachable from
+      #   the LAN, which is the safer arrangement.
+      #
+      # The app (same origin: SPA + API). This is the LAN URL.
+      - "${BIND_HOST:-0.0.0.0}:${APP_PORT:-5173}:5173"
+      # The backend, straight through — curl, Postman, /docs/, admin.
+      - "${BIND_HOST:-0.0.0.0}:${API_PORT:-8000}:8000"
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      # Two traps in one line:
+      #  • busybox wget, not GNU — the long options (--tries, --spider) do not
+      #    exist here and the check fails without ever hitting the server;
+      #  • 127.0.0.1, not localhost — inside the container localhost resolves to
+      #    ::1 first, and nginx's `listen 5173` binds IPv4 only, so the probe
+      #    gets "Connection refused" while the port works fine from outside.
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:5173/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - elvuelto
+
+networks:
+  elvuelto:
+    driver: bridge
+
+volumes:
+  # Used by the prod override only: collectstatic writes here and nginx reads it.
+  elvuelto_static:
+  elvuelto_media:

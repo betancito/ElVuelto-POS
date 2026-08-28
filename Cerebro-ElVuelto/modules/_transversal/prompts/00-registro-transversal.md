@@ -1,7 +1,7 @@
 ---
 tags: [registro, prompts, transversal]
 status: activo
-updated: 2026-08-11
+updated: 2026-08-26
 ---
 
 # Registro de prompts y corridas — _transversal
@@ -29,6 +29,8 @@ Prompts que **no pertenecen a un solo módulo** (cross-cutting: front-wide, deps
 | [[PROMPT-FIX-20260805-desactivar-de-punta-a-punta]] | fix | [[TENANCY-20260802-toggle-active-fantasma]] + residual de refresh | 🟢 corrido-ok | 2026-08-05 | ✅ pasó 5/5; el Dev NO tocó `apiBase.ts` y tenía razón | [[RUN-20260805-desactivar-de-punta-a-punta]] |
 | [[PROMPT-FEAT-TRANSVERSAL-20260809-compresion-cloudinary]] | feature | [[BACKEND-20260809-compresion-estandar-imagenes]] | 🟢 corrido-ok | 2026-08-10 | ✅ pasó — 6/6 casos con subidas reales contra Cloudinary, incl. verificación independiente del fix de staleness/versión | [[RUN-20260809-compresion-cloudinary]] |
 | [[PROMPT-FEAT-TRANSVERSAL-20260811-docs-swagger-key-gate]] | feature | [[BACKEND-20260811-docs-swagger-api-key]] | 🟢 corrido-ok | 2026-08-11 | ✅ pasó — 12/12+6/6+9/9 casos reales; sin prompt previo (pedido directo del owner); review adversarial corrida (3 hallazgos arreglados, 2 a backlog nuevo); rediseñado a mitad de sesión de `?key=` en URL a login-form+sesión a pedido del owner | [[RUN-20260811-docs-swagger-key-gate]] |
+| — (pedido directo, sin prompt) | feature | [[DESKTOP-20260821-app-escritorio-cajero-exe]] | 🟢 corrido-ok | 2026-08-24 | ✅ generación verificada punta a punta (`.exe` PE32+ con ícono y config horneada; CLI 11/11 por tty). ⚠️ **impresión sin verificar**: este Mac no tiene impresoras y el owner probará en Windows. Revisión adversarial propia → 5 hallazgos, 5 arreglados | [[RUN-20260824-beta-manual-exe-caja]] |
+| — (pedido directo, sin prompt) | infra | [[INFRA-20260826-dockerizacion-stack]] | 🟢 corrido-ok | 2026-08-26 | ✅ dev y prod verificados contra servidor real (curl, HMR 101, CSRF desde la LAN, gunicorn no-root). Revisión propia → 3 defectos, 3 arreglados. ✅ **adversarial §10.2 pagada el 2026-08-27** (2 lentes de Docker en [[RUN-20260827-caja-adulto-mayor-y-recibo]]). ⚠️ sin confirmación visual del owner | [[RUN-20260826-dockerizacion-stack]] |
 
 ## Cómo se registra una corrida
 El **Planner** actualiza la fila al correr (Estado, Corrida, Veredicto) y guarda el reporte extenso en `corridas/RUN-<fecha>-<slug>.md`. El Dev no edita el cerebro.

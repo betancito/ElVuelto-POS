@@ -35,9 +35,9 @@ function SaleReceiptModal({
   onClose: () => void
 }) {
   const user = useAppSelector((s) => s.auth.user)
+  // Sin logoUrl a propósito — ver utils/generateReceipt.ts.
   const tenant = {
     nombre: tenantNombre,
-    logoUrl: user?.tenantLogoUrl,
     email: user?.tenantEmail,
     supportPhone: user?.tenantSupportPhone,
   }

@@ -2,7 +2,7 @@
 tags: [modulo, contratos]
 status: vivo
 module: tenancy
-updated: 2026-08-02
+updated: 2026-08-30
 ---
 
 # Tenancy — Contratos (endpoints)
@@ -60,3 +60,12 @@ Base: `/api/tenants/` (montado en `elvuelto/urls.py`). Router `DefaultRouter` en
 
 ## Cómo se filtra el tenant (backbone)
 El aislamiento NO vive en este módulo de endpoints sino en 3 piezas reutilizadas: `TenantMiddleware` (`request.tenant` desde JWT), `TenantMixin` (FK), `TenantModelViewSet` (`get_queryset().filter(tenant=...)`). Consumido por products/inventory/sales/reports/users — ver grep en [[mapa-tenancy]]. Superadmin tiene `tenant=None` y omite el filtro vía `IsSuperAdmin`.
+
+> [!warning] Re-anclado el 2026-08-30 — falta `factura_electronica` en las listas de arriba
+> `TenantSerializer.Meta.fields` es una lista **explícita** y desde el 2026-08-30 incluye
+> `factura_electronica` (`BooleanField`, `default=False`, escribible por PATCH, no está en
+> `read_only_fields`). `TenantCreateSerializer` lo hereda vía `Meta(TenantSerializer.Meta)`, así que
+> también se acepta en el `POST`. Y el payload de login (`_user_payload`) suma la clave
+> `tenant_factura_electronica`, que es `None` para un superadmin sin tenant.
+> Ver [[ADR-TENANCY-20260830-factura-electronica-por-tenant]].
+

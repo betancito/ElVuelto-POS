@@ -52,6 +52,12 @@ class Command(BaseCommand):
                 "nombre": "Panadería La Esperanza",
                 "ciudad": "Medellín",
                 "correo": "contacto@laesperanza.com",
+                # Con el default del modelo (False) y sin teléfono, la rama
+                # ENCENDIDA del bloque de factura del recibo quedaba
+                # inalcanzable en desarrollo: nadie podía verla sin editar la
+                # base a mano. El seed cubre las dos ramas.
+                "factura_electronica": True,
+                "support_number": "300 000 0000",
                 "activo": True,
             },
         )

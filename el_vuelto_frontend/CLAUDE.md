@@ -92,7 +92,9 @@ Each feature owns its API endpoints, Redux slice (if needed), pages, and sub-com
 
 `AuthUser` interface (stored in Redux):
 ```ts
-{ id, nombre, correo, cedula, rol: "SUPERADMIN"|"ADMIN"|"CAJERO", activo, leadCashier, tenantId, tenantNombre, tenantSlug, tenantLogoUrl }
+{ id, nombre, correo, cedula, rol: "SUPERADMIN"|"ADMIN"|"CAJERO", activo, leadCashier,
+  tenantId, tenantNombre, tenantSlug, tenantLogoUrl,
+  tenantEmail, tenantSupportPhone, tenantFacturaElectronica }
 ```
 
 **`tenantSlug` comes from the login response (`user.tenant_slug`) and is never computed on the client.** It is the persisted `Tenant.slug` (backend `apps/tenants/slugs.py`). Anything that needs a `/login/<slug>` URL — `PosPage`'s "Cerrar Turno", `UsersPage`'s staff link — reads it from Redux. There used to be two local slugify functions (`utils/slugify.ts`, now deleted, and a `toSlug` inside `UsersPage`) that disagreed with each other **and** with the backend on accents: a cashier of "Panadería La Esperanza" was sent to a slug the server could not resolve → "Sucursal no encontrada". Do not reintroduce one; if a new screen needs the slug, take it from `state.auth.user.tenantSlug`.
@@ -377,6 +379,17 @@ for legibility on a real thermal head: the tenant logo is gone (a grey smudge at
 the font is Arial instead of Courier, and the columns are flex rows rather than
 space-padded monospace — which is also why product names no longer truncate at
 16 characters. One knob, `BASE_PX`, scales the whole thing.
+**The electronic-invoice block is gated per tenant** (2026-08-30): `ReceiptTenantInfo` carries a
+required `facturaElectronica: boolean` (from `Tenant.factura_electronica`, opt-in, `default=False`),
+and the block — question, email and phone — prints only when it is on. It used to be gated by the
+implicit `tenant.email || tenant.supportPhone`, which was *always* true because `Tenant.correo` is
+required server-side, so the block printed on 100% of receipts. **The field is required, not
+optional, on purpose:** it is the only thing that forces both call sites to pass it (see the
+excess-property note below — a missing key breaks assignability, an extra one does not).
+**"El Vuelto POS" is gone from the receipt** (2026-08-30, owner's call): the last line is now
+"Gracias por su compra". The `.marca` CSS rule went with it. The credentials PDF
+(`downloadCredentials.ts`) and the reports export still carry the brand — that was deliberate, not
+an oversight.
 **`ReceiptTenantInfo` has no `logoUrl`, and nothing enforces that.** Verified by
 experiment on 2026-08-27: adding `logoUrl` back to a caller's `tenant` object
 still passes `tsc` (exit 0). TypeScript's excess-property check only fires on an

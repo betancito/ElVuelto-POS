@@ -58,6 +58,12 @@ export default function TenantsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editActivo, setEditActivo] = useState(true)
+  // Los dos booleanos viven FUERA de react-hook-form, igual que `editActivo`:
+  // un switch no es un input registrado. El precio es que hay que anexarlos a
+  // mano al body de la mutation — si se olvida, el super admin mueve el switch,
+  // ve el toast de éxito y no se guardó nada.
+  const [createFactura, setCreateFactura] = useState(false)
+  const [editFactura, setEditFactura] = useState(false)
   const [credentials, setCredentials] = useState<CredentialsData | null>(null)
 
   // The picked file is a `File`, not a form value — same reason `editActivo`
@@ -110,6 +116,11 @@ export default function TenantsPage() {
   function closeCreateModal() {
     revokeLogoDraft(createLogo)
     setCreateLogo(NO_LOGO_CHANGE)
+    // Se limpia TODO junto. Resetear solo el switch dejaba el formulario con
+    // los datos escritos y el toggle en `false`: al reabrir, el super admin veía
+    // sus datos intactos y creía que el switch seguía como lo había dejado.
+    setCreateFactura(false)
+    createForm.reset()
     setShowCreateModal(false)
   }
 
@@ -139,7 +150,7 @@ export default function TenantsPage() {
   }
 
   async function onCreateSubmit(data: CreateFormData) {
-    const result = await createTenant(data)
+    const result = await createTenant({ ...data, factura_electronica: createFactura })
       .unwrap()
       .catch((err) => {
         applyServerErrors(
@@ -174,6 +185,7 @@ export default function TenantsPage() {
     revokeLogoDraft(editLogo)
     setEditingTenant(tenant)
     setEditActivo(tenant.activo)
+    setEditFactura(tenant.factura_electronica)
     setEditLogo(NO_LOGO_CHANGE)
     editForm.reset({
       nombre: tenant.nombre,
@@ -190,7 +202,12 @@ export default function TenantsPage() {
 
     // Data first, logo second: the other order would leave a new logo behind
     // on an edit the server rejected.
-    const saved = await updateTenant({ id, ...data, activo: editActivo })
+    const saved = await updateTenant({
+      id,
+      ...data,
+      activo: editActivo,
+      factura_electronica: editFactura,
+    })
       .unwrap()
       .then(() => true)
       .catch((err) => {
@@ -261,6 +278,26 @@ export default function TenantsPage() {
             <Input label="Número de soporte (opcional)" error={createForm.formState.errors.support_number?.message} {...createForm.register('support_number')} />
           </div>
 
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>¿Emite factura electrónica?</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={createFactura}
+              aria-label="¿Emite factura electrónica?"
+              onClick={() => setCreateFactura((v) => !v)}
+              className={[styles.toggle, createFactura ? styles.toggleOn : styles.toggleOff].join(' ')}
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+            <span className={styles.toggleStatus}>{createFactura ? 'Sí' : 'No'}</span>
+          </div>
+          <p className={styles.hint}>
+            Si está encendido, el recibo del cajero muestra la pregunta
+            «¿Requiere factura electrónica?» junto al correo y, si lo tiene cargado,
+            al número de soporte del negocio.
+          </p>
+
           <hr className={styles.divider} />
           <p className={styles.sectionLabel}>Administrador inicial</p>
           <div className={styles.formRow}>
@@ -299,6 +336,26 @@ export default function TenantsPage() {
           <div className={styles.formRow}>
             <Input label="Número de soporte (opcional)" error={editForm.formState.errors.support_number?.message} {...editForm.register('support_number')} />
           </div>
+
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>¿Emite factura electrónica?</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={editFactura}
+              aria-label="¿Emite factura electrónica?"
+              onClick={() => setEditFactura((v) => !v)}
+              className={[styles.toggle, editFactura ? styles.toggleOn : styles.toggleOff].join(' ')}
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+            <span className={styles.toggleStatus}>{editFactura ? 'Sí' : 'No'}</span>
+          </div>
+          <p className={styles.hint}>
+            Apagado, el recibo no muestra la pregunta ni los datos de contacto del negocio.
+            El cambio se aplica <strong>cuando el cajero vuelva a iniciar sesión</strong>:
+            una caja que ya está abierta sigue imprimiendo como antes hasta ese momento.
+          </p>
 
           <div className={styles.toggleRow}>
             <span className={styles.toggleLabel}>Estado del negocio</span>

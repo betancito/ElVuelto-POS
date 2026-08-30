@@ -1,7 +1,7 @@
 ---
 tags: [adr, pos, sales, ux, impresion, desktop, global]
 status: aceptado
-updated: 2026-08-27
+updated: 2026-08-30
 ---
 
 # ADR-POS-20260827 — La caja se diseña para un adulto mayor en 1366×768
@@ -146,3 +146,18 @@ cumplidas todavía** — ver [[POS-20260827-tres-arreglos-a-medias]] y la secci�
 [[ADR-SALES-20260816-stock-negativo-permitido]] (el aviso que el reposo no debe tapar) ·
 [[ADR-AUTH-20260816-teclado-numerico-staff-login]] (mismo criterio táctil, en el login) ·
 [[POS-20260827-tres-arreglos-a-medias]] · [[patron-impresion-recibos]]
+
+
+> [!warning] Corrección del 2026-08-30 — los dos callouts de "quedó a medias" de arriba ya son FALSOS
+> Este ADR todavía dice, en sus dos últimos bloques, que *"la implementación quedó a medias"*, que
+> *"4 aguantan y 3 no"* y que *"dos de las promesas de arriba no están cumplidas"*. **Eso describe el
+> estado de la madrugada del 08-27**, antes de la tercera y la cuarta pasada de esa misma noche.
+> Verificado contra `abee9d8` con árbol limpio: los tres arreglos **están en el código**
+> (`IdleScreensaver.tsx:58,221` · `pos.css:1984` · `main.js:143,175-182`), y sus anclas cambiaron
+> (`main.js:137→:143`, `:169-172→:175-182`).
+>
+> 🔴 **Pero el arreglo del toque trajo una regresión propia**, encontrada en la re-verificación
+> adversarial de hoy: si el `pointerup` nunca llega, el tragador de clicks **no se apaga nunca** y la
+> caja deja de responder hasta recargar. Ficha: [[POS-20260830-tragador-reposo-puede-trabar-la-caja]].
+> La decisión de diseño de este ADR **no cambia**; lo que cambia es que la implementación del reposo
+> todavía no está cerrada.

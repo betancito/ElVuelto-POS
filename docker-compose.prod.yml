@@ -66,3 +66,39 @@ services:
       - elvuelto_static:/vol/static:ro
       - elvuelto_media:/vol/media:ro
     restart: unless-stopped
+
+  # ── Borde TLS (opcional, solo con dominio) ─────────────────────────────────
+  # Detrás de `profiles`, así que `up prod` NO lo arranca: el mismo `up prod` se
+  # usa para correr en la LAN por HTTP (ver el comentario de .env.example), y un
+  # Caddy suelto ahí intentaría sacar certificado para un dominio que no resuelve
+  # y quemaría el límite de validaciones fallidas de Let's Encrypt.
+  #
+  #   COMPOSE_PROFILES=edge ./scripts/manage-docker.sh up prod
+  #
+  # Requiere DOMAIN y ACME_EMAIL en el .env de la RAÍZ, y BIND_HOST=127.0.0.1
+  # para que 5173/8000 dejen de escuchar en la IP pública. Runbook completo:
+  # docs/azure-deploy.md.
+  caddy:
+    image: ${IMAGE_PREFIX:-elvuelto}-caddy:${TAG:-prod}
+    build:
+      context: ./docker/caddy
+      dockerfile: Dockerfile
+    profiles: ["edge"]
+    environment:
+      DOMAIN: ${DOMAIN:?falta DOMAIN en el .env de la raiz}
+      ACME_EMAIL: ${ACME_EMAIL:?falta ACME_EMAIL en el .env de la raiz}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - nginx
+    volumes:
+      # Certificados y llaves privadas. NUNCA borrar este volumen: Let's Encrypt
+      # limita a 5 certificados por dominio por semana.
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

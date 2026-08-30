@@ -2,7 +2,7 @@
 tags: [tarea, backend, tenancy, docs, seguridad]
 status: 🔴
 prioridad: alta
-updated: 2026-08-15
+updated: 2026-08-30
 ---
 
 # BACKEND-20260813-docstring-tenancy-miente-aislamiento — la mentira del aislamiento automático volvió, ahora en un docstring
@@ -66,3 +66,33 @@ aplica si la subclase **no** pisa `get_queryset()`, que hoy solo lo usan `Catego
   y [[riesgo-tenancy-sin-red-de-seguridad]].
 - Doble actualización: no hace falta tocar los `CLAUDE.md` por esto — ya son correctos. Sí conviene que
   el docstring apunte al `CLAUDE.md` en vez de repetir la regla.
+
+
+> [!warning] Re-verificado en el PASO 0 del 2026-08-30 — sigue abierto, y el dato más fuerte no estaba escrito
+> `abee9d8` **no tocó ni un archivo bajo `el_vuelto_backend/apps/`**
+> (`git diff eacaae0..abee9d8 -- el_vuelto_backend/apps/tenants/viewsets.py` → salida vacía; del backend
+> solo se movieron `.dockerignore`, `CLAUDE.md`, `settings/base.py`, `settings/production.py` y
+> `requirements.txt`). El archivo no se toca desde `a15f6cc`. Anclas **intactas**: la mentira sigue en
+> `apps/tenants/viewsets.py:20-21` — *"cross-tenant data leakage is impossible at the API layer"* — y
+> `grep -n "impossible"` la sigue devolviendo, o sea que el criterio de aceptación no se cumple.
+>
+> **El número que la ficha no tenía:** de **11 vistas tenant-scoped** del backend, solo **2** heredan
+> `TenantModelViewSet` (`apps/products/views.py:18` `CategoryViewSet`, `:53` `ProductViewSet`) — y una
+> de esas dos, `ProductViewSet`, **pisa `get_queryset()`** (`:57-64`) y tiene que volver a llamar
+> `_get_tenant()` a mano. O sea: **`CategoryViewSet` es la única vista del sistema que realmente recibe
+> el filtro automático**. "Impossible at the API layer" describe **1 de 11 endpoints**.
+>
+> Las otras 9 filtran a mano con `require_tenant`: `sales/views.py:35`, `inventory/views.py:47,67`,
+> `inventory/views.py:76` (`StockView`), `users/views.py:158`, y los 5 `APIView` de reports
+> (`reports/views.py:25,70,123,195,237`).
+>
+> **El contraejemplo lo escribió el propio equipo, a 35 líneas de distancia:**
+> `apps/products/views.py:58-59` dice *"Overriding get_queryset drops TenantModelViewSet's guard"*.
+> El repo se contradice a sí mismo dentro del mismo módulo.
+>
+> **Residuo nuevo, salido de contar:** `apps/inventory/views.py:9` importa `TenantModelViewSet` y
+> **ninguna de sus dos clases lo hereda** — import muerto que refuerza la impresión falsa de que el
+> módulo está cubierto.
+>
+> `el_vuelto_backend/CLAUDE.md:61,69` **sí dice la verdad** (*"Inheriting it is not enough"*), lo que
+> deja al docstring como el único lugar que miente. Ver [[2026-08-30-planner-paso0-resync]].

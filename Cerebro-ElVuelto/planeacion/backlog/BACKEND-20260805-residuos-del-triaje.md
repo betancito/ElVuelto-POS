@@ -2,7 +2,7 @@
 tags: [tarea, backend, front, robustez]
 status: 🔴
 prioridad: media
-updated: 2026-08-20
+updated: 2026-08-30
 ---
 
 # BACKEND-20260805-residuos-del-triaje — Los 4 hallazgos menores confirmados
@@ -68,3 +68,24 @@ Nota: `ReportsPage.tsx:608-609` interpola `tenant_logo_url` y `tenant_nombre` **
 
 ## Criterio de aceptación
 Cada punto es independiente. Un param inválido da 400; un duplicado da 400 por campo; `esc()` escapa comillas; `applyServerErrors` no da por mostrado lo que no se ve.
+
+
+> [!danger] El relevamiento del punto 1 estaba incompleto — hay una TERCERA instancia, y es pública
+> Re-verificado en el PASO 0 del 2026-08-30. Las 15 anclas de esta ficha están **correctas al byte**
+> (`sales/views.py:43,52` · `inventory/views.py:50,56` · `products/models.py:19,26,74,87` ·
+> `products/serializers.py:14,71-78,110,129` · `date_params.py` 93 líneas sin `uuid` · etc.) y el
+> mecanismo se confirmó de forma independiente con el venv del repo:
+> `UUIDField().get_prep_value('basura')` levanta `django.core.exceptions.ValidationError` y
+> `rest_framework.views.exception_handler(DjangoValidationError(...), {})` devuelve `None` → **500 HTML**.
+>
+> Pero el relevamiento se hizo con `grep query_params.get`, y por eso quedó afuera
+> `apps/users/serializers.py:72` — `tenant_id = self.initial_data.get("tenant_id")` **crudo**, en el
+> login **público y sin autenticar**. El arreglo que propone esta ficha (`parse_uuid_param()` en
+> `date_params.py` "usado en los dos `get_queryset`") **no lo cubre**: son TRES lugares y el tercero no
+> es un `get_queryset`. Ficha propia: [[BACKEND-20260830-login-publico-500-tenant-id-no-uuid]].
+>
+> Vías descartadas por el escéptico (para que no se re-investiguen): no hay `lookup_value_regex`, todas
+> las rutas con id usan `<uuid:...>` (`tenants/urls.py:27,32,37`) y las detail routes caen en el
+> `get_object_or_404` de DRF → 404, no 500; `?activo=` está coercionado (`products/views.py:62-63`) y
+> `?metodo_pago=` es comparación de string. El punto 2 sigue vivo: `TenantModelViewSet`
+> (`apps/tenants/viewsets.py:15-33`) **no** envuelve `IntegrityError`.

@@ -92,7 +92,7 @@ All three login paths (both branches of `CustomTokenObtainPairSerializer.validat
 ```
 id, nombre, correo, cedula, rol, activo,
 tenant_id, tenant_nombre, tenant_slug, tenant_logo_url,
-tenant_email, tenant_support_phone, lead_cashier
+tenant_email, tenant_support_phone, tenant_factura_electronica, lead_cashier
 ```
 
 It is a single helper because the frontend maps this exact shape into `AuthUser` no matter which endpoint answered — the dict used to be written out three times, and adding a key to only some copies breaks whichever flow was missed (`tenant_slug` matters precisely on the cashier path: it is what "Cerrar Turno" redirects to). `tenant_*` keys are `None` for a superadmin (no tenant).
@@ -199,9 +199,21 @@ Default DRF permission: `IsAuthenticated` (set in base settings).
 ```
 id (UUID PK), nombre, slug (unique, editable=False — see below), nit (unique), ciudad, correo (unique),
 support_number (nullable — support phone shown to the tenant's staff),
-activo (bool), created_at, updated_at
+factura_electronica (bool, default False), activo (bool), created_at, updated_at
 db_table: "tenants"
 ```
+
+**`Tenant.factura_electronica` governs the receipt's electronic-invoice block.** When it is on,
+`generateReceipt.ts` prints "¿Requiere factura electrónica?" together with the tenant's `correo` and
+`support_number`; when off it prints none of the three. It is **opt-in** (`default=False`, owner's
+call 2026-08-30): declaring that a business issues electronic invoices is a DIAN obligation, not a
+display preference, so it is never inherited. Writable only through the superadmin's `Tenant` CRUD
+(`IsSuperAdmin`) — a tenant ADMIN cannot flip its own.
+
+It reaches the cashier through **one** place: `_user_payload()` in `apps/users/serializers.py`, as
+`tenant_factura_electronica`, shared by all three login flows. `/auth/me/` returns `UserSerializer`,
+which has no `tenant_*` fields, and `/auth/refresh/` returns no `user` — so a cashier already logged
+in keeps the value from their login until they sign in again. Flipping the toggle is **not** live.
 
 **`Tenant.slug` is persisted and generated exactly once.** `Tenant.save()` fills it only when empty, from `nombre`, via `apps/tenants/slugs.py` (NFD → strip diacritics → lowercase → non-alphanumerics to `-`): `"Café Bogotá"` → `cafe-bogota`. On collision (`nombre` is **not** unique) it appends `-2`, `-3`, … A **rename does not move the slug** — it is the public identity of the business (`/login/<slug>`), and links already handed to cashiers must keep working. It is read-only in `TenantSerializer` and `editable=False` on the model: nobody, client or admin, types it.
 

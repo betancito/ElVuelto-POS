@@ -43,7 +43,8 @@ Commits must follow Conventional Commits format — `npm run commit` is the safe
 ### Docker (`docker-compose.yml` + `docker/`)
 
 The whole stack also runs in containers, behind a single nginx reverse proxy.
-Full guide: `docs/docker.md`.
+Full guide: `docs/docker.md`. For a **public deploy on Azure** (VM + Flexible Server,
+domain, HTTPS): `docs/azure-deploy.md`.
 
 ```bash
 cp .env.example .env                      # then set CSRF_TRUSTED_ORIGINS
@@ -55,8 +56,13 @@ cp .env.example .env                      # then set CSRF_TRUSTED_ORIGINS
 `up prod` starts the production variant (built `dist/`, gunicorn, `DEBUG=False`).
 
 **nginx is the only service that publishes ports**; `backend` and `frontend`
-talk over the internal compose network by service name. The published numbers
-match the internal ones on purpose:
+talk over the internal compose network by service name. In a **public deploy** a
+**Caddy** service (`docker/caddy/`, compose profile `edge`) sits in front and terminates
+TLS, talking HTTP to nginx — that is the topology `settings/production.py:17-20`
+declares. It is behind a profile on purpose: the same `up prod` is used on the LAN over
+HTTP, and a stray Caddy there would burn Let's Encrypt's failed-validation rate limit.
+
+The published numbers match the internal ones on purpose:
 
 - **`:5173`** — the app on a **single origin**: `/` is the SPA, `/api/`,
   `/admin/`, `/docs/` are Django. This is the URL to open from a phone.

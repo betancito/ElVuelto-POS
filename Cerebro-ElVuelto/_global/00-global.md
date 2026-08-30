@@ -1,7 +1,7 @@
 ---
 tags: [indice, global]
 status: activo
-updated: 2026-08-27
+updated: 2026-08-30
 ---
 
 # 00-global — Índice de lo transversal
@@ -34,6 +34,8 @@ updated: 2026-08-27
 - [[ADR-AUTH-20260816-teclado-numerico-staff-login]] — keypad numérico propio en `/login/<slug>` (POS táctil). Abre con `pointerdown`+`click` (nunca `focus`), cierra con cualquier `keydown`, `inputMode` de dos vías porque los lectores HID emiten keydown, PIN de llenado izquierda→derecha, y la página reserva el alto **medido** del panel.
 - [[ADR-DESKTOP-20260824-wrapper-electron-y-generador-manual]] — el `.exe` del cajero es un **wrapper Electron** sobre la misma web, y existe por una sola razón: **impresión silenciosa** (el navegador no imprime sin diálogo). Se genera **a mano** con `build.py`; no hay módulo de descarga ni firma de código.
 - [[ADR-INFRA-20260826-docker-nginx-mismo-origen]] — el stack corre tras **un solo nginx** y la app se sirve en **mismo origen** (`apiBase.ts` llama a `/api` relativo). Sin eso, `localhost:8000` horneado en el bundle significa *el celular* cuando lo abre el celular. `Host $http_host`, nunca `$host`.
+- [[ADR-TENANCY-20260830-factura-electronica-por-tenant]] — el bloque «¿Requiere factura electrónica?» del recibo pasa a depender de un toggle por negocio, **opt-in** (`default=False`). Antes se imprimía en el 100% de los recibos por una condición implícita mal leída (`tenant.email || tenant.supportPhone`, y `correo` es obligatorio). Solo lo escribe el super admin. De paso, «El Vuelto POS» sale del recibo. **No se aplica en caliente:** el flag viaja solo en el login.
+- [[ADR-INFRA-20260830-deploy-azure-tls-en-el-borde]] — deploy en Azure: **TLS termina en Caddy**, que habla HTTP a nginx en la red privada (nginx *respeta* el `X-Forwarded-Proto` entrante, Caddy lo *descarta*: por eso el borde no puede ser nginx expuesto). La base la alcanza la VM con **una** regla de firewall; el owner entra con **túnel SSH**, no con reglas por IP. El modo de red del Flexible Server es **irreversible**.
 - [[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]] — la caja se diseña para un **adulto mayor sobre pantalla táctil en 1366×768**: el problema siempre fue el **alto**, no el ancho. Arrastra: media queries de `max-height`, modo reposo con guarda de 6 términos, recibo térmico sin grises y vaciado con confirmación.
 
 ## Riesgos (transversales)

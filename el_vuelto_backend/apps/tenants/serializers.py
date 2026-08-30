@@ -20,6 +20,7 @@ class TenantSerializer(serializers.ModelSerializer):
             "ciudad",
             "correo",
             "support_number",
+            "factura_electronica",
             "activo",
             "logo_url",
             "created_at",

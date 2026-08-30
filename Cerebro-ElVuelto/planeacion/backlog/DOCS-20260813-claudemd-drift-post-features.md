@@ -2,7 +2,7 @@
 tags: [tarea, docs, frontend, backend]
 status: 🔴
 prioridad: alta
-updated: 2026-08-20
+updated: 2026-08-30
 ---
 
 # DOCS-20260813-claudemd-drift-post-features — 14 afirmaciones falsas en los tres `CLAUDE.md`
@@ -120,3 +120,43 @@ escribir. Reporte con la salida real de los `grep`/lecturas que lo confirman.
   `qrcode 8.2`, que **no** están en `requirements.txt` ni se importan en ningún `.py`. La afirmación de
   `el_vuelto_backend/CLAUDE.md:605` ("there is no ESC/POS printing dependency") es cierta respecto al
   repo; lo que está sucio es el entorno local. Ver [[riesgo-deps-duplicadas-y-escpos]].
+
+
+> [!warning] Re-verificado punto por punto en el PASO 0 del 2026-08-30 — **11 siguen falsas, 3 se cayeron**
+> `abee9d8` engordó los tres `CLAUDE.md` (**raíz +48**, **backend +23**, **frontend +69**), así que
+> **toda ancla de línea a un `CLAUDE.md` guardada antes del 08-27 está corrida** — no solo las de esta
+> ficha: vale barrer el vault entero.
+>
+> **Las 3 que se cayeron** (las corrigió el run de la caja/recibo del 08-27, no un trabajo de doc):
+> el punto 1 en el raíz (`:91-97` ahora dice explícito *"Neither uses jsPDF"*) y los puntos 2 y 3 en el
+> frontend (`:372-374` y `:389-390`). Confirmado: `grep jspdf` en `src/` pega **solo** en
+> `downloadCredentials.ts:1,56,130,254`.
+>
+> **Las 11 restantes siguen mintiendo igual.** 7 cambiaron de línea, 4 no se movieron ni un renglón
+> (front `:15`, back `:308`, back `:333/:340`, `docs_auth.py:5-6`).
+>
+> **Anclas de código que hay que actualizar en esta ficha:** `settings/base.py` `DOCS_API_KEY`
+> `:203→:232` · `REDIS_URL` `:135→:143` · bloque drf-spectacular `:189-200→:217-229` ·
+> `el_vuelto_frontend/.env.example` `VITE_APP_NAME` `:2→:9` · `src/vite-env.d.ts` `:5→:8` ·
+> `generateReceipt.ts` `ReceiptTenantInfo` `:3-8→:3-7` · `printReceipt.ts` pasó de 16 a **31** líneas
+> (función `:11-31`) · `SuccessModal.tsx` call site `:157→:220`.
+
+> [!danger] Punto 15 — drift NUEVO, nacido de `abee9d8`: el `CLAUDE.md` raíz se contradice a sí mismo
+> `CLAUDE.md:112` dice *"Frontend reads `VITE_API_URL` (defaults to `http://localhost:8000/api`)"* y
+> `:133` pone ese absoluto como el `.env` de ejemplo. Pero **el mismo commit** cambió
+> `src/app/apiBase.ts:13` a `baseUrl: import.meta.env.VITE_API_URL ?? '/api'`, y
+> `el_vuelto_frontend/CLAUDE.md:34-44` llama a ese absoluto *"the exact thing that breaks LAN access"*.
+> El propio raíz `:65-67` ya dice que `apiBase.ts` llama al path **relativo** `/api`. O sea: **línea 66
+> contra líneas 112 y 133, en el mismo archivo.** Un agente que copie el bloque `:112`/`:133` rompe el
+> acceso desde la LAN — el defecto exacto que la dockerización vino a eliminar.
+
+> [!danger] Punto 16 — `CSRF_TRUSTED_ORIGINS` documentado en el `.env` equivocado, y el remedio es inerte
+> `el_vuelto_backend/CLAUDE.md:578` encabeza su bloque como **`el_vuelto_backend/.env`** y `:588` mete
+> ahí `CSRF_TRUSTED_ORIGINS`. No sirve: `docker-compose.yml:50` declara
+> `CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}` bajo `environment:`, que **pisa** al `env_file:`
+> (`:35-39`). Y peor — si el `.env` de la **raíz** no la define, la variable llega al contenedor como
+> **cadena vacía**, y `python-decouple` (`decouple.py:85-87`: *"We can't avoid `__contains__` because
+> value may be empty"*) la toma porque **está presente**, así que el default de `base.py:200-203`
+> **nunca dispara**: queda `"".split(",")` → `[""]` → filtrado por `base.py:204` → **`CSRF_TRUSTED_ORIGINS = []`**.
+> El hogar correcto de la variable es el `.env` de la **raíz** (`\.env.example:55`, que la marca
+> *"THE ONE PEOPLE FORGET"*).

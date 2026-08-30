@@ -1,8 +1,8 @@
 ---
 tags: [tarea, backend, seguridad, config]
-status: 🔴
+status: 🟡
 prioridad: media
-updated: 2026-08-15
+updated: 2026-08-30
 ---
 
 # BACKEND-20260811-falta-https-enforcement-produccion — sin `SECURE_SSL_REDIRECT`/cookies seguras en prod
@@ -11,6 +11,43 @@ updated: 2026-08-15
 [[ADR-G-20260811-docs-swagger-key-gate]] (lente config-drift, workflow) · verificado con `grep` real:
 `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_PROXY_SSL_HEADER` — cero
 resultados en todo `elvuelto/settings/`.
+
+> [!warning] RE-CLASIFICADO 🟡 el 2026-08-30 — el commit `abee9d8` lo implementó, pero viene APAGADO
+> Todo lo que pedía el criterio de aceptación **existe hoy** en
+> `elvuelto/settings/production.py:11-43` — y encima el commit contestó la pregunta de infra que lo
+> bloqueaba. Pero está entero adentro de un `if SECURE_SSL:` (`:23`) con
+> `SECURE_SSL = config("SECURE_SSL", default=False, cast=bool)` (`:21`), y `docker-compose.prod.yml:44`
+> lo fija en `${SECURE_SSL:-0}`. **Un deploy con `settings.production` sin setear `SECURE_SSL` queda
+> exactamente igual de expuesto que antes**: mismos W004, W008, W012, W016.
+>
+> Y aun con `SECURE_SSL=1`, **W004 sigue disparando**: `SECURE_HSTS_SECONDS` arranca en `0`
+> (`production.py:39`), que es falsy para el check de Django
+> (`django/core/checks/security/base.py:168-170`).
+>
+> El apagado por defecto **está bien argumentado** (`production.py:12-15`: el mismo settings module
+> corre el stack de prod en la LAN por HTTP con `manage-docker.sh up prod`, donde un
+> `SECURE_SSL_REDIRECT` dejaría la app inalcanzable). O sea: pasó de *"no existe"* a *"hay un botón
+> correcto y está en off"*. **No es lo mismo que estar protegido**, y por eso no se marca 🟢.
+
+> [!info] Anclas de hoy (las de esta ficha estaban desfasadas)
+> | afirmación vieja | realidad al 2026-08-30 |
+> |---|---|
+> | «cero flags de seguridad, `grep` → 0 resultados» | `production.py:29` proxy header, `:31` SSL_REDIRECT, `:32` SESSION_COOKIE_SECURE, `:33` CSRF_COOKIE_SECURE, `:39-43` HSTS |
+> | «`production.py` tiene 34 líneas» | **67 líneas** |
+> | «no hay NADA de infraestructura de deploy en el repo» | **falsa**: `docker-compose{,.dev,.prod}.yml`, `docker/backend/Dockerfile`, `docker/nginx/*`, `docs/docker.md` |
+> | «la pregunta de dónde termina TLS sigue abierta» | contestada en `production.py:17-20`: en el borde (**Caddy**), que habla HTTP a nginx en la red privada |
+> | «cookies Secure se pueden fijar ya, no dependen de la topología» | **sí dependen acá**: sobre HTTP en LAN el navegador no devuelve una cookie `Secure` y se caen el login del admin y el gate de `/docs/` |
+>
+> Plumbing verificado: `docker/nginx/proxy_common.conf:25`
+> `proxy_set_header X-Forwarded-Proto $forwarded_proto` + `docker/nginx/prod.conf:14-17`
+> (`map` que **respeta** el valor del borde en vez de pisarlo con `$scheme` — que es justo la trampa
+> del bucle de redirect).
+>
+> ⚠️ **Caddy no está en el repo**: `find . -iname "*caddy*"` → 0 hits fuera de `node_modules`/`.venv`.
+> Hoy **nginx ES el borde** (`proxy_common.conf:24`). O sea que la mitad
+> «`SECURE_PROXY_SSL_HEADER` coherente con el proxy real» **no es verificable desde este repo**.
+>
+> Nada de esto está registrado en el cerebro → [[INFRA-20260830-deploy-azure-sin-registro]].
 
 ## El problema
 `settings/production.py` (`DEBUG=False`) no fija ninguno de los settings de Django que fuerzan HTTPS o

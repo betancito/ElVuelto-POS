@@ -1,7 +1,7 @@
 ---
 tags: [indice, router]
 status: activo
-updated: 2026-08-27
+updated: 2026-08-30
 ---
 
 # 00-INDEX — Router del cerebro ElVuelto
@@ -36,6 +36,57 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
 - ✅ **Cuarta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-tenant-desde-panel]] — subir el logo de un tenant desde `TenantDetailPage.tsx`, pedida directo al Planner (con análisis/planeación primero, modo plan). Backend y hook del frontend ya existían — solo faltaba la pantalla. Decisión: [[ADR-TENANCY-20260812-logo-tenant-superadmin-ui]]. Verificado con servidor real: permiso 403/401, validación de archivo 400×3, upsert+versionado de Cloudinary; revisión adversarial (workflow) corrida. Ver [[RUN-20260812-logo-tenant-superadmin-ui]].
 - ✅ **Quinta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-en-modales-crear-editar]] — el logo también desde los modales de **crear** y **editar** negocio, con subida **diferida** (se aplica al guardar; Cancelar descarta) y la opción de **quitarlo**, que necesitó un endpoint nuevo (`DELETE /api/tenants/{id}/logo/` + helper `destroy_image`). Pedida directo al Planner, con modo plan aprobado. Decisión: [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]], que **supersede el punto 1** de la decisión anterior. 15/15 casos contra servidor real; la revisión adversarial (24 agentes) encontró **1 bug real propio** — `destroy_image` no atrapaba el `ValueError` que el SDK de Cloudinary levanta con credenciales vacías, así que el DELETE daba 500 y la fila del logo sobrevivía — arreglado y re-verificado. Ver [[RUN-20260812-logo-tenant-modales-crear-editar]].
 
+## PASO 0 del 2026-08-30 — el owner commiteó TODO, y el cerebro se quedó tres pasadas atrás (lee esto primero)
+- 🟢 **HEAD = `abee9d8`** ("deploy ready commit", 2026-08-27 23:29, **75 archivos, +10838/-165**),
+  `main == origin/main`, **árbol de app limpio**, cero archivos sin trackear. Docker (08-26), el `.exe`
+  (08-24) y la caja (08-27) **están versionados**. Entorno verde: `tsc --noEmit` exit 0 sin salida,
+  `makemigrations --check` → *No changes detected*. Ningún prompt 🟡 en curso.
+- 🔴 **Casi todo el índice de arriba estaba desactualizado, no desfasado: falso.** El bloque del 08-27
+  dice que "3 de los 7 arreglos no cierran" y que "nada está commiteado". Las **dos** cosas eran ciertas
+  a las 18:32 del 27 y dejaron de serlo esa misma noche: hubo una **tercera pasada** (20:14, cerró los
+  arreglos 1 y 2) y una **cuarta** (22:10, cerró el 3 contra la térmica real del dueño). Verificado
+  contra el código: `IdleScreensaver.tsx:58,221` · `pos.css:1984` · `main.js:143,175-182`.
+- 🔴 **Ninguna de esas dos pasadas tiene handoff** ([[GOBERNANZA]] §7). El último archivo de `_sesiones/`
+  es del 08-27 18:32; la tercera pasada quedó como anexo dentro del RUN y de la **cuarta**
+  `grep -rn "cuarta pasada"` devuelve **una sola línea en todo el vault**. Tampoco tiene sección en el RUN.
+- 🔴 **El arreglo del toque trajo una regresión peor que el bug que arregló.** La red de seguridad de 5 s
+  quedó **inalcanzable** justo en el escenario para el que existe: `dedoAbajo` solo baja con el
+  `pointerup` del mismo `pointerId` (`IdleScreensaver.tsx:182-183`), así que si ese evento no llega,
+  `vencer` se re-agenda infinito (`:207-213`) y el tragador de clicks (`:220`) **deja toda la caja sin
+  responder hasta recargar la página**. El banco de pruebas da 8/8 porque **sus 8 casos siempre sueltan
+  el dedo**; con 3 casos agregados sale 1/4. Ficha: [[POS-20260830-tragador-reposo-puede-trabar-la-caja]].
+- 🔴 **Hay un CUARTO trabajo dentro del commit que el cerebro no tiene en ningún lado: un deploy a
+  Azure con TLS.** `base.py:70-77` (`DB_SSLMODE`, *"Azure Database for PostgreSQL EXIGE TLS"*),
+  `production.py:11-43` (bloque HTTPS entero) y `.env.example:74-89`. `grep -rn "Azure|sslmode"` sobre
+  el vault → **0 hits**. Incluye una **decisión de topología sin ADR** (TLS termina en el borde, Caddy,
+  que habla HTTP a nginx). Ficha: [[INFRA-20260830-deploy-azure-sin-registro]].
+- ⚖️ **Ese bloque cierra a medias un ítem que el backlog daba por abierto.**
+  [[BACKEND-20260811-falta-https-enforcement-produccion]] pasa de 🔴 a **🟡**: todo lo que pedía existe,
+  pero adentro de un `if SECURE_SSL:` apagado por defecto (`production.py:21`) que
+  `docker-compose.prod.yml:44` fija en `0`. De *"no existe"* a *"hay un botón correcto y está en off"*.
+- 🔴 **Un 500 nuevo en el endpoint más expuesto**, salido de atacar el relevamiento de
+  [[BACKEND-20260805-residuos-del-triaje]] (que se hizo con `grep query_params.get` y por eso lo perdió):
+  `POST /api/auth/login/` es público y `AllowAny`, y `apps/users/serializers.py:72` lee `tenant_id`
+  **crudo** → un no-UUID revienta en **500 HTML**. El hermano `CashierLoginSerializer:162` lo declara
+  bien con `UUIDField`. Ficha: [[BACKEND-20260830-login-publico-500-tenant-id-no-uuid]].
+- ⚠️ **`vite.config.js` entró al commit y no es basura inerte: GANA sobre el `.ts`.**
+  `vite/dist/node/constants.js:33-40` pone el `.js` primero en `DEFAULT_CONFIG_FILES`. Desde hoy, editar
+  `vite.config.ts` es invisible para `npm run dev` hasta el próximo `npm run build`. Armado, no
+  disparado (los dos archivos coinciden). Ficha: [[FRONT-20260830-vite-config-js-pisa-al-ts]].
+- 📐 **Toda ancla a un `CLAUDE.md` anterior al 08-27 está corrida** (+48 raíz / +23 back / +69 front).
+  De las 14 mentiras de [[DOCS-20260813-claudemd-drift-post-features]], **11 siguen y 3 se cayeron**
+  (las de recibos/credenciales, corregidas de rebote por el run de la caja) — y se suman **2 puntos
+  nuevos**, los dos nacidos del propio commit.
+- 🟢 **Lo que sigue igual:** [[BACKEND-20260813-docstring-tenancy-miente-aislamiento]] intacto
+  (`abee9d8` **no tocó ni un archivo** bajo `el_vuelto_backend/apps/`), con un dato nuevo que la ficha no
+  tenía: de **11 vistas tenant-scoped, `CategoryViewSet` es la única** que recibe el filtro automático —
+  `ProductViewSet` pisa `get_queryset()`. "Impossible at the API layer" describe **1 de 11**.
+- 🧹 **El `.venv` ahora está desalineado en las dos direcciones:** le sobra `python-escpos 3.1` (con
+  Pillow colgando de él) y le **falta** `gunicorn`, que `requirements.txt:11` declara desde este commit.
+- ⚠️ **Entorno frío hoy:** Docker daemon caído y Postgres no responde en `5432`. Cualquier prueba contra
+  servidor real hay que levantarla primero.
+- Detalle: [[2026-08-30-planner-paso0-resync]].
+
 ## 2026-08-27 — la caja, rediseñada para el cajero real (lee esto primero)
 - 🟢 **Cinco tareas en una noche**, pedido directo del owner con una ronda de preguntas y ejecución
   autónoma: POS usable en **1366×768**, `.exe` en **pantalla completa**, **modo reposo** con
@@ -61,7 +112,8 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
   quedó fuera del pase de altura; y **mi propia afirmación en el `CLAUDE.md` era falsa** (lo probé:
   `tsc` sale 0).
 - ⛔ **CORREGIDO EL 2026-08-27 (sesión siguiente): la línea de arriba decía "Todo corregido" y era
-  falso.** La madrugada se quedó sin tokens antes de anexar el resultado al RUN, y ese "todo
+  falso.** ⚠️ **Y este bloque, a su vez, quedó falso esa misma noche — ver la sección del 2026-08-30:
+  los 3 SÍ se cerraron en la tercera y cuarta pasada.** La madrugada se quedó sin tokens antes de anexar el resultado al RUN, y ese "todo
   corregido" se escribió sin verificar. Al re-verificar contra el código real (7 verificadores + 1
   escéptico cada uno), **4 de los 7 arreglos aguantan y 3 no**: el toque que despierta **todavía agrega
   el producto** (los 400 ms se cuentan desde el `pointerdown`, no desde el `pointerup`, y por Pointer
@@ -81,7 +133,7 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
   de paso (el `generateReceipt.ts` que "usa jsPDF" y el `downloadCredentials.ts` que "exporta `.txt`").
 - ⚠️ **Nada se pudo ver en pantalla** — sin navegador en el entorno. Para el recibo quedó
   `temp/recibo-antes-y-despues.html` (se abre y va a la térmica con Ctrl+P); para el resto **falta el
-  ojo del owner**. Y **nada está commiteado**.
+  ojo del owner**. ~~Y **nada está commiteado**.~~ → **el owner commiteó todo el 08-27 23:29 (`abee9d8`)**.
 - Detalle: [[2026-08-27-planner-cierre-run-caja]] (cierre y re-verificación) · la madrugada quedó
   anexada en [[2026-08-26-planner-paso0-resync]].
 
@@ -111,13 +163,13 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
 - 🔴 **Desviación de protocolo anotada:** [[GOBERNANZA]] §10.2 pide revisión adversarial y **no se
   corrió**. El setup toca CSRF y validación de hosts, así que no es inocua.
 - ⚠️ **Falta el ojo del owner en el celular** (se probó con `curl` desde `192.168.1.75`: 200 en todo,
-  WebSocket del HMR 101) y **falta el commit** — nada de esto está versionado.
+  WebSocket del HMR 101). ~~Falta el commit~~ → **commiteado en `abee9d8`**.
 
 ## PASO 0 del 2026-08-26 — lee esto primero
 - 🟢 **Código quieto, entorno verde.** HEAD = **`eacaae0`** y **`main` == `origin/main`**.
   `makemigrations --check` → *No changes detected* (exit 0); `tsc --noEmit` → exit 0, cero salida.
   **Ningún prompt 🟡 en curso** en los 7 registros. La app web no se toca desde el **2026-08-16 17:50**.
-- 🔴 **El árbol de app YA NO está limpio: la beta del `.exe` lleva dos días sin commitear.** Cinco
+- ~~🔴 **El árbol de app YA NO está limpio: la beta del `.exe` lleva dos días sin commitear.**~~ **RESUELTO** — Cinco
   entradas sucias — `el_vuelto_desktop/` (15 archivos que sí entrarían al commit), `printReceipt.ts`,
   los dos `CLAUDE.md` y `.gitignore`. Commitear es del owner ([[GOBERNANZA]] §0).
 - 🔴 **Los 5 ítems de peso siguen abiertos**, verificados hoy contra código y **sin una sola ancla
@@ -130,8 +182,8 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
 - 🧩 **Observación sin ficha:** `.gitignore:16` ignora `package-lock.json` en todo el repo, así que el
   generador del `.exe` no es reproducible al 100% en un clon nuevo — `electron` está clavado en
   `44.0.0`, pero `@electron/packager` y `resedit` flotan con `^`. Decisión del owner si amerita excepción.
-- ❓ **Un cambio de repo sin dueño:** `.gitignore` tiene `+temp.md` sin commitear, que no figura en
-  ningún RUN ni nota (`grep` sobre el cerebro → 0 hits). Hipótesis: lo agregó el owner.
+- ~~❓ **Un cambio de repo sin dueño:** `.gitignore` tiene `+temp.md` sin commitear~~ — cerrado el
+  2026-08-30: entró en `abee9d8`, y eran **dos** líneas (`.gitignore:78 temp.md` y `:79 temp/`), no una.
 - 🎯 **Lo primero que corresponde no es código:** correr `ElVuelto-<slug>.exe` en Windows contra la
   térmica. La fase 2 no arranca antes. Siguen esperando el ojo del owner las tres features del
   08-15/08-16 (once días).

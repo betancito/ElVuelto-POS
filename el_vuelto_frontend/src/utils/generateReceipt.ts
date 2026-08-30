@@ -4,6 +4,17 @@ export interface ReceiptTenantInfo {
   nombre: string
   email?: string | null
   supportPhone?: string | null
+  /**
+   * Toggle por negocio, editable desde el super admin (`Tenant.factura_electronica`).
+   * Apagado ⇒ el recibo NO imprime la pregunta, ni el correo, ni el teléfono.
+   *
+   * Va REQUERIDO a propósito. Los dos call sites arman el objeto en una
+   * variable y se la pasan a `printReceipt`, y ahí TypeScript no chequea llaves
+   * sobrantes (ver el_vuelto_frontend/CLAUDE.md). Una llave FALTANTE sí rompe la
+   * asignabilidad, así que declararlo requerido es lo único que obliga a los dos
+   * call sites a pasarlo. Con `?` un typo se colaría en silencio y no hay tests.
+   */
+  facturaElectronica: boolean
 }
 
 /**
@@ -110,7 +121,12 @@ export function generateReceiptHTML(sale: Sale, tenant: ReceiptTenantInfo): stri
   // una mancha gris ilegible y se comía papel. El nombre en texto se lee siempre.
   const headerHTML = `<div class="center negocio">${esc(tenant.nombre.toUpperCase())}</div>`
 
-  const hasFactura = tenant.email || tenant.supportPhone
+  // Antes era implícita (`tenant.email || tenant.supportPhone`), y como
+  // `Tenant.correo` es obligatorio en el backend eso daba SIEMPRE verdadero: el
+  // bloque se imprimía en el 100% de los recibos. Ahora manda el toggle, y se
+  // conserva el `&&` para no imprimir una pregunta huérfana si el negocio
+  // quedara sin ningún contacto cargado.
+  const hasFactura = tenant.facturaElectronica && (tenant.email || tenant.supportPhone)
   const facturaHTML = hasFactura
     ? `<div class="rule"></div>
 <div class="factura">
@@ -189,9 +205,13 @@ export function generateReceiptHTML(sale: Sale, tenant: ReceiptTenantInfo): stri
 
   .total { margin-top: 2px; }
   .cambio { margin-top: 2px; }
-  .factura { font-size: ${px(BASE_PX * 0.93)}; line-height: 1.5; }
+  /* overflow-wrap por la misma razón que .row .l: un correo no tiene espacios,
+     así que es UN token inquebrable. Uno de 39 caracteres como
+     facturacion@minegocio.com.co se sale del papel de 70mm y el cabezal lo
+     imprime cortado. (Sin backticks acá: esto vive dentro de un template
+     literal y un backtick lo cierra.) */
+  .factura { font-size: ${px(BASE_PX * 0.93)}; line-height: 1.5; overflow-wrap: anywhere; }
   .gracias { margin-top: 5px; }
-  .marca { font-size: ${px(BASE_PX * 0.8)}; margin-top: 2px; }
 
   @media print {
     body { margin: 0; padding: 0; }
@@ -220,7 +240,6 @@ ${facturaHTML}
 <div class="rule"></div>
 
 <div class="center gracias">* Gracias por su compra! *</div>
-<div class="center marca">El Vuelto POS</div>
 
 <div style="page-break-after:always"></div>
 </body>

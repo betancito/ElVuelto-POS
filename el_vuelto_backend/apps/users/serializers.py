@@ -49,6 +49,13 @@ def _user_payload(user):
         "tenant_logo_url": _tenant_logo_url(user),
         "tenant_email": user.tenant.correo if user.tenant_id else None,
         "tenant_support_phone": user.tenant.support_number if user.tenant_id else None,
+        # Gobierna el bloque de factura electrónica del recibo. Viaja SOLO acá:
+        # `/auth/me/` (UserSerializer) no devuelve campos `tenant_*` y
+        # `/auth/refresh/` no devuelve `user`, así que un cajero ya logueado
+        # conserva el valor de su login hasta que vuelva a entrar.
+        "tenant_factura_electronica": (
+            user.tenant.factura_electronica if user.tenant_id else None
+        ),
         "lead_cashier": user.lead_cashier,
     }
 

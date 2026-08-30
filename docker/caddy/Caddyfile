@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Caddy — el borde TLS de ElVuelto.
+#
+# Por qué existe: settings/production.py:17-20 declara la topología —TLS termina
+# en el borde, que le habla a nginx por HTTP dentro de la red privada— pero la
+# pieza no estaba en el repo. Esta es.
+#
+# Lo que hace y NO hay que escribir a mano:
+#   · saca y renueva el certificado de Let's Encrypt solo,
+#   · redirige 80 → 443,
+#   · pone X-Forwarded-{For,Proto,Host} y DESCARTA los que mande el cliente
+#     (por eso el borde tiene que ser Caddy y no nginx expuesto: nginx los
+#     respeta, ver el `map` de docker/nginx/prod.conf:14-17),
+#   · preserva el Host original, que es lo que necesita el chequeo de Origin
+#     de Django y lo que documenta docker/nginx/proxy_common.conf:3-11.
+# ─────────────────────────────────────────────────────────────────────────────
+
+{
+	email {$ACME_EMAIL}
+
+	# ENSAYO: descomentá esta línea para la primera prueba. Usa el ACME de
+	# staging de Let's Encrypt — el certificado sale NO confiable (el navegador
+	# se queja, es lo esperado) pero hace todo el baile completo sin gastar el
+	# límite de 5 validaciones fallidas por hora del ACME de producción.
+	# Cuando el log diga "certificate obtained", comentala y rebuildeá.
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$DOMAIN} {
+	# HTTP hacia adentro, a propósito: la red de compose es privada y nginx
+	# escucha en 5173. NO poner `encode gzip` — nginx ya comprime
+	# (docker/nginx/prod.conf:34-38) y sería trabajo doble.
+	# NO poner `header_up X-Forwarded-Proto {scheme}` — Caddy ya lo pone;
+	# forzarlo a mano solo abre la puerta a equivocarse.
+	reverse_proxy nginx:5173
+}

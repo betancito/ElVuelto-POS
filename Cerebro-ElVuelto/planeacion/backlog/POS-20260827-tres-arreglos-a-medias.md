@@ -2,16 +2,23 @@
 tags: [tarea, pos, sales, desktop, ux, impresion, regresion]
 status: 🟢
 prioridad: alta
-updated: 2026-08-27
+updated: 2026-08-30
 ---
 
-> [!done] 1 y 2 CERRADOS el 2026-08-27 (tercera pasada). Queda abierto el 3 (el rollo).
-> El owner pidió terminar las tareas 1 y 3 de la noche de la caja. Las dos quedaron hechas,
-> con revisión adversarial propia (6 lentes + escépticos) que **encontró un bug nuevo en el
-> propio arreglo** — ver abajo.
+> [!done] Los TRES cerrados el 2026-08-27 — confirmado contra el código el 2026-08-30
+> Tercera pasada (tarde): 1 y 2. Cuarta pasada (noche): el 3, cuando el dueño probó contra su térmica
+> real y el recibo salió recortado. El PASO 0 del 2026-08-30 lo verificó contra `abee9d8` con árbol
+> limpio: los tres arreglos **están en el código**. Anclas de hoy abajo.
 >
-> **Y el 3 se cerró esa misma noche**, cuando el dueño probó contra su térmica real y el recibo
-> salió recortado: el arreglo del alto era parte de la solución. Los tres puntos quedaron cerrados.
+> *(Este callout reemplaza al que decía "queda abierto el 3": convivía nueve líneas arriba del que
+> decía que los tres estaban cerrados. Corregido en el PASO 0 del 2026-08-30.)*
+
+> [!danger] Pero el arreglo #1 trajo una REGRESIÓN, y es peor que el bug que arregló
+> La re-verificación adversarial del 2026-08-30 encontró que la red de seguridad de 5 s quedó
+> **inalcanzable** en el único escenario para el que existe: si el `pointerup` nunca llega,
+> `dedoAbajo` no baja nunca (`IdleScreensaver.tsx:182-183`), `vencer` se re-agenda infinito
+> (`:207-213`) y el tragador de clicks (`:220`) **deja toda la caja sin responder** hasta recargar.
+> Ficha propia: [[POS-20260830-tragador-reposo-puede-trabar-la-caja]].
 
 # POS-20260827-tres-arreglos-a-medias — Lo que la revisión adversarial dio por cerrado y no lo estaba
 > [!done] Los TRES quedaron cerrados el 2026-08-27.
@@ -107,12 +114,31 @@ mide bien — justo el caso raro.
 **Arreglo propuesto:** usar solo `document.body.scrollHeight` (o `getBoundingClientRect().height` del
 body), o darle un alto chico a la ventana oculta.
 
-## Anclas
-- `el_vuelto_frontend/src/components/ui/IdleScreensaver.tsx:126,140`
-- `el_vuelto_frontend/src/features/sales/components/SuccessModal.tsx:179` · `pos.css:1956-1975`
-- `el_vuelto_frontend/src/features/sales/components/ReceiptPreview.tsx:71`
-- `el_vuelto_desktop/app/main.js:132,137,169-172,189`
+## Anclas — re-ancladas contra `abee9d8` el 2026-08-30
+Las de este bloque estaban corridas: se escribieron antes de la tercera y la cuarta pasada.
+
+| qué | ancla vieja | **ancla de hoy** |
+|---|---|---|
+| tragador del reposo | `IdleScreensaver.tsx:126,140` | `IdleScreensaver.tsx:58` (`GRACIA_TRAS_SOLTAR_MS`), `:182-183`, `:207-213`, `:220-221` |
+| sticky del SuccessModal | `SuccessModal.tsx:179` · `pos.css:1956-1975` | `SuccessModal.tsx:185` (`__footer`) · `pos.css:1984-1995` |
+| medición del rollo | `main.js:132,137,169-172,189` | `main.js:132` (`MIN`), `:143` (`getBoundingClientRect`), `:175-182` (ventana 420×400), `:206` |
+| recibo sin tope de ítems | `ReceiptPreview.tsx:71` | sin cambio |
+
+> [!info] `MIN = 40000` dejó de ser código muerto
+> La ficha decía (abajo) que nunca se alcanzaba porque el piso del viewport lo tapaba. Quitado ese
+> piso, el `Math.max(MIN, micrones)` de `main.js:148` sí puede morder — por debajo de ~136 px de
+> recibo (~36 mm). En la práctica sigue sin alcanzarse, pero la afirmación de "código muerto"
+> dependía del bug ya arreglado.
+
+> [!question] Un detalle del recibo que conviene mirar, no verificado contra hardware
+> `generateReceipt.ts:196-200` — la regla `@media print { body { margin: 0; padding: 0 } }` viene
+> **después** de `body { margin: 0 auto; padding: 2mm 1mm 6mm }` (`:151,155`) con la misma
+> especificidad, así que gana al imprimir. Dos efectos: se **mide** con ~8 mm de padding que al
+> imprimir no existe (dirección segura: avanza rollo de más, no recorta), y el body de 70 mm
+> **pierde el centrado** en la página de 80 mm, contra el contrato del `CLAUDE.md` raíz. El dueño
+> reportó el recibo saliendo bien el 2026-08-27, así que la zona muerta puede tolerarlo.
 
 ## Enlaces
 [[RUN-20260827-caja-adulto-mayor-y-recibo]] · [[POS-20260827-caja-1366x768-y-reposo]] ·
-[[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]] · [[POS-20260827-escaner-activo-con-modales]]
+[[ADR-POS-20260827-caja-para-adulto-mayor-en-1366x768]] · [[POS-20260827-escaner-activo-con-modales]] ·
+[[POS-20260830-tragador-reposo-puede-trabar-la-caja]] · [[2026-08-30-planner-paso0-resync]]

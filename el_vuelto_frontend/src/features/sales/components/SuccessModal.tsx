@@ -28,6 +28,15 @@ export default function SuccessModal({ sale, tenantNombre, onNewSale, onClose }:
     nombre: tenantNombre,
     email: user?.tenantEmail,
     supportPhone: user?.tenantSupportPhone,
+    // `?? false` cubre dos casos, y los dos son reales: `user === null`, y una
+    // sesión de sessionStorage rehidratada de ANTES de este cambio. En ese
+    // segundo caso el TIPO MIENTE: `AuthUser.tenantFacturaElectronica` es
+    // `boolean` requerido porque el backend siempre lo manda, pero un blob
+    // viejo de redux-persist no lo trae y en runtime llega `undefined`
+    // (`store.ts` no tiene `version` ni `migrate`). Coincide con el default del
+    // modelo (opt-in), así que una sesión vieja se comporta como un negocio
+    // recién creado — falla hacia el lado seguro, no imprime de más.
+    facturaElectronica: user?.tenantFacturaElectronica ?? false,
   }
 
   function handleWhatsApp() {

@@ -2,7 +2,7 @@
 tags: [riesgo, global, backend, deps]
 status: resuelto
 severidad: baja
-updated: 2026-08-15
+updated: 2026-08-30
 ---
 
 # Riesgo — Dependencias: `cloudinary` duplicado y `python-escpos` muerto
@@ -33,3 +33,22 @@ Deduplicar `cloudinary`, eliminar `python-escpos`, corregir los CLAUDE.md. Ver [
 >
 > Ojo con la ancla vieja de arriba: `requirements.txt:7` **hoy dice `psycopg2-binary==2.9.10`**, no
 > escpos. La referencia quedó corrida cuando el archivo cambió.
+
+
+> [!warning] Re-verificado el 2026-08-30 — y ahora el `.venv` está desalineado en las DOS direcciones
+> **Le sobra** (sigue igual): `pip list` en `el_vuelto_backend/.venv` devuelve `python-escpos 3.1` con
+> su cola completa — `appdirs 1.4.4`, `argcomplete 3.7.0`, `importlib_resources 7.1.0`,
+> `python-barcode 0.16.1`, `PyYAML 6.0.3`, `qrcode 8.2`, `six 1.17.0`. `requirements.txt` tiene 11
+> líneas y ninguna es escpos; `grep -rn escpos --include=*.py apps elvuelto` → **0 hits**.
+>
+> **Le falta** (nuevo desde `abee9d8`): `pip show gunicorn` → *"Package(s) not found"*, aunque
+> `requirements.txt:11` lo declara desde este commit. No rompe nada hoy
+> (`docker/backend/Dockerfile:42` lo instala en su propio `/opt/venv` y el dev local corre
+> `runserver`), pero el `.venv` ya **no es reproducible desde `requirements.txt` en ninguna dirección**.
+>
+> **Dato nuevo sobre Pillow:** `pip show pillow` → `Required-by: python-escpos`. O sea que en el venv
+> Pillow **no es top-level**: es cola del escpos muerto. Sigue declarado en `requirements.txt:6` y sigue
+> sin usarse — los únicos hits de `ImageField` son migraciones históricas
+> (`products/migrations/0001_initial.py:44`, `tenants/migrations/0001_initial.py:23`); los modelos vivos
+> usan `URLField` (`products/models.py:18-19`, `tenants/models.py:69-70`).
+> Ver [[2026-08-30-planner-paso0-resync]].

@@ -15,6 +15,9 @@ export interface Tenant {
   correo: string
   support_number?: string | null
   logo_url?: string | null
+  /** Toggle del recibo: gobierna el bloque "¿Requiere factura electrónica?".
+   *  Requerido — el backend lo devuelve siempre (`default=False` en el modelo). */
+  factura_electronica: boolean
   activo: boolean
   created_at: string
 }
@@ -25,6 +28,7 @@ export interface CreateTenantArgs {
   ciudad: string
   correo: string
   support_number?: string
+  factura_electronica?: boolean
   admin_nombre: string
   admin_correo: string
 }
@@ -40,6 +44,7 @@ export interface UpdateTenantArgs {
   ciudad?: string
   correo?: string
   support_number?: string
+  factura_electronica?: boolean
   activo?: boolean
 }
 

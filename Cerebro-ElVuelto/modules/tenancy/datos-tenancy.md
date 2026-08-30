@@ -2,12 +2,12 @@
 tags: [modulo, datos]
 status: vivo
 module: tenancy
-updated: 2026-08-02
+updated: 2026-08-30
 ---
 
 # Tenancy — Datos (modelos y BD)
 
-Fuente: `apps/tenants/models.py` + migraciones `0001`–`0003`.
+Fuente: `apps/tenants/models.py` + migraciones `0001`–`0005`. *(Re-anclado el 2026-08-30: decía `0001`–`0003` y ya van cinco.)*
 
 ## Modelo `Tenant` (`models.py:6-23`, `db_table="tenants"`)
 
@@ -19,6 +19,7 @@ Fuente: `apps/tenants/models.py` + migraciones `0001`–`0003`.
 | `ciudad` | CharField(100) | no/no | — | — | |
 | `correo` | EmailField(254) | no/no | — | **`unique=True`** | del negocio (≠ correo del admin) |
 | `support_number` | CharField(20) | **sí/sí** | — | — | agregado en `0003` |
+| `factura_electronica` | BooleanField | no | **`False`** | — | agregado en `0005`. Gobierna el bloque «¿Requiere factura electrónica?» del recibo (pregunta + `correo` + `support_number`). **Opt-in a propósito**, ver [[ADR-TENANCY-20260830-factura-electronica-por-tenant]]. Escribible solo por el super admin |
 | `activo` | BooleanField | no | `True` | — | escribible por PATCH; el middleware solo resuelve tenants `activo=True` |
 | `created_at` | DateTimeField | — | `auto_now_add` | — | |
 | `updated_at` | DateTimeField | — | `auto_now` | — | |
@@ -49,6 +50,8 @@ Fuente: `apps/tenants/models.py` + migraciones `0001`–`0003`.
 ## Migraciones clave (explican el estado actual)
 - `0001_initial`: crea `Tenant` **con** `logo = ImageField(upload_to="tenants/logos/")` (almacenamiento local, hoy eliminado).
 - `0002_add_tenant_documents`: crea `TenantDocument` + `unique_together`. Marca el giro de logo local → Cloudinary.
+- `0004_tenant_slug`: agrega `slug` (persistido, `editable=False`) con backfill ordenado por `created_at`. Ver [[ADR-TENANCY-20260809-slug-persistido]].
+- `0005_tenant_factura_electronica`: agrega `factura_electronica` (`BooleanField(default=False)`). `AddField` con default, sin `RunPython`: Postgres 11+ no reescribe la tabla. **El default apaga el bloque del recibo en todos los negocios existentes** — decisión del owner, ver el ADR.
 - `0003_remove_tenant_logo_tenant_support_number`: **quita `Tenant.logo`** (ya migrado a `TenantDocument`) y **agrega `support_number`**. El CLAUDE.md del backend lista el modelo Tenant SIN `support_number` — drift documental menor.
 
 ## Dónde vive cada validación

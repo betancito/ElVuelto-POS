@@ -16,6 +16,11 @@ export interface AuthUser {
   tenantLogoUrl: string | null
   tenantEmail: string | null
   tenantSupportPhone: string | null
+  // Gobierna el bloque de factura electrónica del recibo. Llega SOLO en el
+  // payload del login: `/auth/me/` no devuelve campos `tenant_*` y el refresh
+  // no devuelve `user`. O sea que apagar el toggle desde el super admin no
+  // afecta a un cajero ya logueado hasta que vuelva a entrar.
+  tenantFacturaElectronica: boolean
   leadCashier: boolean
 }
 

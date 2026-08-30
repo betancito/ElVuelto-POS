@@ -25,6 +25,7 @@ export default function TenantsTable({ tenants, onEdit, onOpen }: Props) {
             <th>NIT</th>
             <th>Ciudad</th>
             <th>Correo</th>
+            <th>Factura</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -58,6 +59,13 @@ export default function TenantsTable({ tenants, onEdit, onOpen }: Props) {
               <td>{t.nit}</td>
               <td>{t.ciudad}</td>
               <td>{t.correo}</td>
+              <td>
+                {/* Sin esta columna, saber qué negocios facturan
+                    electrónicamente obliga a abrir el modal de cada uno. */}
+                <Badge variant={t.factura_electronica ? 'success' : 'neutral'}>
+                  {t.factura_electronica ? 'Sí' : 'No'}
+                </Badge>
+              </td>
               <td>
                 <Badge variant={t.activo ? 'success' : 'neutral'}>
                   {t.activo ? 'Activo' : 'Inactivo'}

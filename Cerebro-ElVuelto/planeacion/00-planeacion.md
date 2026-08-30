@@ -1,7 +1,7 @@
 ---
 tags: [indice, planeacion]
 status: activo
-updated: 2026-08-27
+updated: 2026-08-30
 ---
 
 # 00-planeacion — Índice de planeación
@@ -243,7 +243,9 @@ re-verificaron a propósito. **No se abrió ningún ítem nuevo.** Entorno verde
 exit 0, `tsc --noEmit` exit 0), sin prompts 🟡 en curso. Detalle:
 [[2026-08-26-planner-paso0-resync]].
 
-> [!warning] La beta del `.exe` lleva dos días sin commitear
+> [!warning] ~~La beta del `.exe` lleva dos días sin commitear~~ — **RESUELTO el 2026-08-27 23:29**
+> Se deja tachado como historia. HEAD = **`abee9d8`** ("deploy ready commit", 75 archivos,
+> +10838/-165), `main == origin/main`, **working tree limpio**. Todo lo de abajo entró al commit.
 > El árbol de app **ya no está limpio**: `el_vuelto_desktop/` (15 archivos que sí entran al commit),
 > `printReceipt.ts`, los dos `CLAUDE.md` y `.gitignore`. HEAD sigue en `eacaae0`, pusheado. Commitear es
 > acción del owner ([[GOBERNANZA]] §0). El arreglo del `.gitignore` del 08-24 se auditó con
@@ -254,8 +256,9 @@ exit 0, `tsc --noEmit` exit 0), sin prompts 🟡 en curso. Detalle:
 > (a) `.gitignore:16` ignora `package-lock.json` en todo el repo, así que el generador del `.exe` no es
 > reproducible al 100% en un clon nuevo (`electron` clavado en `44.0.0`, pero `@electron/packager` y
 > `resedit` con `^`). Convención preexistente → **decisión del owner** si la beta merece excepción.
-> (b) ❓ `.gitignore` tiene `+temp.md` sin commitear, sin rastro en ningún RUN ni nota. Hipótesis: lo
-> agregó el owner. Impacto bajo, se anota para no dejar el cambio sin trazabilidad.
+> (b) ~~❓ `.gitignore` tiene `+temp.md` sin commitear~~ — **cerrado el 2026-08-30**: entró en `abee9d8`,
+> y no era una línea sino **dos** (`.gitignore:78 temp.md` y `:79 temp/`). El directorio `temp/` como
+> regla de ignore no figura en ninguna nota.
 
 > [!todo] Las cuatro cosas que esperan al owner siguen esperando
 > (a) Correr `ElVuelto-<slug>.exe` en **Windows con la térmica** — es lo único que decide si la fase 1 de
@@ -293,7 +296,7 @@ exit 0, `tsc --noEmit` exit 0), sin prompts 🟡 en curso. Detalle:
 |---|---|---|
 | [[POS-20260827-caja-1366x768-y-reposo]] | feature | 🟢 (corrida; pedido directo con ronda de preguntas y ejecución autónoma nocturna. Cinco tareas: POS usable en 1366×768, `.exe` en pantalla completa, modo reposo con salvapantallas, recibo térmico legible y vaciado de carrito con confirmación. ⚠️ **nada se pudo ver en pantalla**: falta el ojo del owner) |
 | [[POS-20260827-escaner-activo-con-modales]] | media | 🔴 (preexistente, descubierto al construir el modal de vaciado; no se tocó) |
-| [[POS-20260827-tres-arreglos-a-medias]] | **alta** | 🔴 (nace de la re-verificación del 2026-08-27: de los 7 arreglos que la revisión adversarial dio por cerrados, **3 no cierran el caso que decían cerrar**. El peor: el toque que despierta **todavía mete un producto al carrito** con un toque sostenido >400 ms — el gesto exacto del adulto mayor para el que se rediseñó la caja) |
+| [[POS-20260827-tres-arreglos-a-medias]] | **alta** | 🟢 **cerrada** (los 3 se cerraron esa misma noche, tercera y cuarta pasada; verificado contra `abee9d8` en el PASO 0 del 2026-08-30). El texto de abajo era el estado de la mañana del 27: 🔴 (nace de la re-verificación del 2026-08-27: de los 7 arreglos que la revisión adversarial dio por cerrados, **3 no cierran el caso que decían cerrar**. El peor: el toque que despierta **todavía mete un producto al carrito** con un toque sostenido >400 ms — el gesto exacto del adulto mayor para el que se rediseñó la caja) |
 
 > [!decision] Cinco pedidos, un solo criterio
 > Al responder la ronda de preguntas el owner agregó la restricción que ordena todo lo demás: *"esto
@@ -317,3 +320,110 @@ exit 0, `tsc --noEmit` exit 0), sin prompts 🟡 en curso. Detalle:
 > [!todo] Sigue sin verificarse en pantalla
 > Sin navegador en el entorno. Para el recibo quedó `temp/recibo-antes-y-despues.html`, que se abre y
 > se manda a la térmica con Ctrl+P. Para el resto, falta el ojo del owner.
+
+
+### PASO 0 (2026-08-30) — el owner commiteó todo, y el cerebro se quedó tres pasadas atrás
+HEAD = **`abee9d8`** (2026-08-27 23:29), `main == origin/main`, **árbol limpio**, `tsc --noEmit` exit 0,
+`makemigrations --check` → *No changes detected*. Todo lo de Docker (08-26), el `.exe` (08-24) y la caja
+(08-27) está versionado. Verificación con 8 verificadores + 4 escépticos contra código real.
+Detalle: [[2026-08-30-planner-paso0-resync]].
+
+| ítem | prioridad | estado |
+|---|---|---|
+| [[POS-20260830-tragador-reposo-puede-trabar-la-caja]] | **alta** | 🔴 (**regresión** del arreglo del 08-27: si el `pointerup` nunca llega, el tragador de clicks no se apaga nunca y **el POS deja de responder** hasta recargar. Falla peor que el bug que arregló) |
+| [[BACKEND-20260830-login-publico-500-tenant-id-no-uuid]] | **alta** | 🔴 (tercera instancia de [[BACKEND-20260805-residuos-del-triaje]], la peor: `POST /api/auth/login/` es público y `AllowAny`) |
+| [[INFRA-20260830-deploy-azure-sin-registro]] | **alta** | 🔴 (hay un **cuarto trabajo** dentro de `abee9d8` — deploy a Azure con TLS — con **0 hits** en todo el vault. Incluye una decisión de topología sin ADR) |
+| [[FRONT-20260830-vite-config-js-pisa-al-ts]] | media | 🔴 (el `.js` commiteado **gana** sobre el `.ts`: vite lo carga primero. Armado, no disparado) |
+
+> [!warning] Reclasificado: [[BACKEND-20260811-falta-https-enforcement-produccion]] pasa de 🔴 a 🟡
+> El commit implementó **todo** lo que pedía el criterio (`production.py:11-43`) y contestó la pregunta
+> de infra que lo bloqueaba. Pero vive dentro de un `if SECURE_SSL:` (`:23`) apagado por defecto (`:21`)
+> que `docker-compose.prod.yml:44` fija en `0`. Pasó de *"no existe"* a *"hay un botón correcto y está
+> en off"*. El apagado está bien argumentado (el mismo module corre prod en LAN por HTTP).
+
+> [!info] Los otros ítems de peso, re-verificados hoy contra código
+> [[BACKEND-20260813-docstring-tenancy-miente-aislamiento]] **sigue abierto** y con anclas intactas
+> (`abee9d8` no tocó **ni un archivo** bajo `el_vuelto_backend/apps/`) — el dato nuevo es que
+> **`CategoryViewSet` es la única de 11 vistas** que recibe el filtro automático.
+> [[BACKEND-20260811-manage-py-settings-fallback-inseguro]] y
+> [[BACKEND-20260815-docs-login-key-en-traceback-debug]] siguen abiertos, anclas exactas
+> (`manage.py:8`, `docs_views.py:113-117`).
+> [[DOCS-20260813-claudemd-drift-post-features]]: de las 14, **11 siguen falsas y 3 se cayeron**
+> (las de recibos/credenciales, corregidas por el run de la caja). Se le suman **dos puntos nuevos**
+> (15: el raíz se contradice sobre `VITE_API_URL`; 16: `CSRF_TRUSTED_ORIGINS` documentado en el `.env`
+> equivocado, con el remedio inerte). Y **toda ancla a un `CLAUDE.md`** anterior al 08-27 está corrida:
+> el commit sumó +48 / +23 / +69 líneas.
+
+> [!todo] Sigue esperando al owner — y ahora hay una razón nueva para no apurar el `.exe`
+> (a) Correr `ElVuelto-<slug>.exe` en **Windows con la térmica**. (b) La confirmación visual de las tres
+> features del 08-15/08-16, que ya arrastra **catorce días**. (c) El POS abierto a 1366×768.
+> ⚠️ Antes de dejar el `.exe` en una caja real conviene resolver
+> [[POS-20260830-tragador-reposo-puede-trabar-la-caja]]: en pantalla completa, un POS que deja de
+> responder no tiene salida obvia para el cajero.
+
+
+### 2026-08-30 (tarde) — la guía de despliegue en Azure, escrita
+El owner pidió "ejecutar la guía de despliegue en Azure" y **no existía ninguna** — solo `docs/docker.md`
+(stack local/LAN) y pistas sueltas en `.env.example:74-89`. O sea que el pedido confirmó, desde el otro
+lado, el hallazgo del PASO 0 de la mañana. Su pregunta concreta era de red: cómo hacer que la base acepte
+a la VM, y cómo entrar con DBeaver desde un MacBook **sin IP estática**.
+
+Decisión: [[ADR-INFRA-20260830-deploy-azure-tls-en-el-borde]].
+
+| entregado | qué es |
+|---|---|
+| `docs/azure-deploy.md` | el runbook: 13 pasos, tabla de 10 trampas, y una sección explícita de lo que **no** se pudo verificar |
+| `docker/caddy/Caddyfile` + `Dockerfile` | el borde TLS que el comentario de `production.py:17-20` declaraba y no existía |
+| servicio `caddy` en `docker-compose.prod.yml` | detrás de `profiles: ["edge"]` — `up prod` normal lo ignora |
+| `.env.example` | `DOMAIN`, `ACME_EMAIL`, la nota de `BIND_HOST` y la trampa de `ALLOWED_HOSTS:-*` |
+| `CLAUDE.md` raíz | puntero a la guía y a la topología del borde |
+
+> [!decision] La respuesta a la pregunta del owner son DOS respuestas, no una
+> **VM → base:** una regla de firewall con la IP de salida de la VM. **Owner → base:** túnel SSH por la
+> VM, con la pestaña SSH de DBeaver. El Mac **nunca toca el firewall**: el problema de la IP dinámica no
+> se administra, desaparece. Costo USD 0, contra USD 138,70/mes de la VPN usable desde macOS (el SKU
+> Basic no sirve: sin IKEv2, SSTP es solo Windows) y ~USD 211/mes de Bastion Standard —que además **no
+> puede tunelizar al 5432 de un servicio PaaS**.
+
+> [!warning] Lo irreversible que hay que mirar antes de seguir
+> **El modo de red de un Flexible Server no se puede cambiar después de creado.** Un servidor en public
+> access hoy sí admite Private Endpoint; uno con VNet integration nunca tendrá endpoint público. Igual la
+> **geo-redundancia de backups**: solo se configura al crear. El paso 0 de la guía es averiguarlo.
+
+> [!todo] Nada se ejecutó contra Azure
+> `az` no está instalado en este entorno y no hay credenciales; la imagen de Caddy tampoco se pudo
+> construir (daemon de Docker apagado — el YAML sí se validó). El RUN de la corrida real se escribe
+> cuando el deploy corra. [[INFRA-20260830-deploy-azure-sin-registro]] queda en 🟡.
+
+
+### Décima segunda feature, cerrada 2026-08-30 — la factura electrónica, condicionada por negocio
+Pedido directo del owner, con mapeo previo (5 lectores, 22 puntos de toque) y ronda de decisiones.
+Decisión: [[ADR-TENANCY-20260830-factura-electronica-por-tenant]].
+
+| ítem | prioridad | estado |
+|---|---|---|
+| [[TENANCY-20260830-factura-electronica-por-tenant]] | feature | 🟢 (corrida y verificada: 7 casos contra servidor real en los 3 flujos de login, recibo renderizado en las dos ramas, `tsc` y `makemigrations --check` en 0. ⚠️ nada visto en pantalla) |
+| [[FRONT-20260830-flag-factura-no-llega-en-caliente]] | media | 🔴 (nace de esta feature: el flag viaja solo en el payload del login, así que prender el toggle no llega a una caja ya abierta. Mitigado con texto en el modal, no con código) |
+
+> [!decision] El owner eligió opt-in sabiendo el costo
+> `default=False`. **Consecuencia aceptada: BambiPan dejó de imprimir el bloque** hasta que se lo
+> prenda. El argumento: declarar que se emite factura electrónica es una afirmación legal ante la
+> DIAN; heredarla por default la afirma en nombre de negocios que nunca lo dijeron.
+
+> [!warning] Lo que el pedido no decía, y que el mapeo encontró
+> La condición vieja (`tenant.email || tenant.supportPhone`) era **siempre verdadera**, porque
+> `Tenant.correo` es obligatorio. O sea que el bloque no se mostraba «para los que tienen datos»:
+> se mostraba en el **100%** de los recibos, prometiéndole factura electrónica a los clientes de
+> negocios que no facturan.
+
+> [!danger] La revisión adversarial falló por un bug MÍO, y hay que anotarlo
+> 6 lentes → 25 hallazgos, pero **los 25 escépticos murieron** por una referencia fuera de alcance en
+> mi script del workflow. El workflow reportó `sobreviven: []`, que era **falso**. Se verificaron a
+> mano en vez de darlos por buenos — exactamente lo que este cerebro aprendió el 08-27. De ahí
+> salieron **8 arreglos reales** (el mejor: `.factura` sin `overflow-wrap`, un correo de 39
+> caracteres **se sale del papel de 70mm**) y **1 refutado** (la «cola de papel» que supuestamente
+> encogió: el `padding-bottom` mide desde la última línea, y sigue en 6mm).
+
+> [!todo] Pendiente que no es código
+> **Prender el toggle de BambiPan.** Y probar el recibo **imprimiendo**: la previa en pantalla
+> (`ReceiptPreview.tsx`) nunca mostró el bloque, así que mirar el `SuccessModal` no prueba nada.

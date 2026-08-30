@@ -17,6 +17,16 @@ class Tenant(models.Model):
     ciudad = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
     support_number = models.CharField(max_length=20, blank=True, null=True)
+    # Gobierna el bloque "¿Requiere factura electrónica?" del recibo térmico
+    # (`el_vuelto_frontend/src/utils/generateReceipt.ts`). Cuando está apagado el
+    # recibo NO imprime ni la pregunta ni el `correo` ni el `support_number`.
+    # `default=False` por decisión del owner (2026-08-30): declarar que se
+    # factura electrónicamente es OPT-IN, no un estado heredado — es una
+    # obligación ante la DIAN, no una preferencia estética. Consecuencia
+    # aceptada: los negocios que ya existían dejan de imprimir el bloque hasta
+    # que el super admin los prenda uno por uno. Ver
+    # ADR-TENANCY-20260830-factura-electronica-por-tenant.
+    factura_electronica = models.BooleanField(default=False)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

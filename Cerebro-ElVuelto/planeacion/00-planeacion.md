@@ -1,7 +1,7 @@
 ---
 tags: [indice, planeacion]
 status: activo
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # 00-planeacion — Índice de planeación
@@ -427,3 +427,121 @@ Decisión: [[ADR-TENANCY-20260830-factura-electronica-por-tenant]].
 > [!todo] Pendiente que no es código
 > **Prender el toggle de BambiPan.** Y probar el recibo **imprimiendo**: la previa en pantalla
 > (`ReceiptPreview.tsx`) nunca mostró el bloque, así que mirar el `SuccessModal` no prueba nada.
+
+
+### PASO 0 (2026-09-13) — hay producción viva, y el cerebro la daba por no desplegada
+HEAD = **`89d3f41`** (2026-08-30 13:48), `main == origin/main`, **14 días sin commits**, `tsc --noEmit`
+exit 0, `makemigrations --check` exit 0, ningún prompt 🟡 en curso. Árbol de app con **2 entradas
+sucias**, y las dos importan. Verificación con 9 verificadores + escépticos contra código real y contra
+la producción viva (el verificador del POS no volvió: esa área se verificó a mano).
+Detalle: [[2026-09-13-planner-paso0-resync]].
+
+| ítem | prioridad | estado |
+|---|---|---|
+| [[INFRA-20260913-clave-ssh-de-la-vm-sin-ignorar]] | 🔒 **crítica** | 🔴 (`elvuelto-vm_key.pem` untracked y **sin ignorar** en un repo **público**; `git add -An` la lista. Historial limpio — todavía) |
+| [[INFRA-20260913-el-deploy-a-azure-ya-corrio]] | **alta** | 🟡 (contesta la P-2: `https://elvuelto.online` vive desde el 08-30 y sirve HEAD. Falta el RUN, falta HSTS, falta commitear el compose) |
+| [[INFRA-20260913-dominio-apunta-tambien-al-parking]] | **alta** | 🔴 (dos registros A en round-robin: el 50% por `http://` cae en el parking del registrador, que redirige a un `www` **sin certificado**. Renovación ACME en riesgo ~2026-10-29) |
+| [[AUTH-20260913-admin-django-sin-rate-limit]] | **alta** | 🔴 (`/admin/login/` público sin límite de intentos: el throttling es de DRF y el admin no pasa por DRF) |
+| [[GLOBAL-20260913-el-cerebro-se-publica-solo]] | media | 🔴 (el vault es 305 de 605 archivos de un repo público, con 105 notas de riesgo/backlog. Falta una decisión registrada) |
+| [[GLOBAL-20260913-la-mitad-estructural-del-cerebro-esta-congelada]] | **alta** | 🔴 (`modules/`, `_conexiones/`, 6 de 8 patrones, 19 riesgos y 38 preguntas siguen en 2026-08-02 y publican 🔴 que el código ya cerró. Desfase **medido**: `features/sales` +114% LOC desde su nota) |
+
+> [!danger] Una afirmación del tablero era FALSA y hay que dejarlo escrito
+> [[BACKEND-20260830-login-publico-500-tenant-id-no-uuid]] sostenía que un `tenant_id` no-UUID produce
+> un **500**. Devuelve **400 JSON**: `Serializer.run_validation`
+> (`rest_framework/serializers.py:635-640`) atrapa la `ValidationError` de Django antes de que llegue al
+> `exception_handler` en el que se apoyaba todo el razonamiento. **El 500 real existe y es otro**:
+> `cedula` no-string → `.strip()` → `AttributeError` (`serializers.py:78`), reproducido full-stack.
+> La ficha quedó reescrita; sigue 🔴 y sigue alta, pero por el defecto correcto.
+
+> [!warning] Reclasificado: [[BACKEND-20260811-falta-https-enforcement-produccion]] — 3 de 4 cerrados en el deploy real
+> Medido desde afuera, sin entrar a la VM: la cookie `csrftoken` vuelve con **`Secure`** ⇒ `SECURE_SSL=1`
+> en producción ⇒ **W008, W012 y W016 cerrados**. Queda **W004**: no hay `strict-transport-security`
+> porque `SECURE_HSTS_SECONDS` arranca en `0` (`production.py:39`) y se sube a mano. El motivo para no
+> subirlo —*"después de confirmar que el dominio sirve bien por https"* (`production.py:35-38`)— **se
+> cumplió hace catorce días**. ⚠️ Pero antes hay que resolver el registro A del parking: con HSTS largo
+> cacheado, el 50% que cae en un host que no escucha en 443 pierde hasta la opción de cargar por http.
+
+> [!info] Re-verificación de los ítems que venían abiertos
+> [[BACKEND-20260813-docstring-tenancy-miente-aislamiento]] **sigue abierto**, anclas exactas
+> (`viewsets.py:20-21`), y el barrido completo confirma **0 vistas sin filtrar**: el número 11 del 08-30
+> es correcto, más 3 vistas SUPERADMIN scoped **por URL** (14 en total).
+> [[DOCS-20260813-claudemd-drift-post-features]] re-anclada entera contra `89d3f41`: **12 vivas, 4
+> cerradas** (el punto 7 lo cerró el commit de rebote).
+> [[BACKEND-20260805-residuos-del-triaje]]: los 4 puntos siguen abiertos, 2 anclas corridas — y el
+> callout del 08-30 que decía *"las 15 anclas correctas al byte"* **era falso** para
+> `generateReceipt.ts`, que ya estaba corrida en `abee9d8`.
+> [[BACKEND-20260811-manage-py-settings-fallback-inseguro]] y
+> [[BACKEND-20260815-docs-login-key-en-traceback-debug]]: anclas exactas (`manage.py:8`,
+> `docs_views.py:113-117`), pero su **encuadre de riesgo venció** — ya hay Docker y deploy, y el
+> contenedor fija `settings.production` (`Dockerfile:64`, `docker-compose.prod.yml:21`).
+> [[FRONT-20260830-vite-config-js-pisa-al-ts]]: los dos archivos **siguen coincidiendo** (diffeados de
+> verdad) — armado, no disparado.
+> [[FRONT-20260812-role-button-en-tr-rompe-tabla]]: `89d3f41` la **empeoró** (la celda «Factura» nueva
+> entró dentro del mismo `<tr role="button">`).
+> [[FRONT-20260805-falta-capa-compartida-de-errores]]: se quedó corta — hoy son **4** banners, no 2.
+
+> [!todo] Deuda de gobernanza, y ya arrastra
+> Sin nota de sesión ni un solo `RUN-20260830-*` para la guía de Azure, la feature de factura
+> electrónica **ni el deploy real** ([[GOBERNANZA]] §7 y §9). La fila de factura en
+> `00-registro-tenancy` apunta al ADR en la columna Reporte, así que sus 7 casos HTTP son
+> **inauditables**. Y `sales`, `inventory` y `reports` siguen en `updated: 2026-08-02` — **42 días**.
+
+> [!todo] Lo que sigue esperando al owner
+> (a) La clave privada fuera del repo — un minuto, y es lo único irreversible del tablero.
+> (b) El registro A del parking. (c) `ElVuelto-<slug>.exe` en Windows con la térmica. (d) La
+> confirmación visual de las tres features del 08-15/08-16: **veintiocho días**. (e) **Prender el toggle
+> de factura de BambiPan** (verificado hoy: `factura_electronica=False` en la BD local; el valor en la
+> BD de producción no se pudo leer).
+
+
+> [!danger] La mitad estructural del cerebro está congelada, y ahora está medida
+> El crítico de completitud del PASO 0 encontró lo más grande del día: los 9 verificadores (y los PASO 0
+> del 08-13 en adelante) trabajan siempre sobre `planeacion/backlog/` y tres patrones. **Nadie abre
+> `modules/`, `_conexiones/`, los otros 6 patrones, los 19 riesgos de módulo ni las 38 preguntas desde
+> el 2026-08-02.** Contradicciones verificadas contra código: `estado-sales:30` publica 🔴 un guard que
+> existe hace 41 días y que **su propio registro de módulo** da por cerrado; `sales--inventory:13`
+> contradice de frente el [[ADR-SALES-20260816-stock-negativo-permitido]]; `patron-jwt-refresh:30`
+> advierte un riesgo cross-tenant que el código cerró. Ficha con el plan:
+> [[GLOBAL-20260913-la-mitad-estructural-del-cerebro-esta-congelada]].
+>
+> **Corregidas en el acto** (verificadas contra código): [[TENANCY-20260802-toggle-active-fantasma]] y
+> [[TENANCY-20260802-slug-divergente]] pasan a 🟢 — llevaban 42 días en 🔴 con anclas muertas mientras
+> el índice ya las daba por cerradas. Y se arregló una **línea en blanco dentro de la tabla** de
+> `00-registro-tenancy` (`:22`) que partía el markdown y dejaba la fila de la feature 12a sin renderizar.
+
+> [!info] Escépticos: la feature de factura aguanta, pero un "verificado" era flojo
+> El escéptico de factura electrónica reverificó las 16 afirmaciones abriendo cada archivo y **no pudo
+> tumbar ninguna**. Sí corrigió un método: el fix de `overflow-wrap` se había dado por cerrado con
+> *"está en el bundle desplegado"*, y **presencia no es verificación** — el propio ADR es más honesto
+> (*"nada se vio en pantalla"*). Un recibo se cierra **contra la térmica**, que es justo la lección que
+> este repo pagó el 2026-08-27.
+> ⚠️ Dos escépticos más (infra/HTTPS y seguridad del repo) **se colgaron y no volvieron**: esas dos
+> áreas quedan con verificación de una sola pasada.
+
+### 2026-09-13 (tarde) — incidente de producción: el catálogo servía 50 de 83
+Un cliente real reportó que productos recién creados no aparecían. **No se perdió nada**: el listado del
+admin estaba cortado por la paginación global de DRF. Pedido directo del owner, arreglado en caliente.
+Corrida: [[RUN-20260913-catalogo-sin-paginar]].
+
+| ítem | prioridad | estado |
+|---|---|---|
+| [[PRODUCTS-20260913-listado-truncado-en-50]] | 🔒 alta | 🟢 (corregido: `pagination_class = None` en `ProductViewSet`/`CategoryViewSet`. Verificado contra el stack real + prueba de volumen 125/125 en transacción revertida. ⚠️ falta que el owner confirme 83 en pantalla tras redesplegar) |
+| [[SALES-20260913-historial-truncado-sin-aviso]] | alta | 🔴 (nace de este incidente: el mismo corte de 50 vive en historial de ventas y movimientos, **y ahí no se arregla igual** — esas tablas crecen sin techo) |
+
+> [!decision] Por qué el catálogo sí se sirve entero y las ventas no
+> El catálogo tiene cientos de filas y un techo natural, y la acción `pos` **ya lo servía completo** para
+> la pantalla del cajero: servirlo entero ya era la forma establecida de la lectura más caliente de la
+> app. Las ventas crecen para siempre; ahí la solución es un control de paginación real en la UI o una
+> ventana de fechas obligatoria. Cambiar un bug por un problema de memoria creciente no es un arreglo.
+
+> [!warning] Lo que hizo que pareciera pérdida de datos
+> El corte era **alfabético** (`order_by("nombre")`), así que cada producto nuevo de nombre temprano
+> empujaba a otro fuera de los 50 visibles: el conjunto de "desaparecidos" cambiaba solo con cada alta.
+> Y el buscador filtra en el cliente, así que buscar uno invisible devolvía *"No hay resultados"* — que
+> se lee exactamente igual que *"nunca se creó"*.
+
+> [!success] Y de paso se cerró la mitad estructural del hallazgo de la llave
+> El `.gitignore` de la raíz ganó su sección de material criptográfico (`*.pem`, `*.key`, `*.p12`,
+> `*.pfx`, `id_rsa*`, `id_ed25519*`). `git check-ignore` sale 0 y `git add -An` ya no lista el `.pem`.
+> [[INFRA-20260913-clave-ssh-de-la-vm-sin-ignorar]] baja de 🔒 crítica a 🔒 alta y pasa a 🟡: falta
+> sacar la clave del árbol del repo y advertirlo en `docs/azure-deploy.md`.

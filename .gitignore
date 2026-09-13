@@ -77,3 +77,13 @@ coverage.xml
 *.tmp
 temp.md
 temp/
+
+# ── Claves y material criptográfico ────────────────────────────────────────
+# NUNCA en el árbol del repo (este repo es público). Las llaves SSH viven en
+# ~/.ssh/ con chmod 600 — ver docs/azure-deploy.md.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*

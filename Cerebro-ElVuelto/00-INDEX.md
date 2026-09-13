@@ -1,7 +1,7 @@
 ---
 tags: [indice, router]
 status: activo
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # 00-INDEX — Router del cerebro ElVuelto
@@ -36,7 +36,78 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
 - ✅ **Cuarta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-tenant-desde-panel]] — subir el logo de un tenant desde `TenantDetailPage.tsx`, pedida directo al Planner (con análisis/planeación primero, modo plan). Backend y hook del frontend ya existían — solo faltaba la pantalla. Decisión: [[ADR-TENANCY-20260812-logo-tenant-superadmin-ui]]. Verificado con servidor real: permiso 403/401, validación de archivo 400×3, upsert+versionado de Cloudinary; revisión adversarial (workflow) corrida. Ver [[RUN-20260812-logo-tenant-superadmin-ui]].
 - ✅ **Quinta feature, cerrada 2026-08-12:** [[SUPERADMIN-20260812-logo-en-modales-crear-editar]] — el logo también desde los modales de **crear** y **editar** negocio, con subida **diferida** (se aplica al guardar; Cancelar descarta) y la opción de **quitarlo**, que necesitó un endpoint nuevo (`DELETE /api/tenants/{id}/logo/` + helper `destroy_image`). Pedida directo al Planner, con modo plan aprobado. Decisión: [[ADR-TENANCY-20260812-logo-tenant-modales-crear-editar]], que **supersede el punto 1** de la decisión anterior. 15/15 casos contra servidor real; la revisión adversarial (24 agentes) encontró **1 bug real propio** — `destroy_image` no atrapaba el `ValueError` que el SDK de Cloudinary levanta con credenciales vacías, así que el DELETE daba 500 y la fila del logo sobrevivía — arreglado y re-verificado. Ver [[RUN-20260812-logo-tenant-modales-crear-editar]].
 
-## PASO 0 del 2026-08-30 — el owner commiteó TODO, y el cerebro se quedó tres pasadas atrás (lee esto primero)
+## PASO 0 del 2026-09-13 — HAY PRODUCCIÓN VIVA, y hay una llave privada suelta (lee esto primero)
+- 🟢 **HEAD = `89d3f41`** (2026-08-30 13:48), `main == origin/main`, **14 días sin un solo commit**.
+  Entorno verde: `tsc --noEmit` exit 0 sin salida, `makemigrations --check` → *No changes detected*.
+  Ningún prompt 🟡 en curso. Postgres y Docker **arriba** hoy (a diferencia del 08-30).
+- 🔒 **LO PRIMERO: `elvuelto-vm_key.pem` está en la raíz, untracked y SIN IGNORAR, y el repo es
+  PÚBLICO.** No es inferencia: `git add -An` imprime `add 'elvuelto-vm_key.pem'`. Ninguno de los 4
+  `.gitignore` tiene una regla de material criptográfico. El historial **está limpio** (5 búsquedas
+  independientes), así que hoy se arregla en un minuto. Agravante: el mismo `git add -A` sube las
+  fichas de este PASO 0, con la **IP pública de la VM** (hoy ausente de HEAD) y el mapa de la
+  vulnerabilidad. [[INFRA-20260913-clave-ssh-de-la-vm-sin-ignorar]].
+- 🟢 **EL DEPLOY A AZURE YA CORRIÓ — contesta la P-2 del 08-30, cuya hipótesis era la contraria.**
+  `https://elvuelto.online` responde **200** (`via: 1.1 Caddy`, `server: nginx/1.31.4`), cert Let's
+  Encrypt del 08-30 al 11-28, y el `last-modified` del `index.html` es **28 minutos posterior a
+  `89d3f41`**: lo desplegado es HEAD. El `.exe` del cajero ya apunta ahí (`config.json` → `bambipan`).
+  [[INFRA-20260913-el-deploy-a-azure-ya-corrio]].
+- ⚖️ **Y el estado de HTTPS se midió sin entrar a la VM.** La cookie `csrftoken` vuelve con `Secure`
+  ⇒ `SECURE_SSL=1`; que `/admin/login/` dé **200** y no 301 prueba que el `X-Forwarded-Proto` llega
+  hasta gunicorn; `DEBUG=False` confirmado con un 404 pelado. De los 4 warnings de
+  [[BACKEND-20260811-falta-https-enforcement-produccion]], **3 cerrados en el deploy real, queda W004**
+  (HSTS en 0, se sube a mano) — y la condición para subirlo *"cuando el dominio sirva bien por https"*
+  **ya se cumplió hace catorce días**.
+- 🔴 **El dominio resuelve a DOS servidores.** Round-robin entre la VM y `parkingsrv0.dondominio.com`,
+  que **no escucha en 443** y por 80 redirige a `www` — y **`www` está 100% roto** (falla el handshake
+  TLS: Caddy no tiene sitio para él). El cliente que teclea `elvuelto.online` tiene ~50% de no llegar
+  nunca. Con fecha: la renovación ACME arranca ~**2026-10-29**.
+  [[INFRA-20260913-dominio-apunta-tambien-al-parking]].
+- 🔴 **`/admin/login/` está en internet sin límite de intentos.** El throttling es de DRF y el admin de
+  Django no pasa por DRF (`elvuelto/urls.py:9`, `base.py:113-115`, `prod.conf:52-55` sin `limit_req`).
+  Atenúa que `is_staff` quedó restringido a SUPERADMIN: es **una** cuenta.
+  [[AUTH-20260913-admin-django-sin-rate-limit]].
+- ⛔ **Una afirmación de este índice era FALSA y hay que tacharla: el 500 del login público.**
+  Un `tenant_id` no-UUID devuelve **400 JSON**, no 500: `Serializer.run_validation`
+  (`rest_framework/serializers.py:635-640`) atrapa la `ValidationError` de Django y la re-lanza como
+  error de DRF, así que **nunca llega al `exception_handler`** en el que se apoyaba todo el
+  razonamiento. El 500 real existe y es **`cedula` no-string** → `.strip()` → `AttributeError`
+  (`serializers.py:78`), reproducido full-stack. Ficha reescrita:
+  [[BACKEND-20260830-login-publico-500-tenant-id-no-uuid]].
+- 📐 **`89d3f41` volvió a correr TODAS las anclas de los `CLAUDE.md`** (raíz +6, back +12, front +15).
+  [[DOCS-20260813-claudemd-drift-post-features]] queda re-anclada punto por punto: **12 vivas, 4
+  cerradas** — el commit cerró el punto 7 de rebote. Y hay que borrar de la sección del 08-30 la
+  afirmación de que back `:308` "no se movió ni un renglón": se movió a `:320`.
+- 🧹 **Dos mentiras del propio cerebro, corregidas:** (a) [[patron-tenancy]] decía *"Único pendiente:
+  `UserCreateSerializer`"* y ese guard **está cerrado** (`users/serializers.py:289,317`) — más 5 anclas
+  corridas y la regla del superadmin vencida (hay 3 vistas tenant-scoped **por URL**, y el repo niega
+  que sean impersonación); (b) **`Pillow` NO es dependencia muerta**: la usa
+  `el_vuelto_desktop/tools/make-ico.py:11` con el venv del backend. Borrarla rompe ese script.
+- 🔴 **El cerebro se publica solo:** 305 de 605 archivos del repo público (**50,4 %**), 105 notas de
+  riesgo/backlog. Y [[auditoria-adversarial-20260805]] estaba `status: abierto` con sus dos hallazgos
+  peores cerrados, y con un ancla **invertida** (`tenants/serializers.py:87` hoy dice `# NO is_staff`).
+  [[GLOBAL-20260913-el-cerebro-se-publica-solo]].
+- 🟢 **Tenancy sigue sano:** barrido completo → **0 vistas sin filtrar**. El número 11 del 08-30 es
+  exacto, y se le suman 3 vistas SUPERADMIN scoped por URL (14 en total).
+- 🔴 **La regresión del reposo sigue abierta, con las anclas exactas** — y el banco de pruebas sigue
+  dando **8/8 con el código roto** (corrido hoy), tal como su propio encabezado advertía.
+- 🔴 **Y lo más grande del día: la MITAD ESTRUCTURAL del cerebro está congelada, ahora medida.** Los
+  PASO 0 vienen trabajando siempre sobre `planeacion/backlog/`; **nadie abre `modules/`,
+  `_conexiones/`, 6 de los 8 patrones, los 19 riesgos de módulo ni las 38 preguntas desde el
+  2026-08-02**. Y no están vacíos: publican **🔴 que el código ya cerró** (`estado-sales:30` reclama un
+  guard que existe hace 41 días y que su propio registro da por cerrado; `sales--inventory:13`
+  contradice el [[ADR-SALES-20260816-stock-negativo-permitido]]; `patron-jwt-refresh:30` advierte un
+  riesgo cross-tenant cerrado). `features/sales` creció **+114 % de LOC** desde su nota.
+  [[GLOBAL-20260913-la-mitad-estructural-del-cerebro-esta-congelada]].
+- ⚠️ **Deuda de gobernanza:** faltan **tres** notas de sesión (08-11, 08-16 y 08-30 tarde), y el trabajo
+  de Azure/TLS/deploy no tiene RUN **ni fila** en ningún `00-registro-*`. `modules/inventory/` es el
+  único módulo sin carpeta `prompts/`.
+- ✅ **Corregido en el acto:** [[TENANCY-20260802-toggle-active-fantasma]] y
+  [[TENANCY-20260802-slug-divergente]] pasan a 🟢 (42 días en 🔴 con anclas muertas), y se arregló una
+  línea en blanco dentro de la tabla de `00-registro-tenancy` que dejaba la fila de la feature 12a sin
+  renderizar.
+- Detalle: [[2026-09-13-planner-paso0-resync]].
+
+## PASO 0 del 2026-08-30 — el owner commiteó TODO, y el cerebro se quedó tres pasadas atrás
 - 🟢 **HEAD = `abee9d8`** ("deploy ready commit", 2026-08-27 23:29, **75 archivos, +10838/-165**),
   `main == origin/main`, **árbol de app limpio**, cero archivos sin trackear. Docker (08-26), el `.exe`
   (08-24) y la caja (08-27) **están versionados**. Entorno verde: `tsc --noEmit` exit 0 sin salida,
@@ -81,11 +152,16 @@ Punto de entrada para agentes. Delgado a propósito. **Empieza aquí.**
   (`abee9d8` **no tocó ni un archivo** bajo `el_vuelto_backend/apps/`), con un dato nuevo que la ficha no
   tenía: de **11 vistas tenant-scoped, `CategoryViewSet` es la única** que recibe el filtro automático —
   `ProductViewSet` pisa `get_queryset()`. "Impossible at the API layer" describe **1 de 11**.
-- 🧹 **El `.venv` ahora está desalineado en las dos direcciones:** le sobra `python-escpos 3.1` (con
-  Pillow colgando de él) y le **falta** `gunicorn`, que `requirements.txt:11` declara desde este commit.
+- 🧹 **El `.venv` ahora está desalineado en las dos direcciones:** le sobra `python-escpos 3.1` (~~con
+  Pillow colgando de él~~ ⛔ **falso, corregido el 2026-09-13: Pillow es top-level y tiene un consumidor
+  real**) y le **falta** `gunicorn`, que `requirements.txt:11` declara desde este commit.
 - ⚠️ **Entorno frío hoy:** Docker daemon caído y Postgres no responde en `5432`. Cualquier prueba contra
-  servidor real hay que levantarla primero.
+  servidor real hay que levantarla primero. *(Al 2026-09-13 los dos están arriba.)*
 - Detalle: [[2026-08-30-planner-paso0-resync]].
+- ⛔ **Dos afirmaciones de esta sección quedaron falsas — ver la del 2026-09-13:** (a) el 500 del login
+  por `tenant_id` no-UUID **no existe** (devuelve 400; el 500 real es por `cedula` no-string); (b) back
+  `:308` sí se movió, a `:320`. Y la P-2 que dejó abierta (*"¿el deploy ya corrió?"*) está
+  **contestada: sí**.
 
 ## 2026-08-27 — la caja, rediseñada para el cajero real (lee esto primero)
 - 🟢 **Cinco tareas en una noche**, pedido directo del owner con una ronda de preguntas y ejecución

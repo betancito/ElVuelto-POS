@@ -583,6 +583,24 @@ DEFAULT_PAGINATION_CLASS: PageNumberPagination
 PAGE_SIZE: 50
 ```
 
+> **Gotcha — the catalog opts OUT of pagination, and the frontend assumes it.** `ProductViewSet` and
+> `CategoryViewSet` set `pagination_class = None`. Every RTK Query list endpoint reads the response
+> with `Array.isArray(r) ? r : r.results` and **never follows `next`**, and no screen has a page
+> control, so any paginated list is silently truncated at 50 in the UI. That shipped to production and
+> cost a real customer 33 of their 83 products: the admin catalog showed the first 50 **by `nombre`**,
+> the search box filtered client-side over just those, and every new product whose name sorted early
+> pushed a different one out of view — it read as random data loss. Serving the catalog whole is what
+> the `pos` action already did for the cashier screen, so it is the established shape of the hottest
+> read in the app.
+>
+> **`SaleViewSet` and `InventoryMovementViewSet` deliberately KEEP their pagination** — those tables
+> grow without bound, so the fix there is a real page control in the UI (or an enforced date window),
+> not removing the limit. Until that exists, both lists are still capped at 50 in the UI. Same for
+> `UserViewSet` and `TenantViewSet`, where 50 is far from binding today.
+>
+> `page_size_query_param` is **not** configured, so `?page_size=` is ignored — the only way to reach a
+> paginated list's tail over HTTP is `?page=2`, `?page=3`, …
+
 ---
 
 ## Environment Variables

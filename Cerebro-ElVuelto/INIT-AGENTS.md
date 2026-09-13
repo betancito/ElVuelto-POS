@@ -1,7 +1,7 @@
 ---
 tags: [meta, agentes, init]
 status: activo
-updated: 2026-08-02
+updated: 2026-09-13
 ---
 
 # INIT-AGENTS — Prompts de arranque
@@ -110,8 +110,11 @@ STACK INMUTABLE (versiones reales):
   drf-spectacular 0.30.0 + drf-spectacular-sidecar 2026.8.1. PostgreSQL.
   (Corregido 2026-08-15: `python-escpos` **ya NO figura** en `requirements.txt` — se borró en el commit
   `a15f6cc` — pero **sigue instalado en el `.venv` local**, con `python-barcode`/`qrcode` detrás.
-  `Pillow==11.1.0` sí está declarado en `requirements.txt:6` pero es **dependencia muerta**: cero
-  imports, cero `ImageField`, y `cloudinary` no lo pide. Ver [[riesgo-deps-duplicadas-y-escpos]].)
+  Al `.venv` además le **falta** `gunicorn`, declarado en `requirements.txt:11`.
+  ⚠️ **Corregido 2026-09-13:** acá decía que `Pillow==11.1.0` es *"dependencia muerta"*. **Es falso.**
+  Cero imports en el **backend**, sí — pero `el_vuelto_desktop/tools/make-ico.py:11` hace
+  `from PIL import Image` y su docstring declara que corre con este mismo venv. Borrar Pillow rompe
+  ese script. Ver [[riesgo-deps-duplicadas-y-escpos]].)
 - Frontend: React 18.3.1, @reduxjs/toolkit 2.3.0 (RTK Query), react-redux 9.1.2, redux-persist 6.0.0
   (sessionStorage), react-router-dom 6.28.0, react-hook-form 7.54.0, @hookform/resolvers 3.9.1,
   zod 3.23.8, MUI 9.0.0, tailwindcss 4.2.2, vite 5.4.10, typescript 5.6.3. Alias @/ → src/.

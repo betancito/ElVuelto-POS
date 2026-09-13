@@ -1,11 +1,29 @@
 ---
 tags: [riesgo, global, auditoria, seguridad]
-status: abierto
+status: parcialmente-cerrado
 severidad: alta
-updated: 2026-08-05
+updated: 2026-09-13
 ---
 
 # Auditoría adversarial 2026-08-05 — qué sobrevive de lo entregado
+
+> [!danger] Re-verificada el 2026-09-13 — estaba `status: abierto` y sus dos hallazgos peores YA ESTÁN CERRADOS
+> Esta nota se anunciaba a sí misma como **abierta** y **severidad alta**, con pasos de reproducción
+> textuales, dentro de un repo **público** (ver [[GLOBAL-20260913-el-cerebro-se-publica-solo]]). Un
+> informe de vulnerabilidades **vencido** exagera la superficie real de un sistema que hoy está en
+> producción. Pasa a `parcialmente-cerrado`; cada hallazgo necesita su estado propio.
+>
+> **Y una de sus anclas no está corrida: está INVERTIDA**, que es el peor caso para quien vaya a
+> verificar. El agravante de abajo dice que `apps/tenants/serializers.py:87` pone `is_staff=True` a todo
+> admin de tenant. **Esa misma línea 87, hoy, dice lo contrario**:
+> ```
+> 87  # NO `is_staff`: a tenant admin administers their business, not the
+> 88  # platform. `is_staff` is exactly what Django checks to let someone into
+> 89  # /admin/, and that site bypasses every DRF rule (see CLAUDE.md).
+> 90  # Platform staff is created with `manage.py create_superadmin`.
+> ```
+> Además la migración `users.0005_clear_is_staff_on_tenant_admins` limpió las filas viejas. El
+> agravante quedó cerrado por las dos vías: el código y el backfill.
 
 Nueve atacantes intentaron **romper** cada invariante entregada los 2026-08-04/05, más un crítico que re-verificó los hallazgos dudosos. 10 agentes, 0 errores. No fue una verificación de "está bien": fue un intento sistemático de encontrar el contraejemplo.
 
@@ -27,7 +45,7 @@ Ejemplos: el guard de correo/ADMIN aguantó `""`, `null`, `"   "`, PUT, cambio d
 - Vaciar el `correo` de un ADMIN → queda sin `USERNAME_FIELD` (lockout). El mismo payload por API da 400.
 - Cambiar rol ADMIN→CAJERO → cajero sin cédula.
 
-⚠️ **Agravante:** `TenantCreateSerializer._create_initial_admin` pone `is_staff=True` a **todo** admin de tenant (`apps/tenants/serializers.py:87`). Confirmado en la BD: hay ADMIN de tenant con `is_staff=True`. Hoy el change page les da 403 por falta de permiso de modelo — están **a un `user_permissions` de distancia** de poder hacer todo lo anterior.
+⚠️ ~~**Agravante:** `TenantCreateSerializer._create_initial_admin` pone `is_staff=True` a **todo** admin de tenant (`apps/tenants/serializers.py:87`).~~ **🟢 CERRADO — verificado el 2026-09-13: la línea 87 hoy dice exactamente lo contrario (ver el callout del encabezado).** El texto tachado se conserva como historia. Confirmado en la BD: hay ADMIN de tenant con `is_staff=True`. Hoy el change page les da 403 por falta de permiso de modelo — están **a un `user_permissions` de distancia** de poder hacer todo lo anterior.
 → [[BACKEND-20260805-escrituras-que-evaden-serializers]]
 
 ### 2. `PUT` + `multipart` apaga booleanos ausentes — y en tenants, el negocio entero

@@ -1,11 +1,19 @@
 ---
 tags: [tarea, tenancy, auth, bug]
-status: 🔴
+status: 🟢
 prioridad: media
-updated: 2026-08-02
+updated: 2026-09-13
 ---
 
 # TENANCY-20260802-slug-divergente — Slug back/front divergente y sin transliterar
+
+> [!warning] 🟢 CERRADA — verificado contra código el 2026-09-13; **las TRES anclas están muertas**
+> El índice ya la daba por 🟢 ("resuelto como efecto colateral de
+> [[ADR-TENANCY-20260809-slug-persistido]]"), pero el frontmatter de esta ficha seguía en 🔴 — 42 días.
+> `grep -rn "_nombre_to_slug\|toSlug" el_vuelto_backend/apps/ el_vuelto_frontend/src/` → **cero
+> coincidencias en todo el repo**. Y `TenantBySlugView` (`apps/tenants/views.py:32`) ya no itera todos
+> los tenants en Python: hace un `filter(slug=..., activo=True)` indexado. El texto de abajo se conserva
+> como historia.
 
 **Tipo:** bug · **Descubierto:** auditoría de módulos 2026-08-02
 

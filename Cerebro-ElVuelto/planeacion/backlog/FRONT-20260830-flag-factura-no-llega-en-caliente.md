@@ -2,7 +2,7 @@
 tags: [tarea, frontend, auth, sales, recibo]
 status: 🔴
 prioridad: media
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # FRONT-20260830-flag-factura-no-llega-en-caliente — el toggle se prende y la caja no se entera
@@ -21,7 +21,8 @@ refrescarlo no lo hacen:
   `tenant_*`**. Y `useMeQuery` está exportado pero **no lo consume nadie**.
 - `baseQueryWithReauth` (`src/app/apiBase.ts:38`) despacha `setCredentials` **sin** `user`, y
   `authSlice.ts:51` es `if (action.payload.user)` — el refresh preserva el objeto viejo.
-- `updateUser` (`authSlice.ts:56-64`) solo toca `nombre` y `correo`.
+- `updateUser` (`authSlice.ts:61-69` — **re-anclado el 2026-09-13**; el `:56-64` se escribió leyendo el
+  archivo *antes* del commit y quedó 5 líneas corrido) solo toca `nombre` y `correo`.
 
 Mismo problema, de paso, para `tenant_email`, `tenant_support_phone`, `tenant_nombre` y
 `tenant_logo_url`: **ninguno** se refresca sin volver a entrar. El flag nuevo solo lo hizo visible.
@@ -47,7 +48,7 @@ pero es un cartel, no un arreglo.
 
 ## Anclas
 - `el_vuelto_backend/apps/users/serializers.py:52-58` · `:195-210` · `apps/users/views.py:70`
-- `el_vuelto_frontend/src/app/apiBase.ts:38` · `src/features/auth/authSlice.ts:51,56-64`
+- `el_vuelto_frontend/src/app/apiBase.ts:38` · `src/features/auth/authSlice.ts:51,61-69`
 - `el_vuelto_frontend/src/features/auth/authApi.ts` (`MeResponse`, `useMeQuery` sin consumidores)
 
 ## Enlaces

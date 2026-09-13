@@ -1,7 +1,7 @@
 ---
 tags: [adr, tenancy, sales, recibo, negocio]
 status: aceptada
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # ADR-TENANCY-20260830 — La factura electrónica es un toggle por negocio, y es opt-in
@@ -19,9 +19,18 @@ electrónicamente. Es una obligación ante la DIAN, no un adorno del recibo.
 ## Decisión
 
 ### 1. Un campo booleano en `Tenant`, editable solo por el super admin
-`factura_electronica = BooleanField(default=False)` (`apps/tenants/models.py:20`), migración
-`0005_tenant_factura_electronica`. Encendido ⇒ el recibo imprime la pregunta + el correo + el
-teléfono. Apagado ⇒ ninguno de los tres.
+`factura_electronica = BooleanField(default=False)` (`apps/tenants/models.py:29` — **re-anclado el
+2026-09-13: el `:20` original caía en el comentario de la decisión, `:20-28`**), migración
+`0005_tenant_factura_electronica`. Encendido **y con al menos un contacto cargado** ⇒ el recibo imprime
+la pregunta + el correo + el teléfono. Apagado ⇒ ninguno de los tres.
+
+> [!warning] Precisión agregada el 2026-09-13 — la condición vieja no se borró
+> Este ADR describía la decisión como si `(tenant.email || tenant.supportPhone)` hubiera desaparecido.
+> **Sigue viva**, como segundo término del `&&`: `generateReceipt.ts:129` →
+> `const hasFactura = tenant.facturaElectronica && (tenant.email || tenant.supportPhone)`, justificado
+> en el comentario de `:124-128` (no imprimir una pregunta huérfana si el negocio se quedara sin ningún
+> contacto). **No es un residuo olvidado: es una decisión de implementación** — y hoy es inalcanzable,
+> porque `Tenant.correo` es obligatorio. Lo que estaba mal era el cerebro, no el código.
 
 ### 2. **Opt-in**, no opt-out — decisión explícita del owner
 > [!decision] `default=False`, sabiendo lo que cuesta
@@ -74,7 +83,11 @@ Congelarlo sería un campo nuevo en `Sale` — no se hizo.
 ## Verificación
 7 casos contra servidor real (`runserver` + `curl`), con el tenant y los usuarios de prueba borrados
 al terminar: GET expone el campo · POST lo acepta · PATCH lo guarda y persiste · PATCH parcial **no**
-lo nulifica · los **tres** flujos de login lo devuelven (cédula, correo, cajero) · superadmin sin
+lo nulifica · los **tres** flujos de login **del backend** lo devuelven (cédula, correo, cajero — los
+tres pasan por `_user_payload`, `apps/users/serializers.py:97`, `:102`, `:191`); ⚠️ **desde la SPA solo
+se ejercitan dos**: `loginSuperAdmin` → `/auth/login/` rama correo (la usan superadmin **y** admin de
+tenant) y `loginWorker` → `/auth/login/cashier/`. La rama cédula de `/auth/login/` **no tiene llamador
+en el frontend** · superadmin sin
 tenant devuelve `None` sin reventar. Recibo renderizado de verdad en las dos ramas con esbuild.
 `tsc --noEmit` exit 0 · `makemigrations --check` exit 0.
 

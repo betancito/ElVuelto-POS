@@ -78,6 +78,10 @@ services:
   # Requiere DOMAIN y ACME_EMAIL en el .env de la RAÍZ, y BIND_HOST=127.0.0.1
   # para que 5173/8000 dejen de escuchar en la IP pública. Runbook completo:
   # docs/azure-deploy.md.
+  #
+  # ALTERNATIVA: se puede correr Caddy en el HOST (`apt install caddy`, config en
+  # /etc/caddy/Caddyfile) apuntando a 127.0.0.1:5173. Si vas por ese camino NO
+  # actives este perfil: los dos pelean por los puertos 80 y 443.
   caddy:
     image: ${IMAGE_PREFIX:-elvuelto}-caddy:${TAG:-prod}
     build:
@@ -85,8 +89,15 @@ services:
       dockerfile: Dockerfile
     profiles: ["edge"]
     environment:
-      DOMAIN: ${DOMAIN:?falta DOMAIN en el .env de la raiz}
-      ACME_EMAIL: ${ACME_EMAIL:?falta ACME_EMAIL en el .env de la raiz}
+      # OJO con la sintaxis: acá iba `${DOMAIN:?...}` (variable obligatoria) y
+      # ROMPÍA `build prod` para todo el mundo, incluido quien no usa este
+      # servicio. Compose **interpola el archivo entero ANTES de filtrar por
+      # `profiles`**, así que un `:?` dispara aunque el perfil esté apagado.
+      # Con `:-` la variable queda vacía y el servicio sigue dormido; si alguien
+      # activa el perfil `edge` sin definirlas, Caddy falla al arrancar con un
+      # error legible, que es donde corresponde fallar.
+      DOMAIN: ${DOMAIN:-}
+      ACME_EMAIL: ${ACME_EMAIL:-}
     ports:
       - "80:80"
       - "443:443"

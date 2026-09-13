@@ -1,11 +1,19 @@
 ---
 tags: [tarea, tenancy, limpieza]
-status: 🔴
+status: 🟢
 prioridad: media
-updated: 2026-08-02
+updated: 2026-09-13
 ---
 
 # TENANCY-20260802-toggle-active-fantasma — Endpoint toggle_active fantasma
+
+> [!warning] 🟢 CERRADA — verificado contra código el 2026-09-13 (el índice ya la daba por 🟢; la ficha no se había enterado)
+> El cuerpo de abajo afirma que el front define la mutation y exporta `useToggleTenantActiveMutation`.
+> **Es falso hoy, y el propio código dejó lápida**: `el_vuelto_frontend/src/features/tenants/tenantsApi.ts:147`
+> → `// Deliberately no \`toggleTenantActive\`: \`POST /tenants/{id}/toggle_active/\``.
+> `grep -rn "toggleTenantActive"` sobre `src/` → **0 resultados**. El único `toggle_active` vivo es el de
+> **usuarios** (`apps/users/views.py:166` + `usersApi.ts:50`), que sí existe en el backend y no tiene
+> nada que ver con esta ficha. El texto de abajo se conserva como historia.
 
 **Tipo:** limpieza / decisión · **Descubierto:** auditoría de módulos 2026-08-02
 

@@ -2,7 +2,7 @@
 tags: [tarea, tenancy, sales, recibo, feature]
 status: 🟢
 prioridad: feature
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # TENANCY-20260830-factura-electronica-por-tenant — el bloque del recibo, condicionado por negocio
@@ -13,7 +13,12 @@ Pedido directo del owner. Decisión: [[ADR-TENANCY-20260830-factura-electronica-
 
 ## Lo que se pidió
 1. Toggle por tenant en el super admin: «¿Factura electrónica?».
-2. Encendido ⇒ el recibo muestra la pregunta + correo + teléfono del negocio.
+2. Encendido **y con al menos un contacto cargado** ⇒ el recibo muestra la pregunta + correo +
+   teléfono del negocio. ⚠️ **Precisión del 2026-09-13:** la condición vieja
+   (`tenant.email || tenant.supportPhone`) **no se borró**: sigue como segundo término del `&&` en
+   `generateReceipt.ts:129`, a propósito y documentada en `:124-128` (para no imprimir una pregunta
+   huérfana si el negocio quedara sin ningún contacto). Hoy es inalcanzable porque `correo` es
+   obligatorio, pero el ADR y esta ficha la describían como si hubiera desaparecido.
 3. Apagado ⇒ no muestra ninguno de los tres.
 4. Se quita «El Vuelto POS» del recibo; la última línea pasa a ser «Gracias por su compra».
 
@@ -25,7 +30,7 @@ mostraba «para los que tienen datos»: se mostraba **siempre**.
 ## Entregado
 | capa | archivos |
 |---|---|
-| modelo | `apps/tenants/models.py:20` + `migrations/0005_tenant_factura_electronica.py` |
+| modelo | `apps/tenants/models.py:29` (el comentario de la decisión es `:20-28`) + `migrations/0005_tenant_factura_electronica.py:13-17` |
 | API | `apps/tenants/serializers.py` (`Meta.fields` es lista EXPLÍCITA) · `apps/tenants/admin.py` |
 | cadena al cajero | `apps/users/serializers.py:52-58` (`_user_payload`, cubre los 3 logins de una) |
 | front · auth | `authApi.ts` (tipo + los DOS mapeos) · `authSlice.ts` |

@@ -2,10 +2,43 @@
 tags: [tarea, docs, frontend, backend]
 status: 🔴
 prioridad: alta
-updated: 2026-08-30
+updated: 2026-09-13
 ---
 
 # DOCS-20260813-claudemd-drift-post-features — 14 afirmaciones falsas en los tres `CLAUDE.md`
+
+> [!warning] Re-verificado el 2026-09-13 contra HEAD `89d3f41` — **12 vivas, 4 cerradas, y TODAS las anclas corridas otra vez**
+> `89d3f41` volvió a tocar los tres archivos (raíz +6 efectivas, backend +12, frontend +2 y +13), así
+> que **ninguna ancla de esta ficha servía**. El commit además cerró **un punto más** sin proponérselo.
+>
+> | nro | ancla vieja → **ancla hoy** | veredicto |
+> |---|---|---|
+> | 1 | raíz `:51` → **`:97-103`** | 🟢 ya verdadera (desde 08-27) |
+> | 2 | front `:330` → **`:374-376`** | 🟢 ya verdadera (desde 08-27) |
+> | 3 | front `:331` → **`:402-403`** | 🟢 ya verdadera (desde 08-27) |
+> | 4 | raíz `:36`,`:39` → **`:38`,`:41`** | 🔴 sigue falsa |
+> | 5 | front `:15` → **`:15`** (sin corrimiento) | 🔴 sigue falsa |
+> | 6 | raíz `:92` → **`:144`** | 🔴 sigue falsa |
+> | **7** | front `:72` → **`:93-98`** | 🟢 **CERRADA POR `89d3f41`** |
+> | 8 | front `:172` → **`:216`**; código `serializers.py:253-256` → **`:260-263`** | 🔴 sigue falsa |
+> | 9 | back `:308` → **`:320`** | 🔴 sigue falsa |
+> | 10 | back `:333`,`:340` → **`:345`,`:352`** (lista `:354-359`); código `tenants/serializers.py:77` → **`:78`** | 🔴 sigue falsa |
+> | 11 | raíz `:50` → **`:96`** | 🔴 sigue falsa |
+> | 12 | raíz `:71-83` → **`:122-135`**; back `:578-592` → **`:590-605`**; raíz `:86-88` → **`:137-140`** | 🔴 sigue falsa |
+> | 13 | front `:68` → **`:91`**; front `:162` → **`:206`** | 🔴 sigue falsa |
+> | 14 | `docs_auth.py:5-6` → **`:5-6`** (sin corrimiento) | 🔴 sigue falsa |
+> | 15 | raíz `:66` vs `:112,:133` → **`:72` vs `:118,:139`** | 🔴 sigue falsa (contradicción viva) |
+> | 16 | back `:578`,`:588` → **`:590`,`:600`**; `.env.example` raíz `:54` y `:59` | 🔴 sigue falsa |
+>
+> **Punto 7 cerrado:** `el_vuelto_frontend/CLAUDE.md:93-98` ya lista `tenantEmail`,
+> `tenantSupportPhone` (y la nueva `tenantFacturaElectronica`), y coincide campo por campo con
+> `authSlice.ts:3-25`. No fue trabajo de doc: lo arrastró la feature de factura electrónica.
+>
+> ⚠️ **Y hay que borrar una afirmación del PASO 0 del 08-30**: decía que back `:308` *"no se movió ni un
+> renglón"*. Valía contra `abee9d8`; `89d3f41` sí lo movió, a `:320`.
+>
+> **Conteo de hoy: 10 de los 14 originales + los puntos 15 y 16 = 12 afirmaciones falsas.**
+> El criterio de aceptación (que exigía 14) hay que reescribirlo sobre estas 12.
 
 > [!info] Re-verificado el 2026-08-15 — sube de media a **alta** y se fusiona con el ítem del docstring
 > Se re-comprobaron contra código las **5 más peligrosas** (recibos, `loginSuperAdmin`/`loginWorker`,

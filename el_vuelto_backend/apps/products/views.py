@@ -18,6 +18,9 @@ from .serializers import CategorySerializer, ProductPOSSerializer, ProductSerial
 class CategoryViewSet(TenantModelViewSet):
     queryset = Category.objects.all().order_by("nombre")
     serializer_class = CategorySerializer
+    # The catalog is served whole, like `ProductViewSet` below — see the note
+    # there for why.
+    pagination_class = None
 
     def get_permissions(self):
         # Cashier is read-only on the catalog: may list/retrieve categories,
@@ -53,6 +56,22 @@ class CategoryViewSet(TenantModelViewSet):
 class ProductViewSet(TenantModelViewSet):
     permission_classes = [IsAdmin]
     serializer_class = ProductSerializer
+    # The catalog is served WHOLE, with no pagination.
+    #
+    # `DEFAULT_PAGINATION_CLASS` + `PAGE_SIZE = 50` (settings/base.py) applied
+    # here and silently truncated the admin catalog: a business with 83
+    # products got 50, ordered by `nombre`, and the other 33 were unreachable
+    # — the frontend reads `results` and ignores `next`, no screen has a page
+    # control, and the search box filters client-side over whatever arrived.
+    # Worse, it looked like data loss: every new product whose name sorts
+    # early pushed a different one out of the visible 50. Reported from
+    # production 2026-09-13 with a real customer's catalog.
+    #
+    # Serving the catalog whole is what the `pos` action below has always
+    # done for the cashier's screen, so this is the established shape of the
+    # hottest read in the app, not a new risk. Sales and inventory movements
+    # deliberately KEEP their pagination: those tables grow without bound.
+    pagination_class = None
 
     def get_queryset(self):
         # Overriding get_queryset drops TenantModelViewSet's guard, so call
